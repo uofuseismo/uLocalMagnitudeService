@@ -74,12 +74,20 @@ configure_file(${CMAKE_SOURCE_DIR}/src/version.hpp.in
 set(LIBRARY_SRC
     src/corrections/distance.cpp
     src/corrections/distanceOptions.cpp
+    src/corrections/station.cpp
+    src/corrections/stationIdentifier.cpp
+    src/corrections/stationOptions.cpp
+    src/corrections/stations.cpp
+    src/corrections/stationsSet.cpp
     src/version.cpp)
 set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/corrections/distance.hpp
     include/${PROJECT_NAME}/corrections/distanceOptions.hpp
     include/${PROJECT_NAME}/corrections/station.hpp
+    include/${PROJECT_NAME}/corrections/stationIdentifier.hpp
+    include/${PROJECT_NAME}/corrections/stationOptions.hpp
     include/${PROJECT_NAME}/corrections/stations.hpp
+    include/${PROJECT_NAME}/corrections/stationsSet.hpp
     include/${PROJECT_NAME}/version.hpp)
 #set(PROTO_SRC)
 
@@ -167,7 +175,12 @@ target_link_libraries(uLocalMagnitude
 
 if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
    add_executable(unitTests
-                  testing/corrections/distance.cpp)
+                  testing/corrections/distance.cpp
+                  testing/corrections/station.cpp
+                  testing/corrections/stationIdentifier.cpp
+                  testing/corrections/stationOptions.cpp
+                  testing/corrections/stations.cpp
+                  testing/corrections/stationsSet.cpp)
    set_target_properties(unitTests PROPERTIES
                          CXX_STANDARD 23
                          CXX_STANDARD_REQUIRED YES

@@ -129,18 +129,6 @@ DistanceOptions::getInterpolation() const noexcept
 }
 
 /// Corrections table
-/*
-void DistanceOptions::setUtahCorrections()
-{
-   setCorrections(utahCorrections);
-}
-
-void DistanceOptions::setYellowstoneCorrections()
-{
-   setCorrections(yellowstoneCorrections);
-}
-*/
-
 void DistanceOptions::setCorrections(
     const std::vector<std::pair<double, double>> &corrections)
 {
