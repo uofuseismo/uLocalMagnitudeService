@@ -2,8 +2,10 @@
 #include <utility>
 #include <catch2/catch_test_macros.hpp>
 #include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
+#include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
 
 using namespace ULocalMagnitudeService::Corrections;
+using ULocalMagnitudeService::Magnitude::StreamIdentifier;
 
 TEST_CASE("ULocalMagnitudeService::Corrections::StationIdentifier",
           "[stationIdentifier]")
@@ -85,6 +87,40 @@ TEST_CASE("ULocalMagnitudeService::Corrections::StationIdentifier",
         StationIdentifier stationOnly;
         stationOnly.setStation("CWU");
         REQUIRE_THROWS_AS(stationOnly.toString(), std::runtime_error);
+    }
+
+    SECTION("From stream identifier")
+    {
+        StreamIdentifier streamIdentifier;
+        streamIdentifier.setNetwork("UU");
+        streamIdentifier.setStation("CWU");
+        streamIdentifier.setChannel("HHE");
+        streamIdentifier.setLocationCode("01");
+        const StationIdentifier identifier{streamIdentifier};
+        REQUIRE(identifier.getNetwork() == "UU");
+        REQUIRE(identifier.getStation() == "CWU");
+        REQUIRE(identifier.toString() == "UU.CWU");
+
+        // Channel and location code aren't needed
+        StreamIdentifier networkAndStation;
+        networkAndStation.setNetwork("WY");
+        networkAndStation.setStation("YMR");
+        REQUIRE(StationIdentifier{networkAndStation}.toString() == "WY.YMR");
+    }
+
+    SECTION("From incomplete stream identifier")
+    {
+        StreamIdentifier noNetwork;
+        noNetwork.setStation("CWU");
+        noNetwork.setChannel("HHE");
+        noNetwork.setLocationCode("01");
+        REQUIRE_THROWS_AS(StationIdentifier{noNetwork}, std::invalid_argument);
+
+        StreamIdentifier noStation;
+        noStation.setNetwork("UU");
+        noStation.setChannel("HHE");
+        noStation.setLocationCode("01");
+        REQUIRE_THROWS_AS(StationIdentifier{noStation}, std::invalid_argument);
     }
 
     SECTION("Copy and move")

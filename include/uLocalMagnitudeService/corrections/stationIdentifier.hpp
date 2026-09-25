@@ -2,6 +2,10 @@
 #define ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_STATION_IDENTIFIER_HPP
 #include <memory>
 #include <string>
+namespace ULocalMagnitudeService::Magnitude
+{
+ class StreamIdentifier;
+}
 namespace ULocalMagnitudeService::Corrections
 {
 /// @class StationIdentifier stationIdentifier.hpp
@@ -18,6 +22,12 @@ public:
     StationIdentifier(const StationIdentifier &identifier);
     /// @brief Move constructor.
     StationIdentifier(StationIdentifier &&identifier) noexcept;
+    /// @brief Constructs a station identifier from a stream identifier.
+    /// @param[in] identifier  The stream identifier from which to create this
+    ///                        station identifier.
+    /// @throws std::invalid_argument if the \c identifier.hasNetwork() or
+    ///         \c identifier.hasStation() is false.
+    explicit StationIdentifier(const Magnitude::StreamIdentifier &identifier);
 
     /// @brief Sets the network code.
     /// @param[in] network   The network code - e.g., UU.  

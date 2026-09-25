@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 #include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
+#include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
 
 using namespace ULocalMagnitudeService::Corrections;
 
@@ -43,6 +44,25 @@ StationIdentifier::StationIdentifier() :
     pImpl(std::make_unique<StationIdentifierImpl> ())
 {
 }
+
+/// From stream identifier
+StationIdentifier::StationIdentifier(
+    const Magnitude::StreamIdentifier &identifier)
+{
+    if (!identifier.hasNetwork())
+    {
+        throw std::invalid_argument("Network not set");
+    }
+    if (!identifier.hasStation())
+    {
+        throw std::invalid_argument("Station not set");
+    }
+    StationIdentifier stationIdentifier;
+    stationIdentifier.setNetwork(identifier.getNetwork());
+    stationIdentifier.setStation(identifier.getStation());
+    *this = stationIdentifier;
+}
+
 
 /// Copy constructor
 StationIdentifier::StationIdentifier(const StationIdentifier &identifier)
@@ -102,7 +122,7 @@ bool StationIdentifier::hasNetwork() const noexcept
 /// Station
 void StationIdentifier::setStation(const std::string &stationIn)
 {
-    auto station= ::removeBlanksAndCapitalize(stationIn);
+    auto station = ::removeBlanksAndCapitalize(stationIn);
     if (station.empty())
     {
         throw std::invalid_argument("Station is empty");

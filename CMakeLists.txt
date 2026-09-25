@@ -79,6 +79,8 @@ set(LIBRARY_SRC
     src/corrections/stationOptions.cpp
     src/corrections/stations.cpp
     src/corrections/stationsSet.cpp
+    src/magnitude/amplitude.cpp
+    src/magnitude/streamIdentifier.cpp
     src/version.cpp)
 set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/corrections/distance.hpp
@@ -88,8 +90,19 @@ set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/corrections/stationOptions.hpp
     include/${PROJECT_NAME}/corrections/stations.hpp
     include/${PROJECT_NAME}/corrections/stationsSet.hpp
+    include/${PROJECT_NAME}/magnitude/amplitude.hpp
+    include/${PROJECT_NAME}/magnitude/streamIdentifier.hpp
     include/${PROJECT_NAME}/version.hpp)
-#set(PROTO_SRC)
+set(PROTO_SRC
+    uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.proto
+    uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.proto
+    uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.proto
+    uLocalMagnitudeServiceAPI/v1/magnitude/service.proto
+    uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.proto
+    uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.proto
+    uLocalMagnitudeServiceAPI/v1/magnitude/station_identifier.proto
+    uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.proto
+    )
 
 if (BUILD_SHARED_LIBS)
    add_library(libuLocalMagnitudeService SHARED ${LIBRARY_SRC} ${PROTO_SRC})
@@ -119,21 +132,21 @@ target_sources(libuLocalMagnitudeService
                          ${CMAKE_CURRENT_BINARY_DIR}/include
                       FILES
                          ${LIBRARY_HEADER_FILES})
-#protobuf_generate(TARGET libuLocalMagnitudeService
-#                  LANGUAGE cpp
-#                  OUT_VAR PROTO_GENERATED_CXX_FILES
-#                 )
-#protobuf_generate(TARGET libuLocalMagnitudeService
-#                  LANGUAGE grpc
-#                  PLUGIN "protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
-#                  PLUGIN_OPTIONS generate_mock_code=true
-#                  GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
-#                  OUT_VAR PROTO_GENERATED_FILES
-#                 )
-#set_source_files_properties(${PROTO_GENERATED_FILES} ${PROTO_GENERATED_CXX_FILES}
-#   PROPERTIES
-#      SKIP_LINTING ON
-#)
+protobuf_generate(TARGET libuLocalMagnitudeService
+                  LANGUAGE cpp
+                  OUT_VAR PROTO_GENERATED_CXX_FILES
+                 )
+protobuf_generate(TARGET libuLocalMagnitudeService
+                  LANGUAGE grpc
+                  PLUGIN "protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
+                  PLUGIN_OPTIONS generate_mock_code=true
+                  GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
+                  OUT_VAR PROTO_GENERATED_FILES
+                 )
+set_source_files_properties(${PROTO_GENERATED_FILES} ${PROTO_GENERATED_CXX_FILES}
+   PROPERTIES
+      SKIP_LINTING ON
+)
 
 add_executable(uLocalMagnitudeService
                src/main.cpp)
@@ -180,7 +193,9 @@ if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
                   testing/corrections/stationIdentifier.cpp
                   testing/corrections/stationOptions.cpp
                   testing/corrections/stations.cpp
-                  testing/corrections/stationsSet.cpp)
+                  testing/corrections/stationsSet.cpp
+                  testing/magnitude/amplitude.cpp
+                  testing/magnitude/streamIdentifier.cpp)
    set_target_properties(unitTests PROPERTIES
                          CXX_STANDARD 23
                          CXX_STANDARD_REQUIRED YES
