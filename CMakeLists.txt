@@ -80,6 +80,7 @@ set(LIBRARY_SRC
     src/corrections/stations.cpp
     src/corrections/stationsSet.cpp
     src/magnitude/amplitude.cpp
+    src/magnitude/station.cpp
     src/magnitude/streamIdentifier.cpp
     src/version.cpp)
 set(LIBRARY_HEADER_FILES
@@ -91,6 +92,7 @@ set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/corrections/stations.hpp
     include/${PROJECT_NAME}/corrections/stationsSet.hpp
     include/${PROJECT_NAME}/magnitude/amplitude.hpp
+    include/${PROJECT_NAME}/magnitude/station.hpp
     include/${PROJECT_NAME}/magnitude/streamIdentifier.hpp
     include/${PROJECT_NAME}/version.hpp)
 set(PROTO_SRC
@@ -100,6 +102,8 @@ set(PROTO_SRC
     uLocalMagnitudeServiceAPI/v1/magnitude/service.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.proto
+    uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_request.proto
+    uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_response.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_identifier.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.proto
     )
@@ -195,6 +199,7 @@ if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
                   testing/corrections/stations.cpp
                   testing/corrections/stationsSet.cpp
                   testing/magnitude/amplitude.cpp
+                  testing/magnitude/station.cpp
                   testing/magnitude/streamIdentifier.cpp)
    set_target_properties(unitTests PROPERTIES
                          CXX_STANDARD 23

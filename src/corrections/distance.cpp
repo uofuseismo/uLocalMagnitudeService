@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <iterator>
 #include <memory>
 #include <stdexcept>
@@ -78,6 +79,14 @@ Distance::Distance(const DistanceOptions &options) :
     {
         throw std::runtime_error("No corrections set");
     }
+    if (!options.hasInterpolation())
+    {
+        throw std::runtime_error("Interpolation type not set");
+    }
+    if (!options.hasType())
+    {
+        throw std::runtime_error("Distance type not set");
+    }
     pImpl->mDistanceOptions = options;
     const auto correctionsTable
          = pImpl->mDistanceOptions.getCorrectionsReference();
@@ -138,6 +147,16 @@ bool Distance::isInitialized() const noexcept
     return pImpl->mInitialized;
 }
 
+/// Distance type
+DistanceOptions::Type Distance::getDistanceType() const
+{
+    if (!isInitialized())
+    {
+        throw std::runtime_error("Distance corrections not initialized");
+    }
+    return pImpl->mDistanceOptions.getType();
+}
+
 /// Operator to get it done
 double Distance::operator()(const double distance) const
 {
@@ -169,3 +188,30 @@ double Distance::operator()(const double distance) const
     }
 }
 
+double Distance::operator()(const double epicentralDistance,
+                            const double sourceDepth) const
+{
+    if (!isInitialized())
+    {
+        throw std::runtime_error("Distance correction class not initialized");
+    }
+    if (epicentralDistance < 0)
+    {
+        throw std::invalid_argument(
+            "Epicentral distance cannot be negative");
+    }
+    if (getDistanceType() == DistanceOptions::Type::Hypocentral)
+    {
+        if (sourceDepth < -8600 || sourceDepth > 900000)
+        {
+            throw std::invalid_argument(
+                "Source depth must be between -8600 and 900,000");
+        }
+        auto hypocentralDistance = std::hypot(epicentralDistance, sourceDepth);
+        return this->operator()(hypocentralDistance);
+    }
+    else
+    {
+        return this->operator()(epicentralDistance);
+    }
+}

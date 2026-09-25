@@ -1,9 +1,7 @@
 #include <cstddef>
 #include <filesystem>
-#include <fstream>
 #include <stdexcept>
 #include <string>
-#include <system_error>
 #include <utility>
 #include <vector>
 #include <catch2/catch_test_macros.hpp>
@@ -11,48 +9,26 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
+#include "../distanceTables.hpp"
 
 using namespace ULocalMagnitudeService::Corrections;
+using namespace ULocalMagnitudeService::Testing;
 
 namespace
 {
-/// Writes an initialization file to the temporary directory and removes it
-/// when it goes out of scope.
-class TemporaryIniFile
+/// Loads the options for one of the UUSS tables.
+DistanceOptions uussOptions(const std::string &table)
 {
-public:
-    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-    TemporaryIniFile(const std::string &name, const std::string &contents) :
-        mPath(std::filesystem::temp_directory_path()
-            / ("uLocalMagnitudeService_" + name + ".ini"))
-    {
-        std::ofstream file(mPath);
-        file << contents;
-    }
-    ~TemporaryIniFile()
-    {
-        std::error_code errorCode;
-        std::filesystem::remove(mPath, errorCode);
-    }
-    TemporaryIniFile(const TemporaryIniFile &) = delete;
-    TemporaryIniFile& operator=(const TemporaryIniFile &) = delete;
-    [[nodiscard]] const std::filesystem::path &path() const noexcept
-    {
-        return mPath;
-    }
-private:
-    std::filesystem::path mPath;
-};
+    const TemporaryIniFile iniFile(table,
+                                   table == "Utah" ?
+                                   utahIniSection() : yellowstoneIniSection());
+    return fromInitializationFile(iniFile.path());
+}
 
-/// Creates a distance correction from one of the hardwired tables.
-Distance fromHardwiredTable(const std::string &table,
-                            const std::string &interpolation)
+/// Creates a distance correction from one of the UUSS tables.
+Distance fromUUSSTable(const std::string &table)
 {
-    const TemporaryIniFile iniFile(table + "_" + interpolation,
-                                   "[DistanceCorrections]\n"
-                                   "interpolation = " + interpolation + "\n"
-                                   "use" + table + "Corrections = true\n");
-    return Distance {fromInitializationFile(iniFile.path())};
+    return Distance {uussOptions(table)};
 }
 
 void checkCorrections(const std::vector<std::pair<double, double>> &expected,
@@ -91,8 +67,10 @@ TEST_CASE("ULocalMagnitudeService::Corrections::DistanceOptions", "[distanceOpti
     {
         const DistanceOptions options;
         REQUIRE_FALSE(options.hasCorrections());
-        REQUIRE(options.getInterpolation() ==
-                DistanceOptions::Interpolation::Nearest);
+        REQUIRE_FALSE(options.hasInterpolation());
+        REQUIRE_FALSE(options.hasType());
+        REQUIRE_THROWS_AS(options.getInterpolation(), std::runtime_error);
+        REQUIRE_THROWS_AS(options.getType(), std::runtime_error);
         REQUIRE_THROWS_AS(options.getCorrections(), std::runtime_error);
         REQUIRE_THROWS_AS(options.getCorrectionsReference(),
                           std::runtime_error);
@@ -102,11 +80,22 @@ TEST_CASE("ULocalMagnitudeService::Corrections::DistanceOptions", "[distanceOpti
     {
         DistanceOptions options;
         options.setInterpolation(DistanceOptions::Interpolation::Linear);
+        REQUIRE(options.hasInterpolation());
         REQUIRE(options.getInterpolation() ==
                 DistanceOptions::Interpolation::Linear);
         options.setInterpolation(DistanceOptions::Interpolation::Nearest);
         REQUIRE(options.getInterpolation() ==
                 DistanceOptions::Interpolation::Nearest);
+    }
+
+    SECTION("Distance type")
+    {
+        DistanceOptions options;
+        options.setType(DistanceOptions::Type::Hypocentral);
+        REQUIRE(options.hasType());
+        REQUIRE(options.getType() == DistanceOptions::Type::Hypocentral);
+        options.setType(DistanceOptions::Type::Epicentral);
+        REQUIRE(options.getType() == DistanceOptions::Type::Epicentral);
     }
 
     SECTION("Corrections are sorted")
@@ -222,39 +211,42 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
             std::invalid_argument);
     }
 
-    SECTION("Hardwired tables")
+    SECTION("UUSS tables")
     {
-        const TemporaryIniFile utahFile("utahTable",
-                                        "[DistanceCorrections]\n"
-                                        "interpolation = nearest\n"
-                                        "useUtahCorrections = true\n");
-        const auto utah = fromInitializationFile(utahFile.path());
+        // Utah is nearest neighbor on epicentral distance
+        const auto utah = uussOptions("Utah");
         REQUIRE(utah.getInterpolation() ==
                 DistanceOptions::Interpolation::Nearest);
+        REQUIRE(utah.getType() == DistanceOptions::Type::Epicentral);
         const auto &utahTable = utah.getCorrectionsReference();
         REQUIRE(utahTable.size() == 70);
+        checkCorrections(utahCorrections, utahTable);
         REQUIRE(utahTable.front() == std::pair {0.0, 1.4});
         REQUIRE(utahTable.back() == std::pair {600000.0, 4.9});
 
-        const TemporaryIniFile yellowstoneFile("yellowstoneTable",
-                                               "[DistanceCorrections]\n"
-                                               "interpolation = nearest\n"
-                                               "useYellowstoneCorrections = true\n");
-        const auto yellowstone = fromInitializationFile(yellowstoneFile.path());
+        // Yellowstone is linear on hypocentral distance
+        const auto yellowstone = uussOptions("Yellowstone");
+        REQUIRE(yellowstone.getInterpolation() ==
+                DistanceOptions::Interpolation::Linear);
+        REQUIRE(yellowstone.getType() == DistanceOptions::Type::Hypocentral);
         const auto &yellowstoneTable = yellowstone.getCorrectionsReference();
         REQUIRE(yellowstoneTable.size() == 39);
+        checkCorrections(yellowstoneCorrections, yellowstoneTable);
         REQUIRE(yellowstoneTable.front() == std::pair {3000.0, 0.64});
         REQUIRE(yellowstoneTable.back() == std::pair {180000.0, 3.67});
     }
 
-    SECTION("Interpolation is case insensitive")
+    SECTION("Interpolation and distance type are case insensitive")
     {
         const TemporaryIniFile iniFile("caseInsensitive",
                                        "[DistanceCorrections]\n"
                                        "interpolation = LiNeAr\n"
-                                       "useUtahCorrections = true\n");
-        REQUIRE(fromInitializationFile(iniFile.path()).getInterpolation() ==
+                                       "distanceType = HyPoCeNtRaL\n"
+                                       "distance_correction_1 = 0, 1.0\n");
+        const auto options = fromInitializationFile(iniFile.path());
+        REQUIRE(options.getInterpolation() ==
                 DistanceOptions::Interpolation::Linear);
+        REQUIRE(options.getType() == DistanceOptions::Type::Hypocentral);
     }
 
     SECTION("Custom table in a custom section")
@@ -264,6 +256,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
         const TemporaryIniFile iniFile("customTable",
                                        "[MyCorrections]\n"
                                        "interpolation = linear\n"
+                                       "distanceType = epicentral\n"
                                        "distance_correction_1 = 10000, 2.0\n"
                                        "distance_correction_2 =   0    1.0\n"
                                        "distance_correction_3 = 30000\t4.0\n"
@@ -272,6 +265,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
             = fromInitializationFile(iniFile.path(), "MyCorrections");
         REQUIRE(options.getInterpolation() ==
                 DistanceOptions::Interpolation::Linear);
+        REQUIRE(options.getType() == DistanceOptions::Type::Epicentral);
         checkCorrections({{0, 1.0}, {10000, 2.0}, {20000, 3.0}, {30000, 4.0}},
                          options.getCorrections());
     }
@@ -281,6 +275,45 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
         const TemporaryIniFile iniFile("badInterpolation",
                                        "[DistanceCorrections]\n"
                                        "interpolation = cubic\n"
+                                       "distanceType = epicentral\n"
+                                       "distance_correction_1 = 0, 1.0\n");
+        REQUIRE_THROWS_AS(fromInitializationFile(iniFile.path()),
+                          std::invalid_argument);
+    }
+
+    SECTION("Invalid distance type")
+    {
+        const TemporaryIniFile iniFile("badDistanceType",
+                                       "[DistanceCorrections]\n"
+                                       "interpolation = nearest\n"
+                                       "distanceType = geodesic\n"
+                                       "distance_correction_1 = 0, 1.0\n");
+        REQUIRE_THROWS_AS(fromInitializationFile(iniFile.path()),
+                          std::invalid_argument);
+    }
+
+    SECTION("Interpolation and distance type are required")
+    {
+        const TemporaryIniFile noInterpolation("noInterpolation",
+                                               "[DistanceCorrections]\n"
+                                               "distanceType = epicentral\n"
+                                               "distance_correction_1 = 0, 1.0\n");
+        REQUIRE_THROWS_AS(fromInitializationFile(noInterpolation.path()),
+                          std::invalid_argument);
+        const TemporaryIniFile noType("noDistanceType",
+                                      "[DistanceCorrections]\n"
+                                      "interpolation = nearest\n"
+                                      "distance_correction_1 = 0, 1.0\n");
+        REQUIRE_THROWS_AS(fromInitializationFile(noType.path()),
+                          std::invalid_argument);
+    }
+
+    SECTION("The old hardwired table shortcuts are gone")
+    {
+        const TemporaryIniFile iniFile("oldShortcut",
+                                       "[DistanceCorrections]\n"
+                                       "interpolation = nearest\n"
+                                       "distanceType = epicentral\n"
                                        "useUtahCorrections = true\n");
         REQUIRE_THROWS_AS(fromInitializationFile(iniFile.path()),
                           std::invalid_argument);
@@ -291,6 +324,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
         const TemporaryIniFile iniFile("badEntry",
                                        "[DistanceCorrections]\n"
                                        "interpolation = nearest\n"
+                                       "distanceType = epicentral\n"
                                        "distance_correction_1 = 0, 1.0\n"
                                        "distance_correction_2 = 1 2 3\n");
         REQUIRE_THROWS_AS(fromInitializationFile(iniFile.path()),
@@ -301,7 +335,8 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
     {
         const TemporaryIniFile iniFile("noTable",
                                        "[DistanceCorrections]\n"
-                                       "interpolation = nearest\n");
+                                       "interpolation = nearest\n"
+                                       "distanceType = epicentral\n");
         REQUIRE_THROWS_AS(fromInitializationFile(iniFile.path()),
                           std::invalid_argument);
     }
@@ -312,10 +347,57 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance", "[distance]")
     // Distances in meters
     DistanceOptions options;
     options.setCorrections({{0, 1.0}, {10, 2.0}, {30, 4.0}});
+    options.setInterpolation(DistanceOptions::Interpolation::Nearest);
+    options.setType(DistanceOptions::Type::Epicentral);
 
-    SECTION("Requires corrections")
+    SECTION("Requires corrections, interpolation, and distance type")
     {
         REQUIRE_THROWS_AS(Distance {DistanceOptions {}}, std::runtime_error);
+
+        DistanceOptions noInterpolation;
+        noInterpolation.setCorrections({{0, 1.0}});
+        noInterpolation.setType(DistanceOptions::Type::Epicentral);
+        REQUIRE_THROWS_AS(Distance {noInterpolation}, std::runtime_error);
+
+        DistanceOptions noType;
+        noType.setCorrections({{0, 1.0}});
+        noType.setInterpolation(DistanceOptions::Interpolation::Nearest);
+        REQUIRE_THROWS_AS(Distance {noType}, std::runtime_error);
+    }
+
+    SECTION("Epicentral distance ignores the depth")
+    {
+        options.setInterpolation(DistanceOptions::Interpolation::Linear);
+        const Distance distance{options};
+        REQUIRE(distance.getDistanceType() ==
+                DistanceOptions::Type::Epicentral);
+        REQUIRE_THAT(distance(5, 0),   Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(distance(5, 20),  Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(distance(5, -20), Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THROWS_AS(distance(-1, 0), std::invalid_argument);
+    }
+
+    SECTION("Hypocentral distance uses the depth")
+    {
+        options.setInterpolation(DistanceOptions::Interpolation::Linear);
+        options.setType(DistanceOptions::Type::Hypocentral);
+        const Distance distance{options};
+        REQUIRE(distance.getDistanceType() ==
+                DistanceOptions::Type::Hypocentral);
+        // 3-4-5 triangle: hypocentral distance of 5 m
+        REQUIRE_THAT(distance(3, 4),  Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(distance(4, 3),  Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        // Above the datum is fine
+        REQUIRE_THAT(distance(3, -4), Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(distance(5, 0),  Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        // Directly above the source
+        REQUIRE_THAT(distance(0, 20), Catch::Matchers::WithinAbs(3.0, 1.e-12));
+        REQUIRE_THROWS_AS(distance(-1, 4), std::invalid_argument);
+        // Depth bounds
+        REQUIRE_NOTHROW(distance(10, -8600));
+        REQUIRE_NOTHROW(distance(10, 900000));
+        REQUIRE_THROWS_AS(distance(10, -8601), std::invalid_argument);
+        REQUIRE_THROWS_AS(distance(10, 900001), std::invalid_argument);
     }
 
     SECTION("Invalid distances")
@@ -358,6 +440,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance", "[distance]")
     {
         DistanceOptions shifted;
         shifted.setInterpolation(DistanceOptions::Interpolation::Linear);
+        shifted.setType(DistanceOptions::Type::Epicentral);
         shifted.setCorrections({{100, 1.0}, {200, 2.0}});
         const Distance distance{shifted};
         REQUIRE(distance(0) == 1.0);
@@ -371,6 +454,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance", "[distance]")
         {
             DistanceOptions single;
             single.setInterpolation(interpolation);
+            single.setType(DistanceOptions::Type::Epicentral);
             single.setCorrections({{5000, 0.25}});
             const Distance distance{single};
             REQUIRE(distance(0) == 0.25);
@@ -403,6 +487,8 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance", "[distance]")
     {
         DistanceOptions unsorted;
         unsorted.setCorrections({{30, 4.0}, {0, 1.0}, {10, 2.0}});
+        unsorted.setInterpolation(DistanceOptions::Interpolation::Nearest);
+        unsorted.setType(DistanceOptions::Type::Epicentral);
         const Distance distance{unsorted};
         checkCorrections({{0, 1.0}, {10, 2.0}, {30, 4.0}},
                          distance.getCorrections());
@@ -418,8 +504,9 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance - Utah and Yellowstone"
           "[distance]")
 {
     // The lookup takes meters but the tables are written in kilometers.
-    const auto utahNearest = fromHardwiredTable("Utah", "nearest");
-    const auto yellowstoneNearest = fromHardwiredTable("Yellowstone", "nearest");
+    // Utah is nearest neighbor while Yellowstone is linear.
+    const auto utahNearest = fromUUSSTable("Utah");
+    const auto yellowstoneLinear = fromUUSSTable("Yellowstone");
     const auto atKm = [](const Distance &distance, const double kilometers)
                       {
                           return distance(kilometers*1.e3);
@@ -431,8 +518,8 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance - Utah and Yellowstone"
         REQUIRE(atKm(utahNearest, 30.0)  == 2.1);
         REQUIRE(atKm(utahNearest, 220.0) == 3.65);
         REQUIRE(atKm(utahNearest, 600.0) == 4.9);
-        REQUIRE(atKm(yellowstoneNearest, 3.0)   == 0.64);
-        REQUIRE(atKm(yellowstoneNearest, 180.0) == 3.67);
+        REQUIRE(atKm(yellowstoneLinear, 3.0)   == 0.64);
+        REQUIRE(atKm(yellowstoneLinear, 180.0) == 3.67);
     }
 
     SECTION("Between two entries the nearest one applies")
@@ -442,9 +529,6 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance - Utah and Yellowstone"
         REQUIRE(atKm(utahNearest, 32.6)  == 2.3);
         REQUIRE(atKm(utahNearest, 34.99) == 2.3);
         REQUIRE(atKm(utahNearest, 35.0)  == 2.3);
-        REQUIRE(atKm(yellowstoneNearest, 4.0) == 0.64); // 3 -> 6
-        REQUIRE(atKm(yellowstoneNearest, 4.5) == 0.64); // Tie goes to 3
-        REQUIRE(atKm(yellowstoneNearest, 5.0) == 0.72);
     }
 
     SECTION("The wide Utah gap at 70 km behaves like any other")
@@ -460,28 +544,28 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance - Utah and Yellowstone"
     {
         // Utah starts at 0 so only Yellowstone can be undershot - it
         // starts at 3 km.
-        REQUIRE(atKm(yellowstoneNearest, 0.0) == 0.64);
-        REQUIRE(atKm(yellowstoneNearest, 2.9) == 0.64);
+        REQUIRE(atKm(yellowstoneLinear, 0.0) == 0.64);
+        REQUIRE(atKm(yellowstoneLinear, 2.9) == 0.64);
     }
 
     SECTION("Further than the table goes takes the last correction")
     {
         REQUIRE(atKm(utahNearest, 601.0)  == 4.9);
         REQUIRE(atKm(utahNearest, 5000.0) == 4.9);
-        REQUIRE(atKm(yellowstoneNearest, 181.0)  == 3.67);
-        REQUIRE(atKm(yellowstoneNearest, 5000.0) == 3.67);
+        REQUIRE(atKm(yellowstoneLinear, 181.0)  == 3.67);
+        REQUIRE(atKm(yellowstoneLinear, 5000.0) == 3.67);
     }
 
     SECTION("The two regions are different curves, not an offset")
     {
         REQUIRE(atKm(utahNearest, 50.0) == 2.6);
-        REQUIRE(atKm(yellowstoneNearest, 50.0) == 2.69);
+        REQUIRE(atKm(yellowstoneLinear, 50.0) == 2.69);
         // Utah is the higher curve close in and the lower one far out -
         // they cross so no single offset relates them.
         REQUIRE(atKm(utahNearest, 15.0) == 1.6);
-        REQUIRE(atKm(yellowstoneNearest, 15.0) == 1.33);
+        REQUIRE(atKm(yellowstoneLinear, 15.0) == 1.33);
         REQUIRE(atKm(utahNearest, 150.0) == 3.3);
-        REQUIRE(atKm(yellowstoneNearest, 150.0) == 3.5);
+        REQUIRE(atKm(yellowstoneLinear, 150.0) == 3.5);
     }
 
     SECTION("The Yellowstone dip is preserved, not smoothed")
@@ -489,18 +573,20 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance - Utah and Yellowstone"
         // The corrections rise to 3.17 at 80 km, fall to 3.06 at 110, then
         // rise again.  That is in the source table and a "fix" that made
         // it monotonic would be wrong.
-        REQUIRE(atKm(yellowstoneNearest, 80.0)  == 3.17);
-        REQUIRE(atKm(yellowstoneNearest, 110.0) == 3.06);
-        REQUIRE(atKm(yellowstoneNearest, 140.0) == 3.37);
-        REQUIRE(atKm(yellowstoneNearest, 110.0)
-              < atKm(yellowstoneNearest, 80.0));
+        REQUIRE(atKm(yellowstoneLinear, 80.0)  == 3.17);
+        REQUIRE(atKm(yellowstoneLinear, 110.0) == 3.06);
+        REQUIRE(atKm(yellowstoneLinear, 140.0) == 3.37);
+        REQUIRE(atKm(yellowstoneLinear, 110.0)
+              < atKm(yellowstoneLinear, 80.0));
     }
 
     SECTION("Linear interpolation")
     {
-        const auto utahLinear = fromHardwiredTable("Utah", "linear");
-        const auto yellowstoneLinear
-            = fromHardwiredTable("Yellowstone", "linear");
+        // Utah can still be linearly interpolated by changing the options
+        auto utahLinearOptions = uussOptions("Utah");
+        utahLinearOptions.setInterpolation(
+            DistanceOptions::Interpolation::Linear);
+        const Distance utahLinear{utahLinearOptions};
         // Nodes are unchanged
         REQUIRE_THAT(atKm(utahLinear, 30.0),
                      Catch::Matchers::WithinAbs(2.1, 1.e-12));

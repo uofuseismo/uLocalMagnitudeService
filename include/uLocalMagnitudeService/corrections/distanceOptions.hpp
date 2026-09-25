@@ -25,6 +25,11 @@ public:
         Linear    /*!< Linearly interpolates between nodes and transitions
                        to a constant at the extrema. */
     };
+    enum class Type
+    {
+        Epicentral, /*!< Distance corrections are based on epicentral distance. */
+        Hypocentral /*!< Distance corrections are based on hypocentral distance. */
+    };
 public:
     /// @brief Constructor.
     DistanceOptions();
@@ -40,6 +45,7 @@ public:
     ///                                      correction in magnitude units.
     /// @throws std::invalid_argument if distanceCorrectionsPairs is empty,
     ///         contains a duplicate distance, has a distance less than 0.
+    /// @note The meaning of distance in this table is defined in \c getType().
     void setCorrections(const std::vector<std::pair<double, double>> &distanceCorrectionPairs);
     /// @result The distance/correction table.
     /// @throws std::runtime_error if \c hasCorrections() is false.
@@ -50,12 +56,35 @@ public:
     /// @result True indicates that the corrections were set.
     [[nodiscard]] bool hasCorrections() const noexcept;
 
+    /// @brief Sets the interpolation type.  
+    /// @note For what it's worth, Utah uses nearest neighbor while Yellowstone
+    ///       uses linear.
     /// @param[in] interpolation  The interpolation mode.
     void setInterpolation(const Interpolation interpolation) noexcept;
     /// @result The interpolation mode.
-    /// @note By default this is nearest so as to match what was historically
-    ///       done at UUSS in AQMS and Jiggle. 
-    [[nodiscard]] Interpolation getInterpolation() const noexcept;
+    /// @throws std::runtime_error if \c hasInterpolation() is false.
+    [[nodiscard]] Interpolation getInterpolation() const;
+    /// @result True indicates the interpolation type was set.
+    [[nodiscard]] bool hasInterpolation() const noexcept;
+
+    /// @brief Sets the distance type. 
+    /// @param[in] type  The distance type.
+    /// @note For what's worth, Utah uses epicentral while Yellowstone
+    ///       uses hypocentral.
+    void setType(const Type type) noexcept;
+    /// @result The distance type.  
+    /// @throws std::runtime_error if \c hasType() is false.
+    [[nodiscard]] Type getType() const;
+    /// @result True indicates the distance type was set.
+    [[nodiscard]] bool hasType() const noexcept;
+
+    /* 
+    /// @brief Sets a maximum distance after which point the model is invalid.
+    /// @param[in] maximumDistance   The maximum model distance.
+    void setMaximumDistance(double maximumDistance);
+    /// @result The maximum model distance.
+    [[nodiscard]] double getMaximumDistance() const noexcept;
+    */
 
     /// @brief Destructor.
     ~DistanceOptions();
@@ -69,13 +98,25 @@ private:
 };
 
 /// @brief Creates the distance corrections options from an initialization
-///        file. 
+///        file.  The section must look like:
+///        @code
+///        [DistanceCorrections]
+///        ; nearest or linear
+///        interpolation = nearest
+///        ; epicentral or hypocentral
+///        distanceType = epicentral
+///        ; distance in meters, correction in magnitude units - numbered
+///        ; from 1 with no gaps
+///        distance_correction_1 = 0, 1.4
+///        distance_correction_2 = 5000, 1.4
+///        @endcode
 /// @param[in] initializationFile  The initialization file to parse.
 /// @param[in] section             The section of the initialization file with
 ///                                the distance corrections. 
 /// @result The distance corrections options.
-/// @throws std::invalid_argument if the initialization file does not exist
-///         or any of the parameters are invalid.
+/// @throws std::invalid_argument if the initialization file does not exist,
+///         the interpolation or distance type is missing or invalid, or
+///         the table is missing or invalid.
 [[nodiscard]] DistanceOptions fromInitializationFile(const std::filesystem::path &initializationFile,
                                                      const std::string &section = "DistanceCorrections");
 }
