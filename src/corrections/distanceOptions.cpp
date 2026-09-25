@@ -16,7 +16,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 #include <boost/property_tree/ini_parser.hpp>
-#include "uLocalMagnitude/corrections/distanceOptions.hpp"
+#include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
 
 #define MAX_DISTANCE_METERS 21000000
 
@@ -65,7 +65,7 @@ const std::vector<std::pair<double, double>> yellowstoneCorrections
 
 }
 
-using namespace ULocalMagnitude::Corrections;
+using namespace ULocalMagnitudeService::Corrections;
 
 class DistanceOptions::DistanceOptionsImpl
 {
@@ -193,7 +193,7 @@ bool DistanceOptions::hasCorrections() const noexcept
     return pImpl->mHaveCorrections;
 }
 
-DistanceOptions ULocalMagnitude::Corrections::fromInitializationFile(
+DistanceOptions ULocalMagnitudeService::Corrections::fromInitializationFile(
     const std::filesystem::path &iniFile,
     const std::string &sectionIn)
 {

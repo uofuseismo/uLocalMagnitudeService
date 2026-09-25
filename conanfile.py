@@ -2,8 +2,8 @@ from conan import ConanFile
 from conan.tools.build import can_run
 from conan.tools.cmake import cmake_layout, CMake, CMakeDeps, CMakeToolchain
 
-class uLocalMagnitudeConan(ConanFile):
-   name = "uLocalMagnitude"
+class uLocalMagnitudeServiceConan(ConanFile):
+   name = "uLocalMagnitudeService"
    #version = "0.0.1"
    license = "MIT"
    description = "Local (Richter) magnitude calculator service used at UUSS."
@@ -61,5 +61,5 @@ class uLocalMagnitudeConan(ConanFile):
        cmake.install()
 
    def package_info(self):
-       self.cpp_info.libs = ["uLocalMagnitude"]
+       self.cpp_info.libs = ["uLocalMagnitudeService"]
 

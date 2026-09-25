@@ -1,8 +1,8 @@
-#ifndef ULOCAL_MAGNITUDE_CORRECTIONS_STATION_IDENTIFIER_HPP
-#define ULOCAL_MAGNITUDE_CORRECTIONS_STATION_IDENTIFIER_HPP
+#ifndef ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_STATION_IDENTIFIER_HPP
+#define ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_STATION_IDENTIFIER_HPP
 #include <memory>
 #include <string>
-namespace ULocalMagnitude::Corrections
+namespace ULocalMagnitudeService::Corrections
 {
 /// @class StationIdentifier stationIdentifier.hpp
 /// @brief Uniquely defines a station in terms of network code and

@@ -1,14 +1,14 @@
 #ifndef UDATA_PACKET_BROKER_VERSION_HPP
 #define UDATA_PACKET_BROKER_VERSION_HPP
 #include <string>
-#define uLocalMagnitude_MAJOR  @uLocalMagnitude_VERSION_MAJOR@
-#define uLocalMagnitude_MINOR  @uLocalMagnitude_VERSION_MINOR@
-#define uLocalMagnitude_PATCH  @uLocalMagnitude_VERSION_PATCH@
-#define uLocalMagnitude_GITTAG "@uLocalMagnitude_GITTAG@"
-#define uLocalMagnitude_VERSION "@PROJECT_VERSION@"
-namespace ULocalMagnitude
+#define uLocalMagnitudeService_MAJOR  @uLocalMagnitudeService_VERSION_MAJOR@
+#define uLocalMagnitudeService_MINOR  @uLocalMagnitudeService_VERSION_MINOR@
+#define uLocalMagnitudeService_PATCH  @uLocalMagnitudeService_VERSION_PATCH@
+#define uLocalMagnitudeService_GITTAG "@uLocalMagnitudeService_GITTAG@"
+#define uLocalMagnitudeService_VERSION "@PROJECT_VERSION@"
+namespace ULocalMagnitudeService
 {
-/// @class Version version.hpp "uLocalMagnitude/version.hpp"
+/// @class Version version.hpp "uLocalMagnitudeService/version.hpp"
 /// @brief Defines the library's version information.
 /// @copyright Ben Baker (University of Utah) distributed under the MIT
 ///            NO AI license.

@@ -1,5 +1,5 @@
 #.rst
-# FinduLocalMagnitude
+# FinduLocalMagnitudeService
 # -------------------
 #
 # Finds the UUSS local magnitude calculator library.
@@ -7,9 +7,9 @@
 # Imported Targets
 # ^^^^^^^^^^^^^^^^
 #
-# ``uLocalMagnitude_FOUND``
-#   True indicates uLocalMagnitude was found.
-# ``uLocalMagnitude::uLocalMagnitude``
+# ``uLocalMagnitudeService_FOUND``
+#   True indicates uLocalMagnitudeService was found.
+# ``uLocalMagnitudeService::uLocalMagnitudeService``
 #   The local magnitude library, if found.
 include(CMakeFindDependencyMacro)
 

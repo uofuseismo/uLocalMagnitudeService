@@ -5,9 +5,9 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include "uLocalMagnitude/corrections/stationIdentifier.hpp"
+#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 
-using namespace ULocalMagnitude::Corrections;
+using namespace ULocalMagnitudeService::Corrections;
 
 namespace
 {

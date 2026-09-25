@@ -1,13 +1,13 @@
-#ifndef ULOCAL_MAGNITUDE_CORRECTIONS_DISTANCE_HPP
-#define ULOCAL_MAGNITUDE_CORRECTIONS_DISTANCE_HPP
+#ifndef ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_DISTANCE_HPP
+#define ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_DISTANCE_HPP
 #include <memory>
 #include <utility>
 #include <vector>
-namespace ULocalMagnitude::Corrections
+namespace ULocalMagnitudeService::Corrections
 {
  class DistanceOptions;
 }
-namespace ULocalMagnitude::Corrections
+namespace ULocalMagnitudeService::Corrections
 {
 /// @class Distance distance.hpp
 /// @brief Defines the distance correction which is added to the station's

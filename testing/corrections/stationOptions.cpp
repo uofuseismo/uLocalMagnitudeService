@@ -4,10 +4,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
-#include "uLocalMagnitude/corrections/stationIdentifier.hpp"
-#include "uLocalMagnitude/corrections/stationOptions.hpp"
+#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
+#include "uLocalMagnitudeService/corrections/stationOptions.hpp"
 
-using namespace ULocalMagnitude::Corrections;
+using namespace ULocalMagnitudeService::Corrections;
 
 namespace
 {
@@ -22,7 +22,7 @@ StationIdentifier makeIdentifier(const std::string &network,
 }
 }
 
-TEST_CASE("ULocalMagnitude::Corrections::StationOptions", "[stationOptions]")
+TEST_CASE("ULocalMagnitudeService::Corrections::StationOptions", "[stationOptions]")
 {
     const auto identifier = makeIdentifier("WY", "YFT");
     constexpr double correction{0.18};

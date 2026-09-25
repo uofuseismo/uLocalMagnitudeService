@@ -1,11 +1,11 @@
-#ifndef ULOCAL_MAGNITUDE_CORRECTIONS_STATION_OPTIONS_HPP
-#define ULOCAL_MAGNITUDE_CORRECTIONS_STATION_OPTIONS_HPP
+#ifndef ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_STATION_OPTIONS_HPP
+#define ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_STATION_OPTIONS_HPP
 #include <memory>
-namespace ULocalMagnitude::Corrections
+namespace ULocalMagnitudeService::Corrections
 {
  class StationIdentifier;
 }
-namespace ULocalMagnitude::Corrections
+namespace ULocalMagnitudeService::Corrections
 {
 /// @class StationOptions stationOptions.hpp
 /// @brief Defines the options defining a station (site) correction.

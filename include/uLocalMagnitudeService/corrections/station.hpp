@@ -1,14 +1,14 @@
-#ifndef ULOCAL_MAGNITUDE_CORRECTIONS_STATION_HPP
-#define ULOCAL_MAGNITUDE_CORRECTIONS_STATION_HPP
+#ifndef ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_STATION_HPP
+#define ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_STATION_HPP
 #include <memory>
 #include <string>
 
-namespace ULocalMagnitude::Corrections
+namespace ULocalMagnitudeService::Corrections
 {
  class StationOptions;
 }
 
-namespace ULocalMagnitude::Corrections
+namespace ULocalMagnitudeService::Corrections
 {
 /// @class Station station.hpp
 /// @brief Defines a station (site) magnitude correction.

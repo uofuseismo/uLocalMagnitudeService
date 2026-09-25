@@ -2,11 +2,11 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include "uLocalMagnitude/corrections/station.hpp"
-#include "uLocalMagnitude/corrections/stationOptions.hpp"
-#include "uLocalMagnitude/corrections/stationIdentifier.hpp"
+#include "uLocalMagnitudeService/corrections/station.hpp"
+#include "uLocalMagnitudeService/corrections/stationOptions.hpp"
+#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 
-using namespace ULocalMagnitude::Corrections;
+using namespace ULocalMagnitudeService::Corrections;
 
 class Station::StationImpl
 {

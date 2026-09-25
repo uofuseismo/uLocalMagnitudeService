@@ -8,12 +8,12 @@
 #ifndef NDEBUG
 #include <cassert>
 #endif
-#include "uLocalMagnitude/corrections/distance.hpp"
-#include "uLocalMagnitude/corrections/distanceOptions.hpp"
+#include "uLocalMagnitudeService/corrections/distance.hpp"
+#include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
 
 #define MAX_DISTANCE_METERS 21000000
 
-using namespace ULocalMagnitude::Corrections;
+using namespace ULocalMagnitudeService::Corrections;
 
 namespace
 {

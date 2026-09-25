@@ -1,14 +1,14 @@
-#ifndef ULOCAL_MAGNITUDE_CORRECTIONS_STATIONS_SET_HPP
-#define ULOCAL_MAGNITUDE_CORRECTIONS_STATIONS_SET_HPP
+#ifndef ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_STATIONS_SET_HPP
+#define ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_STATIONS_SET_HPP
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
-namespace ULocalMagnitude::Corrections
+namespace ULocalMagnitudeService::Corrections
 {
  class Station;
 }
-namespace ULocalMagnitude::Corrections
+namespace ULocalMagnitudeService::Corrections
 {
 /// @class StationsSet stationsSet.hpp
 /// @brief Defines a collection of station corrections.

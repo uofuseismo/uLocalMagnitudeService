@@ -1,15 +1,15 @@
-#ifndef ULOCAL_MAGNITUDE_CORRECTIONS_DISTANCE_OPTIONS_HPP
-#define ULOCAL_MAGNITUDE_CORRECTIONS_DISTANCE_OPTIONS_HPP
+#ifndef ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_DISTANCE_OPTIONS_HPP
+#define ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_DISTANCE_OPTIONS_HPP
 #include <filesystem>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-namespace ULocalMagnitude::Corrections
+namespace ULocalMagnitudeService::Corrections
 {   
  class DistanceOptions;
 }
-namespace ULocalMagnitude::Corrections
+namespace ULocalMagnitudeService::Corrections
 {
 
 /// @class DistanceOptions distanceOptions.hpp

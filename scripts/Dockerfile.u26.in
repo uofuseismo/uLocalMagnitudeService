@@ -1,7 +1,7 @@
-# Purpose: Creates the container for running the uLocalMagnitude software
+# Purpose: Creates the container for running the uLocalMagnitudeService software
 #          in a Ubuntu container.
-# Usage: podman build -t ulocalmagnitude:latest -f Dockerfile.u26
-#        buildah bud -t ulocalmagnitude:latest -f Dockerfile.u26
+# Usage: podman build -t ulocalmagnitudeservice:latest -f Dockerfile.u26
+#        buildah bud -t ulocalmagnitudeservice:latest -f Dockerfile.u26
 FROM ubuntu:26.04
 
 ARG RUN_UID=10001
@@ -17,7 +17,7 @@ RUN apt-get update &&\
             --no-create-home --home-dir /nonexistent \
             --shell /usr/sbin/nologin runuser &&\
     tar -xf ./@PROJECT_NAME@-@PROJECT_VERSION@-Linux.tar.gz &&\
-    mv ./@PROJECT_NAME@-@PROJECT_VERSION@-Linux/bin/aqmsDutyReviewBackend /usr/local/bin &&\
+    mv ./@PROJECT_NAME@-@PROJECT_VERSION@-Linux/bin/uLocalMagnitudeService /usr/local/bin &&\
     rm -r ./@PROJECT_NAME@-@PROJECT_VERSION@-Linux/ &&\
     apt-get autoremove -y &&\
     apt-get clean &&\
@@ -37,4 +37,4 @@ USER ${RUN_UID}:${RUN_GID}
 # outright.  With an ENTRYPOINT, an args-only override would be appended to
 # the binary instead of replacing it, and it would receive the shell script
 # as its argv.
-CMD ["/usr/local/bin/uLocalMagnitude", "--ini=/config/config.ini"]
+CMD ["/usr/local/bin/uLocalMagnitudeService", "--ini=/config/config.ini"]

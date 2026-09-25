@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(uLocalMagnitude VERSION 0.0.1 LANGUAGES CXX)
+project(uLocalMagnitudeService VERSION 0.0.1 LANGUAGES CXX)
 enable_testing()
 include(FetchContent)
 
@@ -57,16 +57,16 @@ find_package(Git)
 if (Git_FOUND)
    execute_process(
      COMMAND ${GIT_EXECUTABLE} --no-pager log -n 1 HEAD "--pretty=format:%h"
-     OUTPUT_VARIABLE uLocalMagnitude_GITTAG
+     OUTPUT_VARIABLE uLocalMagnitudeService_GITTAG
      RESULT_VARIABLE gitresult
      ERROR_QUIET
      OUTPUT_STRIP_TRAILING_WHITESPACE
    )
    if (gitresult EQUAL 0)
-      message(STATUS "Last Git commit: ${uLocalMagnitude_GITTAG}")
+      message(STATUS "Last Git commit: ${uLocalMagnitudeService_GITTAG}")
    endif()
 else()
-   set(uLocalMagnitude_GITTAG "")
+   set(uLocalMagnitudeService_GITTAG "")
 endif()
 configure_file(${CMAKE_SOURCE_DIR}/src/version.hpp.in
                ${CMAKE_SOURCE_DIR}/include/${PROJECT_NAME}/version.hpp)
@@ -92,38 +92,38 @@ set(LIBRARY_HEADER_FILES
 #set(PROTO_SRC)
 
 if (BUILD_SHARED_LIBS)
-   add_library(libuLocalMagnitude SHARED ${LIBRARY_SRC} ${PROTO_SRC})
+   add_library(libuLocalMagnitudeService SHARED ${LIBRARY_SRC} ${PROTO_SRC})
 else()
-   add_library(libuLocalMagnitude STATIC ${LIBRARY_SRC} ${PROTO_SRC})
+   add_library(libuLocalMagnitudeService STATIC ${LIBRARY_SRC} ${PROTO_SRC})
 endif()
-add_library(uLocalMagnitude::libuLocalMagnitude ALIAS libuLocalMagnitude)
-set_target_properties(libuLocalMagnitude PROPERTIES
-                      OUTPUT_NAME uLocalMagnitude
+add_library(uLocalMagnitudeService::libuLocalMagnitudeService ALIAS libuLocalMagnitudeService)
+set_target_properties(libuLocalMagnitudeService PROPERTIES
+                      OUTPUT_NAME uLocalMagnitudeService
                       CXX_STANDARD 23
                       CXX_STANDARD_REQUIRED YES
                       CXX_EXTENSIONS NO)
-target_include_directories(libuLocalMagnitude
+target_include_directories(libuLocalMagnitudeService
                            PUBLIC  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
                            PUBLIC  $<INSTALL_INTERFACE:>)
-target_link_libraries(libuLocalMagnitude
+target_link_libraries(libuLocalMagnitudeService
                       PRIVATE Boost::headers
                               protobuf::libprotobuf
                               spdlog::spdlog_header_only
                               gRPC::grpc gRPC::grpc++)
-target_sources(libuLocalMagnitude
+target_sources(libuLocalMagnitudeService
                PUBLIC FILE_SET HEADERS
                       BASE_DIRS
                          include
                          ${CMAKE_CURRENT_BINARY_DIR}/include
                       FILES
                          ${LIBRARY_HEADER_FILES})
-#protobuf_generate(TARGET libuLocalMagnitude
+#protobuf_generate(TARGET libuLocalMagnitudeService
 #                  LANGUAGE cpp
 #                  OUT_VAR PROTO_GENERATED_CXX_FILES
 #                 )
-#protobuf_generate(TARGET libuLocalMagnitude
+#protobuf_generate(TARGET libuLocalMagnitudeService
 #                  LANGUAGE grpc
 #                  PLUGIN "protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
 #                  PLUGIN_OPTIONS generate_mock_code=true
@@ -135,19 +135,19 @@ target_sources(libuLocalMagnitude
 #      SKIP_LINTING ON
 #)
 
-add_executable(uLocalMagnitude
+add_executable(uLocalMagnitudeService
                src/main.cpp)
-set_target_properties(uLocalMagnitude PROPERTIES
+set_target_properties(uLocalMagnitudeService PROPERTIES
                       CXX_STANDARD 23
                       CXX_STANDARD_REQUIRED YES
                       CXX_EXTENSIONS NO)
-target_include_directories(uLocalMagnitude
+target_include_directories(uLocalMagnitudeService
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 if (${WITH_CONAN})
-   target_link_libraries(uLocalMagnitude
+   target_link_libraries(uLocalMagnitudeService
                          PRIVATE opentelemetry-cpp::opentelemetry-cpp
                                  opentelemetry-cpp::proto_grpc
                                  opentelemetry-cpp::exporter_otlp_grpc
@@ -160,15 +160,15 @@ if (${WITH_CONAN})
                                  opentelemetry-cpp::metrics
                                  opentelemetry-cpp::common
                                  opentelemetry-cpp::api)
-   target_compile_definitions(uLocalMagnitude PRIVATE WITH_OTLP_GRPC)
+   target_compile_definitions(uLocalMagnitudeService PRIVATE WITH_OTLP_GRPC)
 else()
-   target_link_libraries(uLocalMagnitude
+   target_link_libraries(uLocalMagnitudeService
                          PRIVATE opentelemetry-cpp::otlp_http_log_record_exporter
                                  opentelemetry-cpp::otlp_http_metric_exporter)
 endif()
 
-target_link_libraries(uLocalMagnitude
-                      PRIVATE uLocalMagnitude::libuLocalMagnitude
+target_link_libraries(uLocalMagnitudeService
+                      PRIVATE uLocalMagnitudeService::libuLocalMagnitudeService
                               spdlog::spdlog_header_only
                               protobuf::libprotobuf gRPC::grpc gRPC::grpc++
                               Boost::headers Boost::program_options)
@@ -190,7 +190,7 @@ if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
                               PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
    target_link_libraries(unitTests
                          PRIVATE spdlog::spdlog_header_only
-                                 uLocalMagnitude::libuLocalMagnitude
+                                 uLocalMagnitudeService::libuLocalMagnitudeService
                                  protobuf::libprotobuf
                                  Catch2::Catch2WithMain)
    include(Catch)
@@ -209,12 +209,12 @@ if (${BUILD_CONTAINER})
                      COMMENT "Creating container file for ${PROJECT_NAME}"
                      COMMAND ${CMAKE_CPACK_COMMAND} -G DEB
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} VERBATIM)
-   add_dependencies(${PROJECT_NAME}-u26 uLocalMagnitude libuLocalMagnitude)
+   add_dependencies(${PROJECT_NAME}-u26 uLocalMagnitudeService libuLocalMagnitudeService)
    find_program(buildah_EXECUTABLE buildah)
    if (buildah_EXECUTABLE)
       add_custom_target(buildah
                         COMMENT "Preparing the container with buildah"
-                        COMMAND ${buildah_EXECUTABLE} bud -t ulocalmagnitude:${PROJECT_VERSION} -t ulocalmagnitude:latest -f ./Dockerfile.u26
+                        COMMAND ${buildah_EXECUTABLE} bud -t ulocalmagnitudeservice:${PROJECT_VERSION} -t ulocalmagnitudeservice:latest -f ./Dockerfile.u26
                         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} VERBATIM)
       add_dependencies(buildah ${PROJECT_NAME}-u26)
    endif()
@@ -233,13 +233,13 @@ write_basic_package_version_file(
     VERSION "${version}"
     COMPATIBILITY AnyNewerVersion
 )
-install(TARGETS libuLocalMagnitude
+install(TARGETS libuLocalMagnitudeService
         EXPORT ${PROJECT_NAME}Targets
         FILE_SET HEADERS
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         COMPONENT libraries)
-install(TARGETS uLocalMagnitude
+install(TARGETS uLocalMagnitudeService
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         COMPONENT applications)
 install(EXPORT ${PROJECT_NAME}Targets

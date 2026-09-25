@@ -9,10 +9,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
-#include "uLocalMagnitude/corrections/distance.hpp"
-#include "uLocalMagnitude/corrections/distanceOptions.hpp"
+#include "uLocalMagnitudeService/corrections/distance.hpp"
+#include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
 
-using namespace ULocalMagnitude::Corrections;
+using namespace ULocalMagnitudeService::Corrections;
 
 namespace
 {
@@ -24,7 +24,7 @@ public:
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     TemporaryIniFile(const std::string &name, const std::string &contents) :
         mPath(std::filesystem::temp_directory_path()
-            / ("uLocalMagnitude_" + name + ".ini"))
+            / ("uLocalMagnitudeService_" + name + ".ini"))
     {
         std::ofstream file(mPath);
         file << contents;
@@ -69,7 +69,7 @@ void checkCorrections(const std::vector<std::pair<double, double>> &expected,
 }
 }
 
-TEST_CASE("ULocalMagnitude::Corrections::DistanceOptions", "[distanceOptions]")
+TEST_CASE("ULocalMagnitudeService::Corrections::DistanceOptions", "[distanceOptions]")
 {
     // Deliberately unsorted
     const std::vector<std::pair<double, double>> corrections
@@ -212,7 +212,7 @@ TEST_CASE("ULocalMagnitude::Corrections::DistanceOptions", "[distanceOptions]")
     }
 }
 
-TEST_CASE("ULocalMagnitude::Corrections::fromInitializationFile",
+TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
           "[distanceOptions]")
 {
     SECTION("Missing file")
@@ -307,7 +307,7 @@ TEST_CASE("ULocalMagnitude::Corrections::fromInitializationFile",
     }
 }
 
-TEST_CASE("ULocalMagnitude::Corrections::Distance", "[distance]")
+TEST_CASE("ULocalMagnitudeService::Corrections::Distance", "[distance]")
 {
     // Distances in meters
     DistanceOptions options;
@@ -414,7 +414,7 @@ TEST_CASE("ULocalMagnitude::Corrections::Distance", "[distance]")
     }
 }
 
-TEST_CASE("ULocalMagnitude::Corrections::Distance - Utah and Yellowstone",
+TEST_CASE("ULocalMagnitudeService::Corrections::Distance - Utah and Yellowstone",
           "[distance]")
 {
     // The lookup takes meters but the tables are written in kilometers.

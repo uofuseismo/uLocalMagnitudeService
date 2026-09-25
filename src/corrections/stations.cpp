@@ -5,12 +5,12 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include "uLocalMagnitude/corrections/stations.hpp"
-#include "uLocalMagnitude/corrections/station.hpp"
-#include "uLocalMagnitude/corrections/stationIdentifier.hpp"
-#include "uLocalMagnitude/corrections/stationsSet.hpp"
+#include "uLocalMagnitudeService/corrections/stations.hpp"
+#include "uLocalMagnitudeService/corrections/station.hpp"
+#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
+#include "uLocalMagnitudeService/corrections/stationsSet.hpp"
 
-using namespace ULocalMagnitude::Corrections;
+using namespace ULocalMagnitudeService::Corrections;
 
 class Stations::StationsImpl
 {

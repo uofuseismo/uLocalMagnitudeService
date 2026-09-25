@@ -1,10 +1,10 @@
 #include <memory>
 #include <stdexcept>
 #include <utility>
-#include "uLocalMagnitude/corrections/stationOptions.hpp"
-#include "uLocalMagnitude/corrections/stationIdentifier.hpp"
+#include "uLocalMagnitudeService/corrections/stationOptions.hpp"
+#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 
-using namespace ULocalMagnitude::Corrections;
+using namespace ULocalMagnitudeService::Corrections;
 
 class StationOptions::StationOptionsImpl
 {

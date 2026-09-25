@@ -1,11 +1,11 @@
 #include <stdexcept>
 #include <utility>
 #include <catch2/catch_test_macros.hpp>
-#include "uLocalMagnitude/corrections/stationIdentifier.hpp"
+#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 
-using namespace ULocalMagnitude::Corrections;
+using namespace ULocalMagnitudeService::Corrections;
 
-TEST_CASE("ULocalMagnitude::Corrections::StationIdentifier",
+TEST_CASE("ULocalMagnitudeService::Corrections::StationIdentifier",
           "[stationIdentifier]")
 {
     SECTION("Defaults")

@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <spdlog/spdlog.h>
-#include "uLocalMagnitude/version.hpp"
+#include "uLocalMagnitudeService/version.hpp"
+#include "logger.hpp"
 
 int main(int argc, char *argv[])
 {

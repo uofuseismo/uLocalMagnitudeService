@@ -6,13 +6,13 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
-#include "uLocalMagnitude/corrections/station.hpp"
-#include "uLocalMagnitude/corrections/stationIdentifier.hpp"
-#include "uLocalMagnitude/corrections/stationOptions.hpp"
-#include "uLocalMagnitude/corrections/stations.hpp"
-#include "uLocalMagnitude/corrections/stationsSet.hpp"
+#include "uLocalMagnitudeService/corrections/station.hpp"
+#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
+#include "uLocalMagnitudeService/corrections/stationOptions.hpp"
+#include "uLocalMagnitudeService/corrections/stations.hpp"
+#include "uLocalMagnitudeService/corrections/stationsSet.hpp"
 
-using namespace ULocalMagnitude::Corrections;
+using namespace ULocalMagnitudeService::Corrections;
 
 namespace
 {
@@ -106,7 +106,7 @@ void checkStations(const Stations &stations)
 
 }
 
-TEST_CASE("ULocalMagnitude::Corrections::Stations", "[stations]")
+TEST_CASE("ULocalMagnitudeService::Corrections::Stations", "[stations]")
 {
     const auto set = makeStationsSet();
 
