@@ -6,3 +6,6 @@ setupDebug.sh
 build
 run
 uLocalMagnitudeServiceAPI
+fetch-example-data-uu80157466.sql
+fetch-example-data-uu80157536.sql
+

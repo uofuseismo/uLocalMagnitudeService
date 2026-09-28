@@ -82,6 +82,7 @@ set(LIBRARY_SRC
     src/magnitude/amplitude.cpp
     src/magnitude/station.cpp
     src/magnitude/streamIdentifier.cpp
+    src/metrics/singleton.cpp
     src/version.cpp)
 set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/corrections/distance.hpp
@@ -94,6 +95,7 @@ set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/magnitude/amplitude.hpp
     include/${PROJECT_NAME}/magnitude/station.hpp
     include/${PROJECT_NAME}/magnitude/streamIdentifier.hpp
+    include/${PROJECT_NAME}/metrics/singleton.hpp
     include/${PROJECT_NAME}/version.hpp)
 set(PROTO_SRC
     uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.proto
