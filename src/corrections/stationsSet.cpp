@@ -156,23 +156,44 @@ StationsSet StationsSet::fromInitializationFile(
             auto stationValue = *stationValueString;
             boost::algorithm::trim_all(stationValue);
             // Now split on commas, spaces, or tabs.  Compressing tokens
-            // handles "UU.CWU, 2.3" where a comma and blank are adjacent.
+            // handles "UU CWU, 2.3" where a comma and blank are adjacent.
+            // The period is handled separately so it doesn't split the
+            // correction.
             std::vector<std::string> splitString;
             boost::algorithm::split(splitString,
                                     stationValue,
-                                    boost::is_any_of(",. \t"),
+                                    boost::is_any_of(", \t"),
                                     boost::algorithm::token_compress_on);
-            if (splitString.size() != 2)
+            if (splitString.size() == 2)
+            {
+                // UU.CWU, 2.3
+                std::vector<std::string> nameSplit;
+                boost::algorithm::split(nameSplit,
+                                        splitString.at(0),
+                                        boost::is_any_of("."));
+                if (nameSplit.size() != 2)
+                {
+                    throw std::invalid_argument(itemName
+                      + " invalid format; need station_correction_n = network station, number");
+                }
+                splitString = {nameSplit.at(0), nameSplit.at(1),
+                               splitString.at(1)};
+            }
+            if (splitString.size() != 3)
             {
                 throw std::invalid_argument(itemName
-                  + " invalid format; need station_correction_n = string.string, number");
+                  + " invalid format; need station_correction_n = network station, number");
             }
             StationIdentifier identifier;
-            auto network = splitString.at(0);
-            auto station = splitString.at(1);
-            identifier.setNetwork(network);
-            identifier.setStation(station);
-            auto correction = std::stod(splitString.at(2));
+            identifier.setNetwork(splitString.at(0));
+            identifier.setStation(splitString.at(1));
+            size_t nParsed{0};
+            auto correction = std::stod(splitString.at(2), &nParsed);
+            if (nParsed != splitString.at(2).size())
+            {
+                throw std::invalid_argument(itemName
+                                          + " correction is not a number");
+            }
             StationOptions stationOptions;
             stationOptions.setIdentifier(identifier);
             stationOptions.setCorrection(correction);
@@ -186,6 +207,10 @@ StationsSet StationsSet::fromInitializationFile(
                                           + identifier.toString()
                                           + "; likely a duplicate");
             }
+        }
+        else
+        {
+            break;
         }
     }
 
