@@ -209,28 +209,28 @@ ServerOptions ULocalMagnitudeService::GRPC::fromInitializationFile(
     boost::property_tree::ini_parser::read_ini(iniFile, propertyTree);
 
     auto host
-        = propertyTree.get<std::string> (section + ".host",
+        = propertyTree.get<std::string> (section + "host",
                                          options.getHost());
     if (host.empty())
     {
-        throw std::invalid_argument(section + ".host is empty");
+        throw std::invalid_argument(section + "host is empty");
     }
     options.setHost(host);
 
     uint16_t port{50000};
     options.setPort(port);
 
-    port = propertyTree.get<uint16_t> (section + ".port", options.getPort());
+    port = propertyTree.get<uint16_t> (section + "port", options.getPort());
     options.setPort(port);
 
     auto serverKey
         = ::resolveSecret(propertyTree,
-                          section + ".serverKey",
-                          section + ".serverKeyFile");
+                          section + "serverKey",
+                          section + "serverKeyFile");
     auto serverCertificate
         = ::resolveSecret(propertyTree,
-                          section + ".serverCertificate",
-                          section + ".serverCertificateFile");
+                          section + "serverCertificate",
+                          section + "serverCertificateFile");
     bool haveServerCerts{false};
     if (serverKey != std::nullopt && serverCertificate != std::nullopt)
     {
@@ -238,9 +238,14 @@ ServerOptions ULocalMagnitudeService::GRPC::fromInitializationFile(
         options.setServerCertificate(*serverCertificate);
         haveServerCerts = true;
     }
+    else if (serverKey != std::nullopt || serverCertificate != std::nullopt)
+    {
+        throw std::invalid_argument(
+           "Server key and certificate must both be set");
+    }
 
     auto enableReflection
-         = propertyTree.get<bool> (section + ".enableReflection", false);
+         = propertyTree.get<bool> (section + "enableReflection", false);
     options.disableReflection();
     if (enableReflection){options.enableReflection();}
     
@@ -248,8 +253,8 @@ ServerOptions ULocalMagnitudeService::GRPC::fromInitializationFile(
     // then know why
     auto accessToken
         = ::resolveSecret(propertyTree,
-                          section + ".accessToken",
-                          section + ".accessTokenFile");
+                          section + "accessToken",
+                          section + "accessTokenFile");
     if (accessToken != std::nullopt)
     {
         if (!haveServerCerts)
@@ -262,8 +267,8 @@ ServerOptions ULocalMagnitudeService::GRPC::fromInitializationFile(
  
     auto clientCertificate
         = ::resolveSecret(propertyTree,
-                          section + ".clientToken",
-                          section + ".accessTokenFile");
+                          section + "clientToken",
+                          section + "clientTokenFile");
     if (clientCertificate != std::nullopt)
     {
         if (!haveServerCerts)
