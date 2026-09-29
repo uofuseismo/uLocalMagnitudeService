@@ -106,6 +106,22 @@ TEST_CASE("ULocalMagnitudeService::GRPC::fromInitializationFile",
         REQUIRE(options.getPort() == 9000);
     }
 
+    SECTION("Reflection")
+    {
+        const TemporaryFile enabled("reflectionOn.ini",
+                                    "[GRPCServer]\n"
+                                    "enableReflection = true\n");
+        REQUIRE(fromInitializationFile(enabled.path()).isReflectionEnabled());
+        const TemporaryFile disabled("reflectionOff.ini",
+                                     "[GRPCServer]\n"
+                                     "enableReflection = false\n");
+        REQUIRE_FALSE(
+            fromInitializationFile(disabled.path()).isReflectionEnabled());
+        const TemporaryFile unset("reflectionUnset.ini", "[GRPCServer]\n");
+        REQUIRE_FALSE(
+            fromInitializationFile(unset.path()).isReflectionEnabled());
+    }
+
     SECTION("Invalid host and port")
     {
         const TemporaryFile emptyHost("emptyHost.ini",

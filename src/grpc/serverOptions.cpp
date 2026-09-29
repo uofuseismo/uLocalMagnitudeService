@@ -267,8 +267,8 @@ ServerOptions ULocalMagnitudeService::GRPC::fromInitializationFile(
  
     auto clientCertificate
         = ::resolveSecret(propertyTree,
-                          section + "clientToken",
-                          section + "clientTokenFile");
+                          section + "clientCertificate",
+                          section + "clientCertificateFile");
     if (clientCertificate != std::nullopt)
     {
         if (!haveServerCerts)
