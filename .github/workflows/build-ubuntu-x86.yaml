@@ -180,6 +180,7 @@ jobs:
             done
             echo "ERROR: could not push $1 after 3 attempts"
             return 1
+          }
           push_tag quay.io/uuss/${QUAY_DIRECTORY}:${version}
           push_tag quay.io/uuss/${QUAY_DIRECTORY}:${dated}
 
