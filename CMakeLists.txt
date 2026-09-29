@@ -79,6 +79,7 @@ set(LIBRARY_SRC
     src/corrections/stationOptions.cpp
     src/corrections/stations.cpp
     src/corrections/stationsSet.cpp
+    src/grpc/serverOptions.cpp
     src/magnitude/amplitude.cpp
     src/magnitude/station.cpp
     src/magnitude/streamIdentifier.cpp
@@ -92,6 +93,7 @@ set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/corrections/stationOptions.hpp
     include/${PROJECT_NAME}/corrections/stations.hpp
     include/${PROJECT_NAME}/corrections/stationsSet.hpp
+    include/${PROJECT_NAME}/grpc/serverOptions.hpp
     include/${PROJECT_NAME}/magnitude/amplitude.hpp
     include/${PROJECT_NAME}/magnitude/station.hpp
     include/${PROJECT_NAME}/magnitude/streamIdentifier.hpp
@@ -201,6 +203,7 @@ if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
                   testing/corrections/stationOptions.cpp
                   testing/corrections/stations.cpp
                   testing/corrections/stationsSet.cpp
+                  testing/grpc/serverOptions.cpp
                   testing/magnitude/amplitude.cpp
                   testing/magnitude/station.cpp
                   testing/magnitude/streamIdentifier.cpp)
