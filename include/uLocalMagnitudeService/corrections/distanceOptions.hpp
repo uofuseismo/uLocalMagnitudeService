@@ -86,6 +86,30 @@ public:
     [[nodiscard]] double getMaximumDistance() const noexcept;
     */
 
+    /// @brief Creates the distance corrections options from an initialization
+    ///        file.  The section must look like:
+    ///        @code
+    ///        [DistanceCorrections]
+    ///        ; nearest or linear
+    ///        interpolation = nearest
+    ///        ; epicentral or hypocentral
+    ///        distanceType = epicentral
+    ///        ; distance in meters, correction in magnitude units - numbered
+    ///        ; from 1 with no gaps
+    ///        distance_correction_1 = 0, 1.4
+    ///        distance_correction_2 = 5000, 1.4
+    ///        @endcode
+    /// @param[in] initializationFile  The initialization file to parse.
+    /// @param[in] section             The section of the initialization file with
+    ///                                    the distance corrections. 
+    /// @result The distance corrections options.
+    /// @throws std::invalid_argument if the initialization file does not exist,
+    ///         the interpolation or distance type is missing or invalid, or
+    ///         the table is missing or invalid.
+    [[nodiscard]] static DistanceOptions
+        fromInitializationFile(const std::filesystem::path &initializationFile,
+                               const std::string &section = "DistanceCorrections");
+
     /// @brief Destructor.
     ~DistanceOptions();
     /// @brief Copy assignment.
@@ -97,27 +121,5 @@ private:
     std::unique_ptr<DistanceOptionsImpl> pImpl;
 };
 
-/// @brief Creates the distance corrections options from an initialization
-///        file.  The section must look like:
-///        @code
-///        [DistanceCorrections]
-///        ; nearest or linear
-///        interpolation = nearest
-///        ; epicentral or hypocentral
-///        distanceType = epicentral
-///        ; distance in meters, correction in magnitude units - numbered
-///        ; from 1 with no gaps
-///        distance_correction_1 = 0, 1.4
-///        distance_correction_2 = 5000, 1.4
-///        @endcode
-/// @param[in] initializationFile  The initialization file to parse.
-/// @param[in] section             The section of the initialization file with
-///                                the distance corrections. 
-/// @result The distance corrections options.
-/// @throws std::invalid_argument if the initialization file does not exist,
-///         the interpolation or distance type is missing or invalid, or
-///         the table is missing or invalid.
-[[nodiscard]] DistanceOptions fromInitializationFile(const std::filesystem::path &initializationFile,
-                                                     const std::string &section = "DistanceCorrections");
 }
 #endif

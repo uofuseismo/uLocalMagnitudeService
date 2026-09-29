@@ -22,7 +22,7 @@ DistanceOptions uussOptions(const std::string &table)
     const TemporaryIniFile iniFile(table,
                                    table == "Utah" ?
                                    utahIniSection() : yellowstoneIniSection());
-    return fromInitializationFile(iniFile.path());
+    return DistanceOptions::fromInitializationFile(iniFile.path());
 }
 
 /// Creates a distance correction from one of the UUSS tables.
@@ -201,13 +201,13 @@ TEST_CASE("ULocalMagnitudeService::Corrections::DistanceOptions", "[distanceOpti
     }
 }
 
-TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
+TEST_CASE("ULocalMagnitudeService::Corrections::DistanceOptions::fromInitializationFile",
           "[distanceOptions]")
 {
     SECTION("Missing file")
     {
         REQUIRE_THROWS_AS(
-            fromInitializationFile("/this/file/does/not/exist.ini"),
+            DistanceOptions::fromInitializationFile("/this/file/does/not/exist.ini"),
             std::invalid_argument);
     }
 
@@ -243,7 +243,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
                                        "interpolation = LiNeAr\n"
                                        "distanceType = HyPoCeNtRaL\n"
                                        "distance_correction_1 = 0, 1.0\n");
-        const auto options = fromInitializationFile(iniFile.path());
+        const auto options = DistanceOptions::fromInitializationFile(iniFile.path());
         REQUIRE(options.getInterpolation() ==
                 DistanceOptions::Interpolation::Linear);
         REQUIRE(options.getType() == DistanceOptions::Type::Hypocentral);
@@ -262,7 +262,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
                                        "distance_correction_3 = 30000\t4.0\n"
                                        "distance_correction_4 = 20000 , 3.0\n");
         const auto options
-            = fromInitializationFile(iniFile.path(), "MyCorrections");
+            = DistanceOptions::fromInitializationFile(iniFile.path(), "MyCorrections");
         REQUIRE(options.getInterpolation() ==
                 DistanceOptions::Interpolation::Linear);
         REQUIRE(options.getType() == DistanceOptions::Type::Epicentral);
@@ -277,7 +277,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
                                        "interpolation = cubic\n"
                                        "distanceType = epicentral\n"
                                        "distance_correction_1 = 0, 1.0\n");
-        REQUIRE_THROWS_AS(fromInitializationFile(iniFile.path()),
+        REQUIRE_THROWS_AS(DistanceOptions::fromInitializationFile(iniFile.path()),
                           std::invalid_argument);
     }
 
@@ -288,7 +288,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
                                        "interpolation = nearest\n"
                                        "distanceType = geodesic\n"
                                        "distance_correction_1 = 0, 1.0\n");
-        REQUIRE_THROWS_AS(fromInitializationFile(iniFile.path()),
+        REQUIRE_THROWS_AS(DistanceOptions::fromInitializationFile(iniFile.path()),
                           std::invalid_argument);
     }
 
@@ -298,13 +298,13 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
                                                "[DistanceCorrections]\n"
                                                "distanceType = epicentral\n"
                                                "distance_correction_1 = 0, 1.0\n");
-        REQUIRE_THROWS_AS(fromInitializationFile(noInterpolation.path()),
+        REQUIRE_THROWS_AS(DistanceOptions::fromInitializationFile(noInterpolation.path()),
                           std::invalid_argument);
         const TemporaryIniFile noType("noDistanceType",
                                       "[DistanceCorrections]\n"
                                       "interpolation = nearest\n"
                                       "distance_correction_1 = 0, 1.0\n");
-        REQUIRE_THROWS_AS(fromInitializationFile(noType.path()),
+        REQUIRE_THROWS_AS(DistanceOptions::fromInitializationFile(noType.path()),
                           std::invalid_argument);
     }
 
@@ -315,7 +315,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
                                        "interpolation = nearest\n"
                                        "distanceType = epicentral\n"
                                        "useUtahCorrections = true\n");
-        REQUIRE_THROWS_AS(fromInitializationFile(iniFile.path()),
+        REQUIRE_THROWS_AS(DistanceOptions::fromInitializationFile(iniFile.path()),
                           std::invalid_argument);
     }
 
@@ -327,7 +327,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
                                        "distanceType = epicentral\n"
                                        "distance_correction_1 = 0, 1.0\n"
                                        "distance_correction_2 = 1 2 3\n");
-        REQUIRE_THROWS_AS(fromInitializationFile(iniFile.path()),
+        REQUIRE_THROWS_AS(DistanceOptions::fromInitializationFile(iniFile.path()),
                           std::invalid_argument);
     }
 
@@ -337,7 +337,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::fromInitializationFile",
                                        "[DistanceCorrections]\n"
                                        "interpolation = nearest\n"
                                        "distanceType = epicentral\n");
-        REQUIRE_THROWS_AS(fromInitializationFile(iniFile.path()),
+        REQUIRE_THROWS_AS(DistanceOptions::fromInitializationFile(iniFile.path()),
                           std::invalid_argument);
     }
 }

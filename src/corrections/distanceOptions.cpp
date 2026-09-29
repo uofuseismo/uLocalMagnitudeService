@@ -186,7 +186,7 @@ bool DistanceOptions::hasCorrections() const noexcept
     return pImpl->mHaveCorrections;
 }
 
-DistanceOptions ULocalMagnitudeService::Corrections::fromInitializationFile(
+DistanceOptions DistanceOptions::fromInitializationFile(
     const std::filesystem::path &iniFile,
     const std::string &sectionIn)
 {

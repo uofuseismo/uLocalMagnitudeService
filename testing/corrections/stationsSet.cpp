@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <catch2/catch_test_macros.hpp>
@@ -7,12 +8,25 @@
 #include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 #include "uLocalMagnitudeService/corrections/stationOptions.hpp"
 #include "uLocalMagnitudeService/corrections/stationsSet.hpp"
+#include "../distanceTables.hpp"
 
 using namespace ULocalMagnitudeService::Corrections;
+using ULocalMagnitudeService::Testing::TemporaryIniFile;
 
 namespace
 {
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+void checkCorrection(const StationsSet &set,
+                     const std::string &name,
+                     const double expected)
+{
+    const auto correction = set.getCorrection(name);
+    REQUIRE(correction.has_value());
+    REQUIRE(correction->getName() == name);
+    REQUIRE_THAT((*correction)(),
+                 Catch::Matchers::WithinAbs(expected, 1.e-14));
+}
+
 Station makeStation(const std::string &network,
                     const std::string &station,
                     const double correction)
@@ -173,5 +187,121 @@ TEST_CASE("ULocalMagnitudeService::Corrections::StationsSet", "[stationsSet]")
         StationsSet moveAssigned;
         moveAssigned = std::move(moved);
         check(moveAssigned);
+    }
+}
+
+TEST_CASE("ULocalMagnitudeService::Corrections::StationsSet::fromInitializationFile",
+          "[stationsSet]")
+{
+    SECTION("Missing file")
+    {
+        REQUIRE_THROWS_AS(
+            StationsSet::fromInitializationFile("/this/file/does/not/exist.ini"),
+            std::invalid_argument);
+    }
+
+    SECTION("Documented format")
+    {
+        const TemporaryIniFile iniFile("stationsDocumented",
+                                       "[StationCorrections]\n"
+                                       "station_correction_1 = UU CWU,  0.4\n"
+                                       "station_correction_2 = UU KNB, -0.35\n");
+        const auto set = StationsSet::fromInitializationFile(iniFile.path());
+        REQUIRE(set.getCorrections().size() == 2);
+        checkCorrection(set, "UU.CWU", 0.4);
+        checkCorrection(set, "UU.KNB", -0.35);
+    }
+
+    SECTION("Separators a user might reasonably type")
+    {
+        const TemporaryIniFile iniFile("stationsSeparators",
+                                       "[StationCorrections]\n"
+                                       "station_correction_1 = UU.CWU, 0.4\n"
+                                       "station_correction_2 = WY.YFT 0.18\n"
+                                       "station_correction_3 = WY  YMR\t-0.1\n"
+                                       "station_correction_4 = US,BOZ,0.17\n"
+                                       "station_correction_5 = uu ctu, 0\n"
+                                       "station_correction_6 = UU B206, 1\n"
+                                       "station_correction_7 = UU SRU, .25\n");
+        const auto set = StationsSet::fromInitializationFile(iniFile.path());
+        REQUIRE(set.getCorrections().size() == 7);
+        checkCorrection(set, "UU.CWU", 0.4);
+        checkCorrection(set, "WY.YFT", 0.18);
+        checkCorrection(set, "WY.YMR", -0.1);
+        checkCorrection(set, "US.BOZ", 0.17);
+        // Names are capitalized
+        checkCorrection(set, "UU.CTU", 0);
+        checkCorrection(set, "UU.B206", 1);
+        checkCorrection(set, "UU.SRU", 0.25);
+    }
+
+    SECTION("Custom section")
+    {
+        const TemporaryIniFile iniFile("stationsCustomSection",
+                                       "[StationCorrections]\n"
+                                       "station_correction_1 = UU CWU, 0.4\n"
+                                       "[Yellowstone]\n"
+                                       "station_correction_1 = WY YFT, 0.18\n"
+                                       "station_correction_2 = WY YMR, -0.1\n");
+        const auto set
+            = StationsSet::fromInitializationFile(iniFile.path(), "Yellowstone");
+        REQUIRE(set.getCorrections().size() == 2);
+        checkCorrection(set, "WY.YFT", 0.18);
+        checkCorrection(set, "WY.YMR", -0.1);
+        REQUIRE_FALSE(set.getCorrection("UU.CWU").has_value());
+    }
+
+    SECTION("No corrections")
+    {
+        const TemporaryIniFile iniFile("stationsNone", "[StationCorrections]\n");
+        REQUIRE(StationsSet::fromInitializationFile(iniFile.path()).empty());
+    }
+
+    SECTION("Parsing stops at the first gap")
+    {
+        const TemporaryIniFile iniFile("stationsGap",
+                                       "[StationCorrections]\n"
+                                       "station_correction_1 = UU CWU, 0.4\n"
+                                       "station_correction_2 = UU KNB, -0.35\n"
+                                       "station_correction_4 = WY YFT, 0.18\n");
+        const auto set = StationsSet::fromInitializationFile(iniFile.path());
+        REQUIRE(set.getCorrections().size() == 2);
+        REQUIRE_FALSE(set.getCorrection("WY.YFT").has_value());
+    }
+
+    SECTION("Duplicates are rejected")
+    {
+        const TemporaryIniFile duplicate("stationsDuplicate",
+                                         "[StationCorrections]\n"
+                                         "station_correction_1 = UU CWU, 0.4\n"
+                                         "station_correction_2 = UU CWU, 0.3\n");
+        REQUIRE_THROWS_AS(StationsSet::fromInitializationFile(duplicate.path()),
+                          std::invalid_argument);
+        // Case and separators don't make it a different station
+        const TemporaryIniFile disguised("stationsDisguised",
+                                         "[StationCorrections]\n"
+                                         "station_correction_1 = UU CWU, 0.4\n"
+                                         "station_correction_2 = uu.cwu 0.3\n");
+        REQUIRE_THROWS_AS(StationsSet::fromInitializationFile(disguised.path()),
+                          std::invalid_argument);
+    }
+
+    SECTION("Invalid entries are rejected")
+    {
+        for (const std::string entry : {"UU, 0.4",          // No station
+                                        "UU CWU",           // No correction
+                                        "UU CWU 0.4 0.5",   // Too many fields
+                                        "UU.CWU.01, 0.4",   // Not a station
+                                        "UU CWU, abc"})     // Not a number
+        {
+            INFO("Entry: " << entry);
+            const TemporaryIniFile iniFile("stationsInvalid",
+                                           "[StationCorrections]\n"
+                                           "station_correction_1 = UU KNB, 0.1\n"
+                                           "station_correction_2 = "
+                                         + entry + "\n");
+            REQUIRE_THROWS_AS(StationsSet::fromInitializationFile(iniFile.path()),
+                              std::invalid_argument);
+        }
     }
 }

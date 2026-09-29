@@ -27,7 +27,7 @@ Corrections::Distance utahDistanceCorrections()
     const Testing::TemporaryIniFile iniFile("magnitudeStationUtah",
                                             Testing::utahIniSection());
     return Corrections::Distance {
-        Corrections::fromInitializationFile(iniFile.path())};
+        Corrections::DistanceOptions::fromInitializationFile(iniFile.path())};
 }
 
 /// The Yellowstone distance corrections with linear interpolation on the
@@ -37,7 +37,7 @@ Corrections::Distance yellowstoneDistanceCorrections()
     const Testing::TemporaryIniFile iniFile("magnitudeStationYellowstone",
                                             Testing::yellowstoneIniSection());
     return Corrections::Distance {
-        Corrections::fromInitializationFile(iniFile.path())};
+        Corrections::DistanceOptions::fromInitializationFile(iniFile.path())};
 }
 
 Corrections::Station stationCorrection(const std::string &network,

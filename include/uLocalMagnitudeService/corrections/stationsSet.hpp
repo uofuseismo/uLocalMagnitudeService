@@ -1,5 +1,6 @@
 #ifndef ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_STATIONS_SET_HPP
 #define ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_STATIONS_SET_HPP
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <optional>
@@ -42,6 +43,25 @@ public:
     ///         identifier could not be found.
     [[nodiscard]] std::optional<Station> getCorrection(const std::string &identifier) const;
 
+    /// @brief Creates the set of station corrections options from an initialization
+    ///        file.  The section must look like:
+    ///        @code
+    ///        [StationCorrections]
+    ///        ; station identifier (network station), value to add to station magnitude
+    ///        ; from 1 with no gaps
+    ///        station_correction_1 = UU CWU,  0.4
+    ///        station_correction_2 = UU KNB, -0.35
+    ///        @endcode
+    /// @param[in] initializationFile  The initialization file to parse.
+    /// @param[in] section             The section of the initialization file with
+    ///                                the station corrections. 
+    /// @result The set of station corrections options.
+    /// @throws std::invalid_argument if the initialization file does not exist,
+    ///         the station identifier is invalid, or the correction is missing.
+    [[nodiscard]] static StationsSet fromInitializationFile(
+        const std::filesystem::path &initializationFile,
+        const std::string &section = "StationCorrections");
+
     /// @brief Destructor.
     ~StationsSet();
     /// @brief Copy assignment.
@@ -52,6 +72,6 @@ private:
     class StationsSetImpl;
     std::unique_ptr<StationsSetImpl> pImpl;
 };
+
 }
 #endif
-
