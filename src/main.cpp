@@ -11,6 +11,7 @@
 #include <memory>
 #include <mutex>
 #include <stdexcept>
+#include <stdlib.h>
 #include <thread>
 #include <utility>
 #include <spdlog/spdlog.h>
@@ -175,6 +176,26 @@ int main(int argc, char *argv[])
 
     // Get the program options
     ::ProgramOptions programOptions;
+    try
+    {
+        programOptions = ::parseInitializationFile(iniFile);
+    }
+    catch (const std::exception &e)
+    {
+        SPDLOG_LOGGER_CRITICAL(consoleLogger,
+                               "Failed to read program options because {}",
+                               std::string {e.what()});
+        return EXIT_FAILURE;
+    }
+
+    if ((programOptions.exportLogs || programOptions.exportMetrics) &&
+        std::getenv("OTEL_SERVICE_NAME") == nullptr)
+    {
+        constexpr int overwrite{1};
+        setenv("OTEL_SERVICE_NAME",
+               programOptions.applicationName.c_str(),
+               overwrite);
+    }
 
     // Create the real logger
     std::shared_ptr<spdlog::logger> logger{nullptr};

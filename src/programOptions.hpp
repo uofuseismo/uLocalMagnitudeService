@@ -61,6 +61,54 @@ struct ProgramOptions
     options.grpcServerOptions
         = ULocalMagnitudeService::GRPC::fromInitializationFile(iniFile);
 
+    // Get OTel logs options
+    auto httpLog
+        = ULocalMagnitudeService::OTelOptions::getHTTPLogOptionsFromIniFile(
+                propertyTree, "OTelHTTPLogOptions");
+    options.exportLogs = false;
+    if (httpLog != std::nullopt)
+    {
+        options.otelHTTPLogOptions = *httpLog;
+        options.exportLogs = true;
+        options.exportLogsWithHTTP = true;
+    }
+    else
+    {
+        auto grpcLog
+            = ULocalMagnitudeService::OTelOptions::getGRPCLogOptionsFromIniFile(
+                propertyTree, "OTelGRPCLogOptions");
+        if (grpcLog != std::nullopt)
+        {
+            options.otelGRPCLogOptions = *grpcLog;
+            options.exportLogs = true;
+            options.exportLogsWithHTTP = false;
+        }
+    }
+
+    // Get OTel metrics options
+    auto httpMetrics
+        = ULocalMagnitudeService::OTelOptions::getHTTPMetricsOptionsFromIniFile(
+                propertyTree, "OTelHTTPMetricsOptions");
+    options.exportMetrics = false;
+    if (httpMetrics != std::nullopt)
+    {
+        options.otelHTTPMetricsOptions = *httpMetrics;
+        options.exportMetrics = true;
+        options.exportMetricsWithHTTP = true;
+    }
+    else
+    {
+        auto grpcMetrics
+            = ULocalMagnitudeService::OTelOptions::
+                getGRPCMetricsOptionsFromIniFile(
+                    propertyTree, "OTelGRPCMetricsOptions");
+        if (grpcMetrics != std::nullopt)
+        {
+            options.otelGRPCMetricsOptions = *grpcMetrics;
+            options.exportMetrics = true;
+            options.exportMetricsWithHTTP = false;
+        }
+    }
 
     return options;
 }
