@@ -1,4 +1,4 @@
-name: AQMS Duty Review Backend Application
+name: uLocal Magnitude Service Application
 run-name: Pipeline for branch ${{ github.ref_name }}
 
 on:

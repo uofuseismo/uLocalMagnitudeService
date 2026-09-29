@@ -190,7 +190,8 @@ target_link_libraries(uLocalMagnitudeService
                       PRIVATE uLocalMagnitudeService::libuLocalMagnitudeService
                               spdlog::spdlog_header_only
                               protobuf::libprotobuf gRPC::grpc gRPC::grpc++
-                              Boost::headers Boost::program_options)
+                              Boost::headers Boost::program_options
+                              Threads::Threads)
 
 if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
    add_executable(unitTests
