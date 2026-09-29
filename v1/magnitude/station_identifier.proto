@@ -1,0 +1,13 @@
+edition = "2023";
+
+package ULocalMagnitudeServiceAPI.V1.Magnitude;
+
+/**
+ * A station identifier.
+ */
+message StationIdentifier {
+  /// The network code - e.g., UU.
+  string network = 1;
+  /// The station code - e.g., HMU.
+  string station = 2;
+}

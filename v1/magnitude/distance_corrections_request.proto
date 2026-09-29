@@ -1,0 +1,15 @@
+edition = "2023";
+
+package ULocalMagnitudeServiceAPI.V1.Magnitude;
+
+/**
+ * This extracts the distance corrections from the service.
+ * This is a debugging utility.
+ */
+message DistanceCorrectionsRequest {
+  /// A request identifier.
+  string identifier = 1 [default = ""];
+  /// The distances in meters at which to return the desired corrections.
+  /// If any distance is not positive then the request is rejected.
+  repeated double distance = 2;
+}
