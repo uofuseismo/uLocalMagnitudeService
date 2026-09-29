@@ -30,5 +30,41 @@ struct ProgramOptions
 };
 
 
+::ProgramOptions parseInitializationFile(const std::filesystem::path &iniFile)
+{
+    ::ProgramOptions options;
+    if (!std::filesystem::exists(iniFile)){return options;}
+    // Parse the initialization file
+    boost::property_tree::ptree propertyTree;
+    boost::property_tree::ini_parser::read_ini(iniFile, propertyTree);
+
+    // Application name
+    options.applicationName
+        = propertyTree.get<std::string> ("General.applicationName",
+                                         options.applicationName);
+    if (options.applicationName.empty())
+    {
+        options.applicationName = APPLICATION_NAME;
+    }   
+    options.verbosity
+        = propertyTree.get<int> ("General.verbosity", options.verbosity);
+
+    auto summaryIntervalInMinutes
+        = static_cast<int> (options.printSummaryInterval.count());
+    summaryIntervalInMinutes
+        = propertyTree.get<int> ("General.printSummaryIntervalInMinutes",
+                                 summaryIntervalInMinutes);
+    options.printSummaryInterval
+        = std::chrono::minutes {summaryIntervalInMinutes};
+
+    // GRPC data packet client options
+    options.grpcServerOptions
+        = ULocalMagnitudeService::GRPC::fromInitializationFile(iniFile);
+
+
+    return options;
+}
+
+
 }
 #endif

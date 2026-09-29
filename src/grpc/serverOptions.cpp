@@ -1,10 +1,16 @@
 #include <cstdint>
-#include <utility>
-#include <optional>
-#include <string>
-#include <stdexcept>
+#include <filesystem>
+#include <exception>
 #include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
+#include <boost/property_tree/ini_parser.hpp>
 #include "uLocalMagnitudeService/grpc/serverOptions.hpp"
+#include "secretFile.hpp"
 
 using namespace ULocalMagnitudeService::GRPC;
 
@@ -182,3 +188,100 @@ void ServerOptions::validate() const
 }
 
 ServerOptions::~ServerOptions() = default;
+
+/// Read server options from a config file
+ServerOptions ULocalMagnitudeService::GRPC::fromInitializationFile(
+    const std::filesystem::path &iniFile,
+    const std::string &sectionIn)
+{
+    if (!std::filesystem::exists(iniFile))
+    {
+        throw std::invalid_argument("Initialization file "
+                                  + iniFile.string() + " does not exist");
+    }
+    ServerOptions options;
+    // Make sure section ends with . so we can find stuff
+    auto section = sectionIn;
+    if (!section.empty() && section.back() != '.'){section.append(".");}
+
+    // Parse the initialization file
+    boost::property_tree::ptree propertyTree;
+    boost::property_tree::ini_parser::read_ini(iniFile, propertyTree);
+
+    auto host
+        = propertyTree.get<std::string> (section + ".host",
+                                         options.getHost());
+    if (host.empty())
+    {
+        throw std::invalid_argument(section + ".host is empty");
+    }
+    options.setHost(host);
+
+    uint16_t port{50000};
+    options.setPort(port);
+
+    port = propertyTree.get<uint16_t> (section + ".port", options.getPort());
+    options.setPort(port);
+
+    auto serverKey
+        = ::resolveSecret(propertyTree,
+                          section + ".serverKey",
+                          section + ".serverKeyFile");
+    auto serverCertificate
+        = ::resolveSecret(propertyTree,
+                          section + ".serverCertificate",
+                          section + ".serverCertificateFile");
+    bool haveServerCerts{false};
+    if (serverKey != std::nullopt && serverCertificate != std::nullopt)
+    {
+        options.setServerKey(*serverKey);
+        options.setServerCertificate(*serverCertificate);
+        haveServerCerts = true;
+    }
+
+    auto enableReflection
+         = propertyTree.get<bool> (section + ".enableReflection", false);
+    options.disableReflection();
+    if (enableReflection){options.enableReflection();}
+    
+    // Read access token and client cert.  Will fail validation and user will
+    // then know why
+    auto accessToken
+        = ::resolveSecret(propertyTree,
+                          section + ".accessToken",
+                          section + ".accessTokenFile");
+    if (accessToken != std::nullopt)
+    {
+        if (!haveServerCerts)
+        {
+            throw std::invalid_argument(
+               "Server key and certificate required to use an access token");
+        }
+        options.setAccessToken(*accessToken);
+    }
+ 
+    auto clientCertificate
+        = ::resolveSecret(propertyTree,
+                          section + ".clientToken",
+                          section + ".accessTokenFile");
+    if (clientCertificate != std::nullopt)
+    {
+        if (!haveServerCerts)
+        {
+            throw std::invalid_argument(
+               "Server key and certificate required to use client certficate");
+        }
+        options.setClientCertificate(*clientCertificate);
+    }
+
+    try
+    {
+        options.validate(); // Will throw
+    }
+    catch (const std::exception &e)
+    {
+        throw std::invalid_argument(
+            "Failed to validate options because " + std::string {e.what()});
+    }
+    return options;
+}

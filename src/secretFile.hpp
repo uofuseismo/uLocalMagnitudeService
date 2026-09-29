@@ -16,7 +16,7 @@
 /// @copyright Ben Baker (University of Utah) distributed under the
 ///            MIT NO AI license.
 
-namespace AQMSDutyReviewBackend
+namespace
 {
 /// @brief Reads a secret from a file.
 /// @param[in] path     The file holding the secret.
@@ -25,13 +25,6 @@ namespace AQMSDutyReviewBackend
 /// @throws std::invalid_argument if the file does not exist or holds
 ///         nothing but whitespace.
 /// @throws std::runtime_error if the file cannot be read.
-///
-/// @note Trimmed, unlike the key files.  A secret handed to a Kubernetes
-///       Secret from a shell almost always picks up a trailing newline,
-///       and a password with one on the end fails authentication while
-///       looking correct in every log and every editor.  A PEM key is the
-///       opposite case - its armor is part of the value - which is why
-///       that reader does not trim and this one does.
 [[nodiscard]] inline std::string readSecretFile(
     const std::filesystem::path &path,
     const std::string &setting)
@@ -87,10 +80,33 @@ template<typename PropertyTree>
     }
     if (fileValue)
     {
-        return ::AQMSDutyReviewBackend::readSecretFile(*fileValue, fileKey);
+        return ::readSecretFile(*fileValue, fileKey);
     }
     if (inlineValue){return std::make_optional<std::string> (*inlineValue);}
     return std::nullopt;
 }
+
+/*
+/// @brief Reads the context of a file into a string buffer.
+/// @param[in] path   The file to read.
+/// @result The data read.
+[[nodiscard]] std::string
+loadStringFromFile(const std::filesystem::path &path)
+{
+    std::string result;
+    if (!std::filesystem::exists(path)){return result;}
+    std::ifstream file(path);
+    if (!file.is_open())
+    {
+        throw std::runtime_error("Failed to open " + path.string());
+    }
+    std::stringstream sstr;
+    sstr << file.rdbuf();
+    file.close(); 
+    result = sstr.str();
+    return result;
+}
+*/
+
 }
 #endif

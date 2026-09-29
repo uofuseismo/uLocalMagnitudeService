@@ -1,6 +1,7 @@
 #ifndef ULOCAL_MAGNITUDE_SERVICE_GRPC_SERVER_OPTIONS_HPP
 #define ULOCAL_MAGNITUDE_SERVICE_GRPC_SERVER_OPTIONS_HPP
 #include <cstdint>
+#include <filesystem>
 #include <string>
 #include <optional>
 #include <memory>
@@ -97,5 +98,14 @@ private:
     class ServerOptionsImpl;
     std::unique_ptr<ServerOptionsImpl> pImpl;
 };
+/// @brief Loads the gRPC server options from an initialization file.
+/// @param[in] iniFile  The path to the initialization file.
+/// @param[in] section  The section of the initialization file to read.
+/// @throws std::invalid_argument if the initialization file does not exist
+///         or any parameters are wrong. 
+[[nodiscard]] ServerOptions fromInitializationFile(
+    const std::filesystem::path &iniFile,
+    const std::string &section = "GRPCServer");
+
 }
 #endif

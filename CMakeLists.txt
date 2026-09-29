@@ -126,6 +126,7 @@ set_target_properties(libuLocalMagnitudeService PROPERTIES
 target_include_directories(libuLocalMagnitudeService
                            PUBLIC  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+                           PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
                            PUBLIC  $<INSTALL_INTERFACE:>)
 target_link_libraries(libuLocalMagnitudeService
@@ -204,6 +205,7 @@ if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
                   testing/corrections/stations.cpp
                   testing/corrections/stationsSet.cpp
                   testing/grpc/serverOptions.cpp
+                  testing/grpc/serverOptionsIni.cpp
                   testing/magnitude/amplitude.cpp
                   testing/magnitude/station.cpp
                   testing/magnitude/streamIdentifier.cpp)
