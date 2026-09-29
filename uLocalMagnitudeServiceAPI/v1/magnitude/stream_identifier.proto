@@ -1,0 +1,18 @@
+edition = "2023";
+
+package ULocalMagnitudeServiceAPI.V1.Magnitude;
+
+/**
+ * A stream identifier which is useful for defining the stream
+ * from which the amplitude was obtained.
+ */
+message StreamIdentifier {
+  /// The network code - e.g., UU.
+  string network = 1;
+  /// The station code - e.g., HMU.
+  string station = 2;
+  /// The channel code - e.g,, HHE.
+  string channel = 3;
+  /// The location code - e.g., 01.
+  string location_code = 4;
+}

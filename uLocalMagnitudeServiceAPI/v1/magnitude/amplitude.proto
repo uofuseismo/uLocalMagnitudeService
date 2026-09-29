@@ -1,0 +1,15 @@
+edition = "2023";
+
+package ULocalMagnitudeServiceAPI.V1.Magnitude;
+
+import "uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.proto";
+
+/**
+ * Defines an observed (peak to peak) amplitude.
+ */
+message Amplitude {
+   /// The stream identifier on which the amplitude was made.
+   StreamIdentifier stream_identifier = 1;
+   /// The observed amplitude in millimeters.  This must be positive.
+   double amplitude = 2;
+}
