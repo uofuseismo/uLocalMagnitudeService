@@ -164,3 +164,16 @@ NetworkOptions::Strategy NetworkOptions::getStrategy() const noexcept
 {
     return pImpl->mStrategy;
 }
+
+/// Validate
+void NetworkOptions::validate() const
+{
+    if (!hasStationCorrections())
+    {
+        throw std::runtime_error("Station corrections not set");
+    }
+    if (!hasDistanceCorrections())
+    {
+        throw std::runtime_error("Distance corrections not set");
+    }
+}

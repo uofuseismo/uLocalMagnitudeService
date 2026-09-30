@@ -1,3 +1,4 @@
+#include <exception>
 #include <map>
 #include <memory>
 #include <optional>
@@ -33,13 +34,15 @@ public:
 Network::Network(const NetworkOptions &options) :
     pImpl(std::make_unique<NetworkImpl> ())
 {
-    if (!options.hasStationCorrections())
+    try
     {
-        throw std::invalid_argument("Station corrections not set");
+        options.validate();
     }
-    if (!options.hasDistanceCorrections())
+    catch (const std::exception &e)
     {
-        throw std::invalid_argument("Distance corrections not set");
+        throw std::invalid_argument(
+            "Network magnitude options invalid because "
+          + std::string {e.what()});
     }
     const auto distanceCorrections = options.getDistanceCorrections();
     const auto stationCorrections

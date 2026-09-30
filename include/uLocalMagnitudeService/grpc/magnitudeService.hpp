@@ -3,6 +3,10 @@
 #include <memory>
 #include <spdlog/logger.h>
 
+namespace ULocalMagnitudeService::Magnitude
+{
+ class NetworkOptions;
+}
 namespace ULocalMagnitudeService::GRPC
 {
  class MagnitudeServiceOptions;

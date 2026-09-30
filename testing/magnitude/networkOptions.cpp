@@ -79,6 +79,7 @@ void checkUtahOptions(const NetworkOptions &options)
     REQUIRE_THAT((*ccut)(), Catch::Matchers::WithinAbs(0.31, 1.e-14));
     REQUIRE(options.getMinimumNumberOfStationMagnitudes() == 3);
     REQUIRE(options.getStrategy() == NetworkOptions::Strategy::Average);
+    REQUIRE_NOTHROW(options.validate());
 }
 
 NetworkOptions makeUtahOptions()
@@ -196,6 +197,33 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkOptions",
         NetworkOptions options;
         options.setStrategy(NetworkOptions::Strategy::Average);
         REQUIRE(options.getStrategy() == NetworkOptions::Strategy::Average);
+    }
+
+    SECTION("Validate")
+    {
+        // Needs both the station and distance corrections
+        const NetworkOptions defaults;
+        REQUIRE_THROWS_AS(defaults.validate(), std::runtime_error);
+
+        NetworkOptions stationsOnly;
+        stationsOnly.setStationCorrections(utahStations());
+        REQUIRE_THROWS_AS(stationsOnly.validate(), std::runtime_error);
+
+        NetworkOptions distanceOnly;
+        distanceOnly.setDistanceCorrections(utahDistanceCorrections());
+        REQUIRE_THROWS_AS(distanceOnly.validate(), std::runtime_error);
+
+        NetworkOptions both;
+        both.setStationCorrections(utahStations());
+        both.setDistanceCorrections(utahDistanceCorrections());
+        REQUIRE_NOTHROW(both.validate());
+
+        // The minimum number of station magnitudes and strategy have
+        // usable defaults
+        NetworkOptions tuned{both};
+        tuned.setMinimumNumberOfStationMagnitudes(1);
+        tuned.setStrategy(NetworkOptions::Strategy::Average);
+        REQUIRE_NOTHROW(tuned.validate());
     }
 
     SECTION("Copy and move")

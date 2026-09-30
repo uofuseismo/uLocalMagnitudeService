@@ -73,6 +73,12 @@ public:
     ///         network magnitude.
     [[nodiscard]] Strategy getStrategy() const noexcept;
 
+    /// @brief Quick way to validate that the network magnitude calculator
+    ///        options are valid in aggregate.
+    /// @throws std::runtime_error if the station corrections or distance
+    ///         corrections are not set. 
+    void validate() const;
+
     /// @brief Destructor.
     ~NetworkOptions();
  
