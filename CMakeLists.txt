@@ -79,8 +79,11 @@ set(LIBRARY_SRC
     src/corrections/stationOptions.cpp
     src/corrections/stations.cpp
     src/corrections/stationsSet.cpp
+    #src/grpc/magnitudeService.cpp
     src/grpc/serverOptions.cpp
     src/magnitude/amplitude.cpp
+    #src/magnitude/network.cpp
+    src/magnitude/networkOptions.cpp
     src/magnitude/station.cpp
     src/magnitude/streamIdentifier.cpp
     src/metrics/singleton.cpp
@@ -95,6 +98,8 @@ set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/corrections/stationsSet.hpp
     include/${PROJECT_NAME}/grpc/serverOptions.hpp
     include/${PROJECT_NAME}/magnitude/amplitude.hpp
+    include/${PROJECT_NAME}/magnitude/network.hpp
+    include/${PROJECT_NAME}/magnitude/networkOptions.hpp
     include/${PROJECT_NAME}/magnitude/station.hpp
     include/${PROJECT_NAME}/magnitude/streamIdentifier.hpp
     include/${PROJECT_NAME}/metrics/singleton.hpp
