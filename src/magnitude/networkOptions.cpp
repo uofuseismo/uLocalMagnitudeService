@@ -95,6 +95,17 @@ Corrections::Distance NetworkOptions::getDistanceCorrections() const
     return *pImpl->mDistanceCorrections;
 }
 
+const Corrections::Distance 
+&NetworkOptions::getDistanceCorrectionsReference() const
+{
+    if (!hasDistanceCorrections())
+    {   
+        throw std::runtime_error("Distance corrections not set");
+    }   
+    return *&*pImpl->mDistanceCorrections;
+}
+
+
 bool NetworkOptions::hasDistanceCorrections() const noexcept
 {
     return pImpl->mHasDistanceCorrections;
@@ -133,7 +144,7 @@ void NetworkOptions::setMinimumNumberOfStationMagnitudes(const int minObs)
     if (minObs < 1)
     {
         throw std::invalid_argument(
-            "Minimum number of stations magnitdues must be positive");
+            "Minimum number of stations magnitudes must be positive");
     }
     pImpl->mMinimumNumberOfStationMagnitudes = minObs;
 }

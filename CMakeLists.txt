@@ -82,7 +82,7 @@ set(LIBRARY_SRC
     #src/grpc/magnitudeService.cpp
     src/grpc/serverOptions.cpp
     src/magnitude/amplitude.cpp
-    #src/magnitude/network.cpp
+    src/magnitude/network.cpp
     src/magnitude/networkOptions.cpp
     src/magnitude/station.cpp
     src/magnitude/streamIdentifier.cpp
@@ -212,6 +212,7 @@ if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
                   testing/grpc/serverOptions.cpp
                   testing/grpc/serverOptionsIni.cpp
                   testing/magnitude/amplitude.cpp
+                  testing/magnitude/networkOptions.cpp
                   testing/magnitude/station.cpp
                   testing/magnitude/streamIdentifier.cpp)
    set_target_properties(unitTests PROPERTIES

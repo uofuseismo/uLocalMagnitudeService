@@ -8,7 +8,7 @@ namespace ULocalMagnitudeService::Corrections
 }
 namespace ULocalMagnitudeService::Magnitude
 {
-/// @class Network network.hpp
+/// @class NetworkOptions networkOptions.hpp
 /// @brief Defines the options for computing a network magnitude.
 /// @copyright Ben Baker (University of Utah) distributed under the
 ///            MIT NO AI license.
@@ -34,11 +34,16 @@ public:
     /// @result The distance corrections.
     /// @throws std::runtime_error \c hasDistanceCorrections() is false.
     [[nodiscard]] Corrections::Distance getDistanceCorrections() const;
-    /// @result Ture indicates the distance corrections were set. 
+    /// @result A reference to the distance corrections.
+    /// @throws std::runtime_error \c hasDistanceCorrections() is false.
+    /// @note This exists as an optimization and
+    ///       \c getDistanceCorrections() should be preferred.
+    [[nodiscard]] const Corrections::Distance &getDistanceCorrectionsReference() const;
+    /// @result True indicates the distance corrections were set. 
     [[nodiscard]] bool hasDistanceCorrections() const noexcept; 
 
     /// @brief Sets the station corrections.
-    /// @param[in] staitonsSet   The set of stations with corrections.
+    /// @param[in] stationsSet   The set of stations with corrections.
     /// @throws std::invalid_argument if stationsSet is empty.
     /// @note If an amplitude is given to the network-based calculator
     ///       and it does not have a corresponding correction then it will
@@ -51,7 +56,7 @@ public:
     [[nodiscard]] bool hasStationCorrections() const noexcept;
 
     /// @brief Sets the minimum number of station magnitudes to compute a
-    ///        a network magnitude.
+    ///        network magnitude.
     /// @param[in] minimum   The minimum number of station magnitudes to
     ///                      compute a network magnitude.
     /// @throws std::invalid_argument if minimum is not positive.
