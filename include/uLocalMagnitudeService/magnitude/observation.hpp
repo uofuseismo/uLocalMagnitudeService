@@ -29,7 +29,7 @@ public:
     ///                        channels.
     /// @throws std::invalid_argument if amplitudes correspond to the same
     ///         stream, either amplitude is missing an identifier or value,
-    ///         or it the identifiers indicate a sensor mismatch - e.g.,
+    ///         or the identifiers indicate a sensor mismatch - e.g.,
     ///         an amplitude on UU.CWU.HHE.01 and UU.CWU.ENN.01 or 
     ///         US.DUG.HH1.00 and US.DUG.HH2.02.
     void setAmplitudes(const std::pair<Amplitude, Amplitude> &amplitudes);
@@ -39,7 +39,7 @@ public:
     ///                            amplitudes is undefined.
     /// @throws std::invalid_argument if amplitudes correspond to the same
     ///         stream, either amplitude is missing an identifier or value,
-    ///         or it the identifiers indicate a sensor mismatch - e.g.,
+    ///         or the identifiers indicate a sensor mismatch - e.g.,
     ///         an amplitude on UU.CWU.HHE.01 and UU.CWU.ENN.01 or 
     ///         US.DUG.HH1.00 and US.DUG.HH2.02.
     void setAmplitudes(std::pair<Amplitude, Amplitude> &&amplitudes);
