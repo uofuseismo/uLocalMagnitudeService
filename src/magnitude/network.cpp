@@ -9,6 +9,7 @@
 #include "uLocalMagnitudeService/magnitude/network.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/networkOptions.hpp"
+#include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/magnitude/station.hpp"
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 // NOLINTBEGIN(misc-include-cleaner)

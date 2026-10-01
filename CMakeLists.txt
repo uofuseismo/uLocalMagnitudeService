@@ -84,6 +84,7 @@ set(LIBRARY_SRC
     src/magnitude/amplitude.cpp
     src/magnitude/network.cpp
     src/magnitude/networkOptions.cpp
+    src/magnitude/observation.cpp
     src/magnitude/station.cpp
     src/magnitude/streamIdentifier.cpp
     src/metrics/singleton.cpp
@@ -100,6 +101,7 @@ set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/magnitude/amplitude.hpp
     include/${PROJECT_NAME}/magnitude/network.hpp
     include/${PROJECT_NAME}/magnitude/networkOptions.hpp
+    include/${PROJECT_NAME}/magnitude/observation.hpp
     include/${PROJECT_NAME}/magnitude/station.hpp
     include/${PROJECT_NAME}/magnitude/streamIdentifier.hpp
     include/${PROJECT_NAME}/metrics/singleton.hpp
@@ -213,6 +215,7 @@ if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
                   testing/grpc/serverOptionsIni.cpp
                   testing/magnitude/amplitude.cpp
                   testing/magnitude/networkOptions.cpp
+                  testing/magnitude/observation.cpp
                   testing/magnitude/station.cpp
                   testing/magnitude/streamIdentifier.cpp)
    set_target_properties(unitTests PROPERTIES

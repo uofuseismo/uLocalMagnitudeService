@@ -47,7 +47,7 @@ public:
     [[nodiscard]] std::optional<double> getStationCorrection(const Corrections::StationIdentifier &identifier) const;
 
     //void compute(const std::vector<Amplitude> &amplitudes);   
-    //[[nodiscard]] Summary operator()(const std::vector<Amplitude> &amplitudes) const;
+    //[[nodiscard]] Summary operator()(const std::vector<Observation> &observations) const;
     /// @brief Destructor.
     ~Network();
     

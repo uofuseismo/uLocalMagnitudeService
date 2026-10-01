@@ -91,21 +91,21 @@ double Station::operator()(
     }
     if (!amplitudes.first.hasValue())
     {
-        throw std::invalid_argument("No amplitude on first observation");
+        throw std::invalid_argument("No amplitude on first amplitude");
     }
     if (!amplitudes.second.hasValue())
     {
-        throw std::invalid_argument("No amplitude on second observation");
+        throw std::invalid_argument("No amplitude on second amplitude");
     }
     if (!amplitudes.first.hasIdentifier())
     {   
         throw std::invalid_argument(
-           "No stream identifier on first observation");
+           "No stream identifier on first amplitude");
     }   
     if (!amplitudes.second.hasIdentifier())
     {   
         throw std::invalid_argument(
-           "No stream identifier on second observation");
+           "No stream identifier on second amplitude");
     }
     // Need a few things to match up based on NSCL
     auto streamIdentifier1 = amplitudes.first.getIdentifier();
