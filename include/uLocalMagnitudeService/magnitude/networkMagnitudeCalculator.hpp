@@ -11,7 +11,7 @@ namespace ULocalMagnitudeService::Corrections
 }
 namespace ULocalMagnitudeService::Magnitude
 {
- class NetworkOptions;
+ class NetworkMagnitudeCalculatorOptions;
  class Observation;
  class Residual;
 }
@@ -30,7 +30,7 @@ public:
     /// @param[in] options  The network magnitude options.
     /// @throws std::invalid_argument if the station or distance corrections
     ///         are not set.
-    explicit NetworkMagnitudeCalculator(const NetworkOptions &options);
+    explicit NetworkMagnitudeCalculator(const NetworkMagnitudeCalculatorOptions &options);
     /// @brief Copy constructor.
     NetworkMagnitudeCalculator(const NetworkMagnitudeCalculator &calculator);
     /// @brief Move constructor.

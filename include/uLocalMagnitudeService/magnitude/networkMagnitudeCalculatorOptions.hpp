@@ -1,5 +1,5 @@
-#ifndef ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_OPTIONS_HPP
-#define ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_OPTIONS_HPP
+#ifndef ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_MAGNITUDE_CALCULATOR_OPTIONS_HPP
+#define ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_MAGNITUDE_CALCULATOR_OPTIONS_HPP
 #include <memory>
 namespace ULocalMagnitudeService::Corrections
 {
@@ -8,11 +8,11 @@ namespace ULocalMagnitudeService::Corrections
 }
 namespace ULocalMagnitudeService::Magnitude
 {
-/// @class NetworkOptions networkOptions.hpp
+/// @class NetworkMagnitudeCalculatorOptions networkMagnitudeCalculatorOptions.hpp
 /// @brief Defines the options for computing a network magnitude.
 /// @copyright Ben Baker (University of Utah) distributed under the
 ///            MIT NO AI license.
-class NetworkOptions
+class NetworkMagnitudeCalculatorOptions
 {
 public:
     enum class Strategy
@@ -21,11 +21,11 @@ public:
     };
 public:
     /// @brief Constructor.
-    NetworkOptions();
+    NetworkMagnitudeCalculatorOptions();
     /// @brief Copy constructor.
-    NetworkOptions(const NetworkOptions &options);
+    NetworkMagnitudeCalculatorOptions(const NetworkMagnitudeCalculatorOptions &options);
     /// @brief Move constructor.
-    NetworkOptions(NetworkOptions &&options) noexcept;
+    NetworkMagnitudeCalculatorOptions(NetworkMagnitudeCalculatorOptions &&options) noexcept;
 
     /// @brief Sets the distance corrections.
     /// @param[in] corrections   The distance corrections.
@@ -80,15 +80,15 @@ public:
     void validate() const;
 
     /// @brief Destructor.
-    ~NetworkOptions();
+    ~NetworkMagnitudeCalculatorOptions();
  
     /// @brief Copy assignment.
-    NetworkOptions& operator=(const NetworkOptions &options);
+    NetworkMagnitudeCalculatorOptions& operator=(const NetworkMagnitudeCalculatorOptions &options);
     /// @brief Move assignment.
-    NetworkOptions& operator=(NetworkOptions &&options) noexcept;
+    NetworkMagnitudeCalculatorOptions& operator=(NetworkMagnitudeCalculatorOptions &&options) noexcept;
 private:
-    class NetworkOptionsImpl;
-    std::unique_ptr<NetworkOptionsImpl> pImpl;
+    class NetworkMagnitudeCalculatorOptionsImpl;
+    std::unique_ptr<NetworkMagnitudeCalculatorOptionsImpl> pImpl;
 };
 }
 #endif

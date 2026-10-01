@@ -6,7 +6,7 @@
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculator.hpp"
-#include "uLocalMagnitudeService/magnitude/networkOptions.hpp"
+#include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
 #include "uLocalMagnitudeService/corrections/station.hpp"
@@ -17,7 +17,7 @@
 
 using namespace ULocalMagnitudeService;
 using Magnitude::NetworkMagnitudeCalculator;
-using Magnitude::NetworkOptions;
+using Magnitude::NetworkMagnitudeCalculatorOptions;
 
 namespace
 {
@@ -71,9 +71,9 @@ Corrections::StationsSet utahStations()
     return set;
 }
 
-NetworkOptions utahOptions()
+NetworkMagnitudeCalculatorOptions utahOptions()
 {
-    NetworkOptions options;
+    NetworkMagnitudeCalculatorOptions options;
     options.setDistanceCorrections(utahDistanceCorrections());
     options.setStationCorrections(utahStations());
     return options;
@@ -98,15 +98,15 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculator",
 {
     SECTION("Requires valid options")
     {
-        REQUIRE_THROWS_AS(NetworkMagnitudeCalculator {NetworkOptions {}},
+        REQUIRE_THROWS_AS(NetworkMagnitudeCalculator {NetworkMagnitudeCalculatorOptions {}},
                           std::invalid_argument);
 
-        NetworkOptions noDistance;
+        NetworkMagnitudeCalculatorOptions noDistance;
         noDistance.setStationCorrections(utahStations());
         REQUIRE_THROWS_AS(NetworkMagnitudeCalculator {noDistance},
                           std::invalid_argument);
 
-        NetworkOptions noStations;
+        NetworkMagnitudeCalculatorOptions noStations;
         noStations.setDistanceCorrections(utahDistanceCorrections());
         REQUIRE_THROWS_AS(NetworkMagnitudeCalculator {noStations},
                           std::invalid_argument);

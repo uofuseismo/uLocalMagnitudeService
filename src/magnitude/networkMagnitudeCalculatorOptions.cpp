@@ -1,18 +1,18 @@
 #include <memory>
 #include <stdexcept>
 #include <utility>
-#include "uLocalMagnitudeService/magnitude/networkOptions.hpp"
+#include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/stationsSet.hpp"
 
 using namespace ULocalMagnitudeService;
 using namespace ULocalMagnitudeService::Magnitude;
 
-class NetworkOptions::NetworkOptionsImpl
+class NetworkMagnitudeCalculatorOptions::NetworkMagnitudeCalculatorOptionsImpl
 {
 public:
-    NetworkOptionsImpl() = default;
-    NetworkOptionsImpl(const NetworkOptionsImpl &options)
+    NetworkMagnitudeCalculatorOptionsImpl() = default;
+    NetworkMagnitudeCalculatorOptionsImpl(const NetworkMagnitudeCalculatorOptionsImpl &options)
     {
         if (options.mDistanceCorrections != nullptr)
         {
@@ -31,39 +31,39 @@ public:
     std::unique_ptr<Corrections::Distance> mDistanceCorrections;
     Corrections::StationsSet mStationCorrections;
     int mMinimumNumberOfStationMagnitudes{2};
-    Strategy mStrategy{NetworkOptions::Strategy::Average};
+    Strategy mStrategy{NetworkMagnitudeCalculatorOptions::Strategy::Average};
     bool mHasDistanceCorrections{false};
     bool mHasStationCorrections{false};
 };
 
 /// Constructor
-NetworkOptions::NetworkOptions() :
-    pImpl(std::make_unique<NetworkOptionsImpl> ())
+NetworkMagnitudeCalculatorOptions::NetworkMagnitudeCalculatorOptions() :
+    pImpl(std::make_unique<NetworkMagnitudeCalculatorOptionsImpl> ())
 {
 }
 
 /// Copy constructor
-NetworkOptions::NetworkOptions(const NetworkOptions &options)
+NetworkMagnitudeCalculatorOptions::NetworkMagnitudeCalculatorOptions(const NetworkMagnitudeCalculatorOptions &options)
 {
     *this = options;
 }
 
 /// Move constructor
-NetworkOptions::NetworkOptions(NetworkOptions &&options) noexcept
+NetworkMagnitudeCalculatorOptions::NetworkMagnitudeCalculatorOptions(NetworkMagnitudeCalculatorOptions &&options) noexcept
 {
     *this = std::move(options);
 }
 
 /// Copy assignment
-NetworkOptions &NetworkOptions::operator=(const NetworkOptions &options)
+NetworkMagnitudeCalculatorOptions &NetworkMagnitudeCalculatorOptions::operator=(const NetworkMagnitudeCalculatorOptions &options)
 {
     if (&options == this){return *this;}
-    pImpl = std::make_unique<NetworkOptionsImpl> (*options.pImpl);
+    pImpl = std::make_unique<NetworkMagnitudeCalculatorOptionsImpl> (*options.pImpl);
     return *this;
 }
 
 /// Move assignment
-NetworkOptions &NetworkOptions::operator=(NetworkOptions &&options) noexcept
+NetworkMagnitudeCalculatorOptions &NetworkMagnitudeCalculatorOptions::operator=(NetworkMagnitudeCalculatorOptions &&options) noexcept
 {
     if (&options == this){return *this;}
     pImpl = std::move(options.pImpl);
@@ -71,10 +71,10 @@ NetworkOptions &NetworkOptions::operator=(NetworkOptions &&options) noexcept
 }
 
 /// Destructor
-NetworkOptions::~NetworkOptions() = default;
+NetworkMagnitudeCalculatorOptions::~NetworkMagnitudeCalculatorOptions() = default;
 
 /// Distance corrections
-void NetworkOptions::setDistanceCorrections(
+void NetworkMagnitudeCalculatorOptions::setDistanceCorrections(
     const Corrections::Distance &corrections)
 {
     if (!corrections.isInitialized())
@@ -86,7 +86,7 @@ void NetworkOptions::setDistanceCorrections(
     pImpl->mHasDistanceCorrections = true;
 }
 
-Corrections::Distance NetworkOptions::getDistanceCorrections() const
+Corrections::Distance NetworkMagnitudeCalculatorOptions::getDistanceCorrections() const
 {
     if (!hasDistanceCorrections())
     {   
@@ -96,7 +96,7 @@ Corrections::Distance NetworkOptions::getDistanceCorrections() const
 }
 
 const Corrections::Distance 
-&NetworkOptions::getDistanceCorrectionsReference() const
+&NetworkMagnitudeCalculatorOptions::getDistanceCorrectionsReference() const
 {
     if (!hasDistanceCorrections())
     {   
@@ -106,14 +106,14 @@ const Corrections::Distance
 }
 
 
-bool NetworkOptions::hasDistanceCorrections() const noexcept
+bool NetworkMagnitudeCalculatorOptions::hasDistanceCorrections() const noexcept
 {
     return pImpl->mHasDistanceCorrections;
 }
 
 
 /// Station corrections
-void NetworkOptions::setStationCorrections(
+void NetworkMagnitudeCalculatorOptions::setStationCorrections(
     const Corrections::StationsSet &corrections)
 {
     if (corrections.empty())
@@ -124,7 +124,7 @@ void NetworkOptions::setStationCorrections(
     pImpl->mHasStationCorrections = true;
 }
 
-Corrections::StationsSet NetworkOptions::getStationCorrections() const
+Corrections::StationsSet NetworkMagnitudeCalculatorOptions::getStationCorrections() const
 {
     if (!hasStationCorrections())
     {
@@ -133,13 +133,13 @@ Corrections::StationsSet NetworkOptions::getStationCorrections() const
     return pImpl->mStationCorrections;
 }
 
-bool NetworkOptions::hasStationCorrections() const noexcept
+bool NetworkMagnitudeCalculatorOptions::hasStationCorrections() const noexcept
 {
     return pImpl->mHasStationCorrections;
 }
 
 /// Minimum number of observations
-void NetworkOptions::setMinimumNumberOfStationMagnitudes(const int minObs)
+void NetworkMagnitudeCalculatorOptions::setMinimumNumberOfStationMagnitudes(const int minObs)
 {
     if (minObs < 1)
     {
@@ -149,24 +149,24 @@ void NetworkOptions::setMinimumNumberOfStationMagnitudes(const int minObs)
     pImpl->mMinimumNumberOfStationMagnitudes = minObs;
 }
 
-int NetworkOptions::getMinimumNumberOfStationMagnitudes() const noexcept
+int NetworkMagnitudeCalculatorOptions::getMinimumNumberOfStationMagnitudes() const noexcept
 {
     return pImpl->mMinimumNumberOfStationMagnitudes;
 }
 
 /// Strategy
-void NetworkOptions::setStrategy(const Strategy strategy) noexcept
+void NetworkMagnitudeCalculatorOptions::setStrategy(const Strategy strategy) noexcept
 {
     pImpl->mStrategy = strategy;
 }
 
-NetworkOptions::Strategy NetworkOptions::getStrategy() const noexcept
+NetworkMagnitudeCalculatorOptions::Strategy NetworkMagnitudeCalculatorOptions::getStrategy() const noexcept
 {
     return pImpl->mStrategy;
 }
 
 /// Validate
-void NetworkOptions::validate() const
+void NetworkMagnitudeCalculatorOptions::validate() const
 {
     if (!hasStationCorrections())
     {

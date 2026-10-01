@@ -4,7 +4,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
-#include "uLocalMagnitudeService/magnitude/networkOptions.hpp"
+#include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
 #include "uLocalMagnitudeService/corrections/station.hpp"
@@ -14,13 +14,13 @@
 #include "../distanceTables.hpp"
 
 using namespace ULocalMagnitudeService;
-using Magnitude::NetworkOptions;
+using Magnitude::NetworkMagnitudeCalculatorOptions;
 
 namespace
 {
 Corrections::Distance utahDistanceCorrections()
 {
-    const Testing::TemporaryIniFile iniFile("networkOptionsUtah",
+    const Testing::TemporaryIniFile iniFile("networkCalculatorOptionsUtah",
                                             Testing::utahIniSection());
     return Corrections::Distance {
         Corrections::DistanceOptions::fromInitializationFile(iniFile.path())};
@@ -28,7 +28,7 @@ Corrections::Distance utahDistanceCorrections()
 
 Corrections::Distance yellowstoneDistanceCorrections()
 {
-    const Testing::TemporaryIniFile iniFile("networkOptionsYellowstone",
+    const Testing::TemporaryIniFile iniFile("networkCalculatorOptionsYellowstone",
                                             Testing::yellowstoneIniSection());
     return Corrections::Distance {
         Corrections::DistanceOptions::fromInitializationFile(iniFile.path())};
@@ -64,7 +64,7 @@ Corrections::StationsSet yellowstoneStations()
 }
 
 /// Checks the options match those made by makeUtahOptions().
-void checkUtahOptions(const NetworkOptions &options)
+void checkUtahOptions(const NetworkMagnitudeCalculatorOptions &options)
 {
     REQUIRE(options.hasDistanceCorrections());
     REQUIRE(options.hasStationCorrections());
@@ -78,27 +78,27 @@ void checkUtahOptions(const NetworkOptions &options)
     REQUIRE(ccut.has_value());
     REQUIRE_THAT((*ccut)(), Catch::Matchers::WithinAbs(0.31, 1.e-14));
     REQUIRE(options.getMinimumNumberOfStationMagnitudes() == 3);
-    REQUIRE(options.getStrategy() == NetworkOptions::Strategy::Average);
+    REQUIRE(options.getStrategy() == NetworkMagnitudeCalculatorOptions::Strategy::Average);
     REQUIRE_NOTHROW(options.validate());
 }
 
-NetworkOptions makeUtahOptions()
+NetworkMagnitudeCalculatorOptions makeUtahOptions()
 {
-    NetworkOptions options;
+    NetworkMagnitudeCalculatorOptions options;
     options.setDistanceCorrections(utahDistanceCorrections());
     options.setStationCorrections(utahStations());
     options.setMinimumNumberOfStationMagnitudes(3);
-    options.setStrategy(NetworkOptions::Strategy::Average);
+    options.setStrategy(NetworkMagnitudeCalculatorOptions::Strategy::Average);
     return options;
 }
 }
 
-TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkOptions",
-          "[networkOptions]")
+TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculatorOptions",
+          "[networkMagnitudeCalculatorOptions]")
 {
     SECTION("Defaults")
     {
-        const NetworkOptions options;
+        const NetworkMagnitudeCalculatorOptions options;
         REQUIRE_FALSE(options.hasDistanceCorrections());
         REQUIRE_FALSE(options.hasStationCorrections());
         REQUIRE_THROWS_AS(options.getDistanceCorrections(),
@@ -106,12 +106,12 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkOptions",
         REQUIRE_THROWS_AS(options.getStationCorrections(),
                           std::runtime_error);
         REQUIRE(options.getMinimumNumberOfStationMagnitudes() == 2);
-        REQUIRE(options.getStrategy() == NetworkOptions::Strategy::Average);
+        REQUIRE(options.getStrategy() == NetworkMagnitudeCalculatorOptions::Strategy::Average);
     }
 
     SECTION("Distance corrections")
     {
-        NetworkOptions options;
+        NetworkMagnitudeCalculatorOptions options;
         options.setDistanceCorrections(utahDistanceCorrections());
         REQUIRE(options.hasDistanceCorrections());
         auto distance = options.getDistanceCorrections();
@@ -129,7 +129,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkOptions",
 
     SECTION("Distance corrections are copied in")
     {
-        NetworkOptions options;
+        NetworkMagnitudeCalculatorOptions options;
         auto distance = utahDistanceCorrections();
         options.setDistanceCorrections(distance);
         distance = yellowstoneDistanceCorrections();
@@ -139,7 +139,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkOptions",
 
     SECTION("Station corrections")
     {
-        NetworkOptions options;
+        NetworkMagnitudeCalculatorOptions options;
         options.setStationCorrections(utahStations());
         REQUIRE(options.hasStationCorrections());
         auto stations = options.getStationCorrections();
@@ -156,7 +156,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkOptions",
 
     SECTION("Station corrections are copied in")
     {
-        NetworkOptions options;
+        NetworkMagnitudeCalculatorOptions options;
         auto stations = utahStations();
         options.setStationCorrections(stations);
         REQUIRE(stations.insert(makeStation("UU", "PKCU", -0.32)));
@@ -165,7 +165,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkOptions",
 
     SECTION("Empty station corrections are rejected")
     {
-        NetworkOptions options;
+        NetworkMagnitudeCalculatorOptions options;
         REQUIRE_THROWS_AS(
             options.setStationCorrections(Corrections::StationsSet {}),
             std::invalid_argument);
@@ -180,7 +180,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkOptions",
 
     SECTION("Minimum number of station magnitudes")
     {
-        NetworkOptions options;
+        NetworkMagnitudeCalculatorOptions options;
         options.setMinimumNumberOfStationMagnitudes(1);
         REQUIRE(options.getMinimumNumberOfStationMagnitudes() == 1);
         options.setMinimumNumberOfStationMagnitudes(10);
@@ -194,35 +194,35 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkOptions",
 
     SECTION("Strategy")
     {
-        NetworkOptions options;
-        options.setStrategy(NetworkOptions::Strategy::Average);
-        REQUIRE(options.getStrategy() == NetworkOptions::Strategy::Average);
+        NetworkMagnitudeCalculatorOptions options;
+        options.setStrategy(NetworkMagnitudeCalculatorOptions::Strategy::Average);
+        REQUIRE(options.getStrategy() == NetworkMagnitudeCalculatorOptions::Strategy::Average);
     }
 
     SECTION("Validate")
     {
         // Needs both the station and distance corrections
-        const NetworkOptions defaults;
+        const NetworkMagnitudeCalculatorOptions defaults;
         REQUIRE_THROWS_AS(defaults.validate(), std::runtime_error);
 
-        NetworkOptions stationsOnly;
+        NetworkMagnitudeCalculatorOptions stationsOnly;
         stationsOnly.setStationCorrections(utahStations());
         REQUIRE_THROWS_AS(stationsOnly.validate(), std::runtime_error);
 
-        NetworkOptions distanceOnly;
+        NetworkMagnitudeCalculatorOptions distanceOnly;
         distanceOnly.setDistanceCorrections(utahDistanceCorrections());
         REQUIRE_THROWS_AS(distanceOnly.validate(), std::runtime_error);
 
-        NetworkOptions both;
+        NetworkMagnitudeCalculatorOptions both;
         both.setStationCorrections(utahStations());
         both.setDistanceCorrections(utahDistanceCorrections());
         REQUIRE_NOTHROW(both.validate());
 
         // The minimum number of station magnitudes and strategy have
         // usable defaults
-        NetworkOptions tuned{both};
+        NetworkMagnitudeCalculatorOptions tuned{both};
         tuned.setMinimumNumberOfStationMagnitudes(1);
-        tuned.setStrategy(NetworkOptions::Strategy::Average);
+        tuned.setStrategy(NetworkMagnitudeCalculatorOptions::Strategy::Average);
         REQUIRE_NOTHROW(tuned.validate());
     }
 
@@ -231,7 +231,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkOptions",
         auto options = makeUtahOptions();
 
         // Copy constructor
-        const NetworkOptions copy{options};
+        const NetworkMagnitudeCalculatorOptions copy{options};
         checkUtahOptions(copy);
 
         // Copy is deep: modifying the original doesn't touch the copy
@@ -241,16 +241,16 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkOptions",
         checkUtahOptions(copy);
 
         // Copy assignment
-        NetworkOptions copyAssigned;
+        NetworkMagnitudeCalculatorOptions copyAssigned;
         copyAssigned = copy;
         checkUtahOptions(copyAssigned);
 
         // Move constructor
-        NetworkOptions moved{std::move(copyAssigned)};
+        NetworkMagnitudeCalculatorOptions moved{std::move(copyAssigned)};
         checkUtahOptions(moved);
 
         // Move assignment
-        NetworkOptions moveAssigned;
+        NetworkMagnitudeCalculatorOptions moveAssigned;
         moveAssigned = std::move(moved);
         checkUtahOptions(moveAssigned);
     }
@@ -259,10 +259,10 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkOptions",
     {
         // The implementation holds the distance corrections by pointer so
         // make sure a copy of an unset one is safe.
-        const NetworkOptions defaults;
-        const NetworkOptions copy{defaults};
+        const NetworkMagnitudeCalculatorOptions defaults;
+        const NetworkMagnitudeCalculatorOptions copy{defaults};
         REQUIRE_FALSE(copy.hasDistanceCorrections());
-        NetworkOptions copyAssigned;
+        NetworkMagnitudeCalculatorOptions copyAssigned;
         copyAssigned = defaults;
         REQUIRE_FALSE(copyAssigned.hasDistanceCorrections());
     }

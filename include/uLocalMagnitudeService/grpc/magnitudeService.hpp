@@ -5,7 +5,7 @@
 
 namespace ULocalMagnitudeService::Magnitude
 {
- class NetworkOptions;
+ class NetworkMagnitudeCalculatorOptions;
 }
 namespace ULocalMagnitudeService::GRPC
 {

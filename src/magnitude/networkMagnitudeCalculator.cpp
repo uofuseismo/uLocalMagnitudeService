@@ -8,7 +8,7 @@
 #include <vector>
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculator.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
-#include "uLocalMagnitudeService/magnitude/networkOptions.hpp"
+#include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/magnitude/stationMagnitudeCalculator.hpp"
 #include "uLocalMagnitudeService/corrections/distance.hpp"
@@ -25,7 +25,7 @@ using namespace ULocalMagnitudeService::Magnitude;
 class NetworkMagnitudeCalculator::NetworkMagnitudeCalculatorImpl
 {
 public:
-    NetworkOptions mOptions;
+    NetworkMagnitudeCalculatorOptions mOptions;
     std::map<std::string, StationMagnitudeCalculator> mStationMagnitudeCalculatorMap;
     bool mInitialized{false};
 };
@@ -33,7 +33,7 @@ public:
 
 /// Constructor
 NetworkMagnitudeCalculator::NetworkMagnitudeCalculator(
-    const NetworkOptions &options) :
+    const NetworkMagnitudeCalculatorOptions &options) :
     pImpl(std::make_unique<NetworkMagnitudeCalculatorImpl> ())
 {
     try
