@@ -6,11 +6,11 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "uLocalMagnitudeService/magnitude/network.hpp"
+#include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculator.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/networkOptions.hpp"
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
-#include "uLocalMagnitudeService/magnitude/station.hpp"
+#include "uLocalMagnitudeService/magnitude/stationMagnitudeCalculator.hpp"
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 // NOLINTBEGIN(misc-include-cleaner)
 #include "uLocalMagnitudeService/corrections/station.hpp"
@@ -22,18 +22,19 @@ using namespace ULocalMagnitudeService::Magnitude;
 
 
 
-class Network::NetworkImpl
+class NetworkMagnitudeCalculator::NetworkMagnitudeCalculatorImpl
 {
 public:
     NetworkOptions mOptions;
-    std::map<std::string, Magnitude::Station> mStationMagnitudeCalculatorMap;
+    std::map<std::string, StationMagnitudeCalculator> mStationMagnitudeCalculatorMap;
     bool mInitialized{false};
 };
 
 
 /// Constructor
-Network::Network(const NetworkOptions &options) :
-    pImpl(std::make_unique<NetworkImpl> ())
+NetworkMagnitudeCalculator::NetworkMagnitudeCalculator(
+    const NetworkOptions &options) :
+    pImpl(std::make_unique<NetworkMagnitudeCalculatorImpl> ())
 {
     try
     {
@@ -52,18 +53,18 @@ Network::Network(const NetworkOptions &options) :
     {
         const auto stationName = stationCorrectionPair.first;
         const auto &stationCorrection = stationCorrectionPair.second;
-        Magnitude::Station
-            stationMagnitude{stationCorrection, distanceCorrections};
-        if (!stationMagnitude.isInitialized())
+        StationMagnitudeCalculator
+            calculator{stationCorrection, distanceCorrections};
+        if (!calculator.isInitialized())
         {
             throw std::runtime_error(
                 "Failed to initialize station magnitude calculator for "
               + stationName);
         }
-        std::pair<std::string, Magnitude::Station> calculatorPair
+        std::pair<std::string, StationMagnitudeCalculator> calculatorPair
         {
             stationName,
-            std::move(stationMagnitude)
+            std::move(calculator)
         };
         pImpl->mStationMagnitudeCalculatorMap.insert(std::move(calculatorPair));
     }
@@ -71,29 +72,50 @@ Network::Network(const NetworkOptions &options) :
     pImpl->mInitialized = true;
 }
 
-/// Move constructor
-Network::Network(Network &&network) noexcept
+/// Copy constructor
+NetworkMagnitudeCalculator::NetworkMagnitudeCalculator(
+    const NetworkMagnitudeCalculator &calculator)
 {
-    *this = std::move(network);
+    *this = calculator;
+}
+
+/// Move constructor
+NetworkMagnitudeCalculator::NetworkMagnitudeCalculator(
+    NetworkMagnitudeCalculator &&calculator) noexcept
+{
+    *this = std::move(calculator);
+}
+
+/// Copy assignment
+NetworkMagnitudeCalculator&
+NetworkMagnitudeCalculator::operator=(
+    const NetworkMagnitudeCalculator &calculator)
+{
+    if (&calculator == this){return *this;}
+    pImpl = std::make_unique<NetworkMagnitudeCalculatorImpl>
+            (*calculator.pImpl);
+    return *this;
 }
 
 /// Move assignment
-Network& Network::operator=(Network &&network) noexcept
+NetworkMagnitudeCalculator&
+NetworkMagnitudeCalculator::operator=(
+    NetworkMagnitudeCalculator &&calculator) noexcept
 { 
-    if (&network == this){return *this;}
-    pImpl = std::move(network.pImpl);
+    if (&calculator == this){return *this;}
+    pImpl = std::move(calculator.pImpl);
     return *this;
 }
 
 /// Initialized?
-bool Network::isInitialized() const noexcept
+bool NetworkMagnitudeCalculator::isInitialized() const noexcept
 {
     return pImpl->mInitialized;
 }
 
 /// The distance corerections
 ULocalMagnitudeService::Corrections::Distance 
-    Network::getDistanceCorrections() const
+    NetworkMagnitudeCalculator::getDistanceCorrections() const
 {
     if (!isInitialized())
     {
@@ -104,7 +126,7 @@ ULocalMagnitudeService::Corrections::Distance
 
 /// The station correction
 std::optional<double> 
-Network::getStationCorrection(
+NetworkMagnitudeCalculator::getStationCorrection(
     const Corrections::StationIdentifier &identifier) const
 {
     if (!isInitialized())
@@ -121,4 +143,4 @@ Network::getStationCorrection(
 }
 
 /// Destructor
-Network::~Network() = default;
+NetworkMagnitudeCalculator::~NetworkMagnitudeCalculator() = default;

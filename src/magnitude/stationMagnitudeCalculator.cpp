@@ -3,7 +3,8 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include "uLocalMagnitudeService/magnitude/station.hpp"
+#include "uLocalMagnitudeService/magnitude/stationMagnitudeCalculator.hpp"
+#include "uLocalMagnitudeService/magnitude/stationMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
@@ -14,10 +15,10 @@
 
 using namespace ULocalMagnitudeService::Magnitude;
 
-class Station::StationImpl
+class StationMagnitudeCalculator::StationMagnitudeCalculatorImpl
 {
 public:
-    StationImpl(const Corrections::Station &station,
+    StationMagnitudeCalculatorImpl(const Corrections::Station &station,
                 const Corrections::Distance &distance) :
         mStationCorrection(station),
         mDistanceCorrection(distance)
@@ -29,8 +30,9 @@ public:
 };
 
 /// Constructor
-Station::Station(const Corrections::Station &station,
-                 const Corrections::Distance &distance)
+StationMagnitudeCalculator::StationMagnitudeCalculator(
+    const Corrections::Station &station,
+    const Corrections::Distance &distance)
 {
     if (!station.isInitialized())
     {
@@ -40,35 +42,40 @@ Station::Station(const Corrections::Station &station,
     {
         throw std::invalid_argument("Distance correction not initialized");
     }
-    pImpl = std::make_unique<StationImpl> (station, distance);
+    pImpl = std::make_unique<StationMagnitudeCalculatorImpl>
+            (station, distance);
     pImpl->mInitialized = true;
 }
 
 /// Copy constructor
-Station::Station(const Station &station)
+StationMagnitudeCalculator::StationMagnitudeCalculator(
+    const StationMagnitudeCalculator &station)
 {
     *this = station;
 }
 
 /// Move constructor
-Station::Station(Station &&station) noexcept
+StationMagnitudeCalculator::StationMagnitudeCalculator(
+    StationMagnitudeCalculator &&station) noexcept
 {
     *this = std::move(station);
 }
 
 /// Destructor
-Station::~Station() = default;
+StationMagnitudeCalculator::~StationMagnitudeCalculator() = default;
 
 /// Copy assignent
-Station& Station::operator=(const Station &station)
+StationMagnitudeCalculator&
+StationMagnitudeCalculator::operator=(const StationMagnitudeCalculator &station)
 {
     if (&station == this){return *this;}
-    pImpl = std::make_unique<StationImpl> (*station.pImpl);
+    pImpl = std::make_unique<StationMagnitudeCalculatorImpl> (*station.pImpl);
     return *this;
 }
 
 /// Move assignent
-Station& Station::operator=(Station &&station) noexcept
+StationMagnitudeCalculator&
+StationMagnitudeCalculator::operator=(StationMagnitudeCalculator &&station) noexcept
 {
     if (&station == this){return *this;}
     pImpl = std::move(station.pImpl);
@@ -76,17 +83,18 @@ Station& Station::operator=(Station &&station) noexcept
 }
 
 /// Initialized?
-bool Station::isInitialized() const noexcept
+bool StationMagnitudeCalculator::isInitialized() const noexcept
 {
     return pImpl->mInitialized;
 }
 
 /// Finally, do something science-y and compute a station magnitude
-double Station::operator()(const Observation &observation) const
+StationMagnitude
+StationMagnitudeCalculator::operator()(const Observation &observation) const
 {
     if (!isInitialized())
     {   
-        throw std::runtime_error("Station magnitude class not initialized");
+        throw std::runtime_error("Station magnitude calculator not initialized");
     }   
     if (!observation.hasAmplitudes())
     {
@@ -124,18 +132,28 @@ double Station::operator()(const Observation &observation) const
     auto amplitude1 = amplitudes.first.getValue();
     auto amplitude2 = amplitudes.second.getValue();
     auto averageAmplitude = 0.5*(amplitude1 + amplitude2);
-    auto correction = getDistanceCorrection(epicentralDistance, eventDepth)
-                    + getStationCorrection();
+    auto distanceCorrection
+        = getDistanceCorrection(epicentralDistance, eventDepth);
+    auto stationCorrection = getStationCorrection();
     auto uncorrectedStationMagnitude = std::log10(0.5*averageAmplitude);
-    return uncorrectedStationMagnitude + correction;
+    auto stationMagnitude
+        = uncorrectedStationMagnitude + distanceCorrection + stationCorrection;
+    // Package up the output
+    StationMagnitude result;
+    result.setStationName(stationName);
+    result.setValue(stationMagnitude);
+    result.setStationCorrection(stationCorrection);
+    result.setDistanceCorrection(distanceCorrection);
+    return result;
 }
 
-double Station::getDistanceCorrection(const double epicentralDistance,
-                                      const double eventDepth) const
+double StationMagnitudeCalculator::getDistanceCorrection(
+    const double epicentralDistance,
+    const double eventDepth) const
 {
     if (!isInitialized())
     {   
-        throw std::runtime_error("Station magnitude class not initialized");
+        throw std::runtime_error("Station magnitude calculator not initialized");
     } 
     if (epicentralDistance < 0)
     {   
@@ -145,11 +163,11 @@ double Station::getDistanceCorrection(const double epicentralDistance,
                                                  eventDepth);
 }
 
-double Station::getStationCorrection() const
+double StationMagnitudeCalculator::getStationCorrection() const
 {
     if (!isInitialized())
     {
-        throw std::runtime_error("Station magnitude class not initialized");
+        throw std::runtime_error("Station magnitude calculator not initialized");
     }
     return pImpl->mStationCorrection.operator()();
 }

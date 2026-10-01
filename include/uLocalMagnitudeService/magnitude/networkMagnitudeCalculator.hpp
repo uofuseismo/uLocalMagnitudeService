@@ -1,5 +1,5 @@
-#ifndef ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_HPP
-#define ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_HPP
+#ifndef ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_MAGNITUDE_CALCULATOR_HPP
+#define ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_MAGNITUDE_CALCULATOR_HPP
 #include <memory>
 #include <optional>
 #include <vector>
@@ -18,22 +18,23 @@ namespace ULocalMagnitudeService::Magnitude
 
 namespace ULocalMagnitudeService::Magnitude
 {
-/// @class Network network.hpp
+/// @class NetworkMagnitudeCalculator networkMagnitudeCalculator.hpp
 /// @brief Computes a network-based magnitude - loosely speaking an average of
 ///        station magnitudes.
 /// @copyright Ben Baker (University of Utah) distributed under the
 ///            MIT NO AI license.
-class Network
+class NetworkMagnitudeCalculator
 {
 public:
-    /// @brief Constructs the network magnitude.
+    /// @brief Constructs the network magnitude calculator.
+    /// @param[in] options  The network magnitude options.
     /// @throws std::invalid_argument if the station or distance corrections
     ///         are not set.
-    explicit Network(const NetworkOptions &options);
+    explicit NetworkMagnitudeCalculator(const NetworkOptions &options);
     /// @brief Copy constructor.
-    Network(const Network &network);
+    NetworkMagnitudeCalculator(const NetworkMagnitudeCalculator &calculator);
     /// @brief Move constructor.
-    Network(Network &&network) noexcept; 
+    NetworkMagnitudeCalculator(NetworkMagnitudeCalculator &&calculator) noexcept;
 
     /// @result True indicates the class is initialized.
     [[nodiscard]] bool isInitialized() const noexcept;   
@@ -50,16 +51,16 @@ public:
     //[[nodiscard]] Summary operator()(const std::vector<Observation> &observations) const;
 
     /// @brief Destructor.
-    ~Network();
-    /// @brief Move assignment.
-    Network& operator=(Network &&network) noexcept;
+    ~NetworkMagnitudeCalculator();
     /// @brief Copy assignment.
-    //Network& operator=(const Network &network);
+    NetworkMagnitudeCalculator& operator=(const NetworkMagnitudeCalculator &calculator);
+    /// @brief Move assignment.
+    NetworkMagnitudeCalculator& operator=(NetworkMagnitudeCalculator &&calculator) noexcept;
 
-    Network() = delete;
+    NetworkMagnitudeCalculator() = delete;
 private:
-    class NetworkImpl;
-    std::unique_ptr<NetworkImpl> pImpl;
+    class NetworkMagnitudeCalculatorImpl;
+    std::unique_ptr<NetworkMagnitudeCalculatorImpl> pImpl;
 };
 }
 #endif

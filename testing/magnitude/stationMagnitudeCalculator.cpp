@@ -7,7 +7,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
-#include "uLocalMagnitudeService/magnitude/station.hpp"
+#include "uLocalMagnitudeService/magnitude/stationMagnitudeCalculator.hpp"
+#include "uLocalMagnitudeService/magnitude/stationMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
@@ -161,7 +162,7 @@ constexpr double yellowstoneDepthInMeters{5140};
 constexpr double centimetersToMillimeters{10};
 }
 
-TEST_CASE("ULocalMagnitudeService::Magnitude::Station - AQMS",
+TEST_CASE("ULocalMagnitudeService::Magnitude::StationMagnitudeCalculatorMagnitudeCalculator - AQMS",
           "[magnitudeStation]")
 {
     const auto distance = utahDistanceCorrections();
@@ -169,14 +170,14 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station - AQMS",
     {
         const std::string name{record.station};
         INFO("Station: " << name);
-        const Magnitude::Station station{
+        const Magnitude::StationMagnitudeCalculator calculator{
             stationCorrection("UU", name, record.stationCorrection),
             distance};
-        REQUIRE(station.isInitialized());
-        REQUIRE_THAT(station.getStationCorrection(),
+        REQUIRE(calculator.isInitialized());
+        REQUIRE_THAT(calculator.getStationCorrection(),
                      Catch::Matchers::WithinAbs(record.stationCorrection,
                                                 1.e-14));
-        REQUIRE_THAT(station.getDistanceCorrection(record.distanceInMeters,
+        REQUIRE_THAT(calculator.getDistanceCorrection(record.distanceInMeters,
                                                    depth),
                      Catch::Matchers::WithinAbs(record.distanceCorrection,
                                                 1.e-14));
@@ -190,26 +191,34 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station - AQMS",
                        *record.amplitudeNorthInCentimeters);
         // Utah doesn't need the depth but it can be there
         const auto magnitude
-            = station(observation(east, north, record.distanceInMeters,
+            = calculator(observation(east, north, record.distanceInMeters,
                                   depth));
-        REQUIRE_THAT(magnitude,
+        REQUIRE_THAT(magnitude.getValue(),
                      Catch::Matchers::WithinAbs(record.stationMagnitude,
                                                 1.e-10));
+        // The station and corrections that went into it are reported
+        REQUIRE(magnitude.getStationName() == "UU." + name);
+        REQUIRE_THAT(magnitude.getStationCorrection(),
+                     Catch::Matchers::WithinAbs(record.stationCorrection,
+                                                1.e-14));
+        REQUIRE_THAT(magnitude.getDistanceCorrection(),
+                     Catch::Matchers::WithinAbs(record.distanceCorrection,
+                                                1.e-14));
         const auto magnitudeNoDepth
-            = station(observation(east, north, record.distanceInMeters,
+            = calculator(observation(east, north, record.distanceInMeters,
                                   std::nullopt));
-        REQUIRE_THAT(magnitudeNoDepth,
-                     Catch::Matchers::WithinAbs(magnitude, 1.e-14));
+        REQUIRE_THAT(magnitudeNoDepth.getValue(),
+                     Catch::Matchers::WithinAbs(magnitude.getValue(), 1.e-14));
         // Order of the channels doesn't matter
         const auto magnitudeReversed
-            = station(observation(north, east, record.distanceInMeters,
+            = calculator(observation(north, east, record.distanceInMeters,
                                   depth));
-        REQUIRE_THAT(magnitudeReversed,
-                     Catch::Matchers::WithinAbs(magnitude, 1.e-14));
+        REQUIRE_THAT(magnitudeReversed.getValue(),
+                     Catch::Matchers::WithinAbs(magnitude.getValue(), 1.e-14));
     }
 }
 
-TEST_CASE("ULocalMagnitudeService::Magnitude::Station - AQMS Yellowstone",
+TEST_CASE("ULocalMagnitudeService::Magnitude::StationMagnitudeCalculatorMagnitudeCalculator - AQMS Yellowstone",
           "[magnitudeStation]")
 {
     const auto distance = yellowstoneDistanceCorrections();
@@ -218,7 +227,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station - AQMS Yellowstone",
         const std::string network{record.network};
         const std::string name{record.station};
         INFO("Station: " << network << "." << name);
-        const Magnitude::Station station{
+        const Magnitude::StationMagnitudeCalculator calculator{
             stationCorrection(network, name, record.stationCorrection),
             distance};
         const auto amplitude1
@@ -231,26 +240,41 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station - AQMS Yellowstone",
                        *record.amplitude2InCentimeters);
         // AQMS interpolates the Yellowstone table at the hypocentral distance
         const auto magnitude
-            = station(observation(amplitude1, amplitude2,
+            = calculator(observation(amplitude1, amplitude2,
                                   record.epicentralDistanceInMeters,
                                   yellowstoneDepthInMeters));
-        REQUIRE_THAT(magnitude,
+        REQUIRE_THAT(magnitude.getValue(),
                      Catch::Matchers::WithinAbs(record.stationMagnitude,
                                                 1.e-10));
+        REQUIRE(magnitude.getStationName() == network + "." + name);
+        REQUIRE_THAT(magnitude.getStationCorrection(),
+                     Catch::Matchers::WithinAbs(record.stationCorrection,
+                                                1.e-14));
+        // The distance correction is at the hypocentral distance
+        REQUIRE_THAT(magnitude.getDistanceCorrection(),
+                     Catch::Matchers::WithinAbs(
+                         calculator.getDistanceCorrection(
+                             record.epicentralDistanceInMeters,
+                             yellowstoneDepthInMeters), 1.e-14));
+        REQUIRE_THAT(magnitude.getDistanceCorrection(),
+                     Catch::Matchers::WithinAbs(
+                         distance(std::hypot(record.epicentralDistanceInMeters,
+                                             yellowstoneDepthInMeters)),
+                         1.e-14));
         // Hypocentral distance needs the depth
         REQUIRE_THROWS_AS(
-            station(observation(amplitude1, amplitude2,
+            calculator(observation(amplitude1, amplitude2,
                                 record.epicentralDistanceInMeters,
                                 std::nullopt)),
             std::invalid_argument);
     }
 }
 
-TEST_CASE("ULocalMagnitudeService::Magnitude::Station",
+TEST_CASE("ULocalMagnitudeService::Magnitude::StationMagnitudeCalculator",
           "[magnitudeStation]")
 {
     const auto distance = utahDistanceCorrections();
-    const Magnitude::Station station{stationCorrection("UU", "CCUT", 0.31),
+    const Magnitude::StationMagnitudeCalculator calculator{stationCorrection("UU", "CCUT", 0.31),
                                      distance};
     const auto east = amplitude("UU", "CCUT", "HHE", "01", 0.3459206596016884);
     const auto north = amplitude("UU", "CCUT", "HHN", "01", 0.15187045093625784);
@@ -264,14 +288,23 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station",
         const auto east1 = amplitude("UU", "CCUT", "HHE", "01", 3);
         const auto north1 = amplitude("UU", "CCUT", "HHN", "01", 1);
         // log10(0.5*0.5*(3 + 1)) = 0
-        REQUIRE_THAT(station(observation(east1, north1, 0, depth)),
+        const auto atZero = calculator(observation(east1, north1, 0, depth));
+        REQUIRE_THAT(atZero.getValue(),
                      Catch::Matchers::WithinAbs(1.4 + 0.31, 1.e-14));
-        REQUIRE_THAT(station(observation(east1, north1, 100000, depth)),
+        REQUIRE_THAT(atZero.getDistanceCorrection(),
+                     Catch::Matchers::WithinAbs(1.4, 1.e-14));
+        REQUIRE_THAT(atZero.getStationCorrection(),
+                     Catch::Matchers::WithinAbs(0.31, 1.e-14));
+        const auto at100km
+            = calculator(observation(east1, north1, 100000, depth));
+        REQUIRE_THAT(at100km.getValue(),
                      Catch::Matchers::WithinAbs(3.0 + 0.31, 1.e-14));
+        REQUIRE_THAT(at100km.getDistanceCorrection(),
+                     Catch::Matchers::WithinAbs(3.0, 1.e-14));
         const auto east2 = amplitude("UU", "CCUT", "HHE", "01", 20);
         const auto north2 = amplitude("UU", "CCUT", "HHN", "01", 20);
         // log10(0.5*20) = 1
-        REQUIRE_THAT(station(observation(east2, north2, 0, depth)),
+        REQUIRE_THAT(calculator(observation(east2, north2, 0, depth)).getValue(),
                      Catch::Matchers::WithinAbs(1 + 1.4 + 0.31, 1.e-14));
     }
 
@@ -282,12 +315,12 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station",
         REQUIRE(yellowstoneDistanceCorrections().getDistanceType() ==
                 Corrections::DistanceOptions::Type::Hypocentral);
         // Utah ignores the depth
-        REQUIRE_THAT(station.getDistanceCorrection(0, depth),
+        REQUIRE_THAT(calculator.getDistanceCorrection(0, depth),
                      Catch::Matchers::WithinAbs(1.4, 1.e-14));
-        REQUIRE_THAT(station.getDistanceCorrection(0, -2000),
+        REQUIRE_THAT(calculator.getDistanceCorrection(0, -2000),
                      Catch::Matchers::WithinAbs(1.4, 1.e-14));
         // Yellowstone uses it; negative depths (above the datum) are fine
-        const Magnitude::Station yellowstone{
+        const Magnitude::StationMagnitudeCalculator yellowstone{
             stationCorrection("WY", "YMR", -0.1),
             yellowstoneDistanceCorrections()};
         REQUIRE_THAT(yellowstone.getDistanceCorrection(0, 15000),
@@ -304,31 +337,31 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station",
     {
         const auto east1 = amplitude("UU", "CCUT", "HHE", "", 0.3459206596016884);
         const auto north1 = amplitude("UU", "CCUT", "HHN", "  ", 0.15187045093625784);
-        REQUIRE_THAT(station(observation(east1, north1, distanceInMeters,
-                                         depth)),
+        REQUIRE_THAT(calculator(observation(east1, north1, distanceInMeters,
+                                         depth)).getValue(),
                      Catch::Matchers::WithinAbs(expectedMagnitude, 1.e-10));
     }
 
     SECTION("Negative distance is rejected")
     {
-        REQUIRE_THROWS_AS(station.getDistanceCorrection(-1, depth),
+        REQUIRE_THROWS_AS(calculator.getDistanceCorrection(-1, depth),
                           std::invalid_argument);
     }
 
     SECTION("Observation needs amplitudes and a distance")
     {
         const Magnitude::Observation empty;
-        REQUIRE_THROWS_AS(station(empty), std::invalid_argument);
+        REQUIRE_THROWS_AS(calculator(empty), std::invalid_argument);
 
         Magnitude::Observation noAmplitudes;
         noAmplitudes.setEpicentralDistance(distanceInMeters);
         noAmplitudes.setDepth(depth);
-        REQUIRE_THROWS_AS(station(noAmplitudes), std::invalid_argument);
+        REQUIRE_THROWS_AS(calculator(noAmplitudes), std::invalid_argument);
 
         Magnitude::Observation noDistance;
         noDistance.setAmplitudes(std::pair {east, north});
         noDistance.setDepth(depth);
-        REQUIRE_THROWS_AS(station(noDistance), std::invalid_argument);
+        REQUIRE_THROWS_AS(calculator(noDistance), std::invalid_argument);
     }
 
     SECTION("Station must match the station correction")
@@ -336,44 +369,44 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station",
         const auto eastOther = amplitude("UU", "LCMT", "HHE", "01", 2.7);
         const auto northOther = amplitude("UU", "LCMT", "HHN", "01", 3.3);
         REQUIRE_THROWS_AS(
-            station(observation(eastOther, northOther, distanceInMeters,
+            calculator(observation(eastOther, northOther, distanceInMeters,
                                 depth)),
             std::invalid_argument);
         // Same station name on a different network
         const auto eastWY = amplitude("WY", "CCUT", "HHE", "01", 2.7);
         const auto northWY = amplitude("WY", "CCUT", "HHN", "01", 3.3);
         REQUIRE_THROWS_AS(
-            station(observation(eastWY, northWY, distanceInMeters, depth)),
+            calculator(observation(eastWY, northWY, distanceInMeters, depth)),
             std::invalid_argument);
     }
 
     SECTION("Copy and move")
     {
         // Copy constructor
-        const Magnitude::Station copy{station};
+        const Magnitude::StationMagnitudeCalculator copy{calculator};
         REQUIRE(copy.isInitialized());
-        REQUIRE_THAT(copy(ccut),
+        REQUIRE_THAT(copy(ccut).getValue(),
                      Catch::Matchers::WithinAbs(expectedMagnitude, 1.e-10));
 
         // Copy assignment
-        Magnitude::Station copyAssigned{stationCorrection("UU", "LCMT", -0.12),
+        Magnitude::StationMagnitudeCalculator copyAssigned{stationCorrection("UU", "LCMT", -0.12),
                                         distance};
         copyAssigned = copy;
         REQUIRE_THAT(copyAssigned.getStationCorrection(),
                      Catch::Matchers::WithinAbs(0.31, 1.e-14));
-        REQUIRE_THAT(copyAssigned(ccut),
+        REQUIRE_THAT(copyAssigned(ccut).getValue(),
                      Catch::Matchers::WithinAbs(expectedMagnitude, 1.e-10));
 
         // Move constructor
-        Magnitude::Station moved{std::move(copyAssigned)};
-        REQUIRE_THAT(moved(ccut),
+        Magnitude::StationMagnitudeCalculator moved{std::move(copyAssigned)};
+        REQUIRE_THAT(moved(ccut).getValue(),
                      Catch::Matchers::WithinAbs(expectedMagnitude, 1.e-10));
 
         // Move assignment
-        Magnitude::Station moveAssigned{stationCorrection("UU", "LCMT", -0.12),
+        Magnitude::StationMagnitudeCalculator moveAssigned{stationCorrection("UU", "LCMT", -0.12),
                                         distance};
         moveAssigned = std::move(moved);
-        REQUIRE_THAT(moveAssigned(ccut),
+        REQUIRE_THAT(moveAssigned(ccut).getValue(),
                      Catch::Matchers::WithinAbs(expectedMagnitude, 1.e-10));
     }
 }

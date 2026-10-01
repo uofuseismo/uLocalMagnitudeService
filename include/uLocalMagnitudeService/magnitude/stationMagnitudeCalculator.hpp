@@ -1,10 +1,11 @@
-#ifndef ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_STATION_HPP
-#define ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_STATION_HPP
+#ifndef ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_STATION_MAGNITUDE_CALCULATOR_HPP
+#define ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_STATION_MAGNITUDE_CALCULATOR_HPP
 #include <memory>
 #include <utility>
 namespace ULocalMagnitudeService::Magnitude
 {
  class Observation;
+ class StationMagnitude;
 }
 namespace ULocalMagnitudeService::Corrections
 {
@@ -15,13 +16,13 @@ namespace ULocalMagnitudeService::Corrections
 namespace ULocalMagnitudeService::Magnitude
 {
 
-/// @class Station station.hpp
+/// @class StationMagnitudeCalculator stationMagnitudeCalculator.hpp
 /// @brief Computes the station magnitudes the UUSS way - that is:
 ///           StationMagnitude = log10(AverageAmplitude/2) + C_d + C_s
 ///        where C_d is the distance correction and C_s the station correction.
 /// @copyright Ben Baker (University of Utah) distributed under the 
 ///            MIT NO AI license.
-class Station
+class StationMagnitudeCalculator
 {
 public:
     /// @brief Constructor.
@@ -29,12 +30,12 @@ public:
     /// @param[in] distance  The distance correction table.
     /// @throws std::invalid_argument if the station correction or the
     ///         distance corrections are not initialized.
-    Station(const Corrections::Station &station,
-            const Corrections::Distance &distance);
+    StationMagnitudeCalculator(const Corrections::Station &station,
+                               const Corrections::Distance &distance);
     /// @brief Copy constructor.
-    Station(const Station &station);
+    StationMagnitudeCalculator(const StationMagnitudeCalculator &calculator);
     /// @brief Move constructor.
-    Station(Station &&station) noexcept;
+    StationMagnitudeCalculator(StationMagnitudeCalculator &&calculator) noexcept;
 
     /// @result True indicates the class is initialized.
     [[nodiscard]] bool isInitialized() const noexcept;
@@ -44,11 +45,13 @@ public:
     /// @param[in] observation  The observed amplitudes and requisite
     ///                         source information for computing a
     ///                         station magnitude.
+    /// @result The station magnitude along with the station and distance
+    ///         corrections that were applied.
     /// @throws std::invalid_argument if the amplitudes are not set,
     ///         the epicentral distance is not set, and, if this is using
     ///         a depth correction, the source depth is not set.
     /// @throws std::runtime_error if \c isInitialized() is false.
-    [[nodiscard]] double operator()(const Observation &observation) const;
+    [[nodiscard]] StationMagnitude operator()(const Observation &observation) const;
  
     /// @brief Function to extract the distance correction.
     /// @param[in] epicentralDistance  The source-receiver epicentral distance
@@ -66,14 +69,14 @@ public:
     [[nodiscard]] double getStationCorrection() const;
 
     /// @brief Destructor.
-    ~Station();
-    /// @brief Copy constructor.
-    Station& operator=(const Station &station);
-    /// @brief Move constructor.
-    Station& operator=(Station &&station) noexcept;
+    ~StationMagnitudeCalculator();
+    /// @brief Copy assignment.
+    StationMagnitudeCalculator& operator=(const StationMagnitudeCalculator &calculator);
+    /// @brief Move assignment.
+    StationMagnitudeCalculator& operator=(StationMagnitudeCalculator &&calculator) noexcept;
 private:
-    class StationImpl;
-    std::unique_ptr<StationImpl> pImpl;
+    class StationMagnitudeCalculatorImpl;
+    std::unique_ptr<StationMagnitudeCalculatorImpl> pImpl;
 };
 
 }

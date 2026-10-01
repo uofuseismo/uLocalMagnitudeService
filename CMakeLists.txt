@@ -82,10 +82,11 @@ set(LIBRARY_SRC
     #src/grpc/magnitudeService.cpp
     src/grpc/serverOptions.cpp
     src/magnitude/amplitude.cpp
-    src/magnitude/network.cpp
+    src/magnitude/networkMagnitudeCalculator.cpp
     src/magnitude/networkOptions.cpp
     src/magnitude/observation.cpp
-    src/magnitude/station.cpp
+    src/magnitude/stationMagnitude.cpp
+    src/magnitude/stationMagnitudeCalculator.cpp
     src/magnitude/streamIdentifier.cpp
     src/metrics/singleton.cpp
     src/version.cpp)
@@ -99,10 +100,11 @@ set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/corrections/stationsSet.hpp
     include/${PROJECT_NAME}/grpc/serverOptions.hpp
     include/${PROJECT_NAME}/magnitude/amplitude.hpp
-    include/${PROJECT_NAME}/magnitude/network.hpp
+    include/${PROJECT_NAME}/magnitude/networkMagnitudeCalculator.hpp
     include/${PROJECT_NAME}/magnitude/networkOptions.hpp
     include/${PROJECT_NAME}/magnitude/observation.hpp
-    include/${PROJECT_NAME}/magnitude/station.hpp
+    include/${PROJECT_NAME}/magnitude/stationMagnitude.hpp
+    include/${PROJECT_NAME}/magnitude/stationMagnitudeCalculator.hpp
     include/${PROJECT_NAME}/magnitude/streamIdentifier.hpp
     include/${PROJECT_NAME}/metrics/singleton.hpp
     include/${PROJECT_NAME}/version.hpp)
@@ -214,9 +216,11 @@ if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
                   testing/grpc/serverOptions.cpp
                   testing/grpc/serverOptionsIni.cpp
                   testing/magnitude/amplitude.cpp
+                  testing/magnitude/networkMagnitudeCalculator.cpp
                   testing/magnitude/networkOptions.cpp
                   testing/magnitude/observation.cpp
-                  testing/magnitude/station.cpp
+                  testing/magnitude/stationMagnitude.cpp
+                  testing/magnitude/stationMagnitudeCalculator.cpp
                   testing/magnitude/streamIdentifier.cpp)
    set_target_properties(unitTests PROPERTIES
                          CXX_STANDARD 23
