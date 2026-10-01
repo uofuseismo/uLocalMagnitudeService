@@ -46,6 +46,10 @@ public:
     /// @result The amplitudes.
     /// @throws std::runtime_error if \c hasAmplitudes() is false.
     [[nodiscard]] std::pair<Amplitude, Amplitude> getAmplitudes() const;
+    /// @result A reference to the amplitudes. 
+    /// @note This exists for performance reasons; \c getAmplitudes() should
+    ///       be preferred.
+    [[nodiscard]] const std::pair<Amplitude, Amplitude> &getAmplitudesReference() const;
     /// @result True indicates the amplitudes were set.
     [[nodiscard]] bool hasAmplitudes() const noexcept;
     /// @result The station name - e.g., UU.CWU.

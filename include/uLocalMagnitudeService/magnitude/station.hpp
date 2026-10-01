@@ -4,7 +4,7 @@
 #include <utility>
 namespace ULocalMagnitudeService::Magnitude
 {
- class Amplitude;
+ class Observation;
 }
 namespace ULocalMagnitudeService::Corrections
 {
@@ -40,21 +40,15 @@ public:
     [[nodiscard]] bool isInitialized() const noexcept;
 
     /// @brief Computes the station magnitude at the station given the
-    ///        amplitudes on the non-vertical channels.
-    /// @param[in] amplitudePair       The observed amplitude on the
-    ///                                non-vertical channels.
-    /// @param[in] epicentralDistance  The source-receiver epicentral distance
-    ///                                in meters.
-    /// @param[in] eventDepth          The event depth in meters.  This is
-    ///                                only used when the distance corrections
-    ///                                are based on hypocentral distance.
-    /// @throws std::invalid_argument if the stream identifiers are the same,
-    ///         do not match the station identifier, the distance is
-    ///         negative, or the depth is out of range.
+    ///        observation.
+    /// @param[in] observation  The observed amplitudes and requisite
+    ///                         source information for computing a
+    ///                         station magnitude.
+    /// @throws std::invalid_argument if the amplitudes are not set,
+    ///         the epicentral distance is not set, and, if this is using
+    ///         a depth correction, the source depth is not set.
     /// @throws std::runtime_error if \c isInitialized() is false.
-    [[nodiscard]] double operator()(const std::pair<Amplitude, Amplitude> &amplitudePair,
-                                    double epicentralDistance,
-                                    double eventDepth) const;
+    [[nodiscard]] double operator()(const Observation &observation) const;
  
     /// @brief Function to extract the distance correction.
     /// @param[in] epicentralDistance  The source-receiver epicentral distance

@@ -61,6 +61,8 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Observation", "[observation]")
         REQUIRE_FALSE(observation.hasEpicentralDistance());
         REQUIRE_FALSE(observation.hasDepth());
         REQUIRE_THROWS_AS(observation.getAmplitudes(), std::runtime_error);
+        REQUIRE_THROWS_AS(observation.getAmplitudesReference(),
+                          std::runtime_error);
         REQUIRE_THROWS_AS(observation.getStationName(), std::runtime_error);
         REQUIRE_THROWS_AS(observation.getEpicentralDistance(),
                           std::runtime_error);
@@ -72,6 +74,17 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Observation", "[observation]")
         Observation observation;
         observation.setAmplitudes(std::pair {east, north});
         checkAmplitudes(observation);
+    }
+
+    SECTION("Amplitudes by reference")
+    {
+        Observation observation;
+        observation.setAmplitudes(std::pair {east, north});
+        const auto &[first, second] = observation.getAmplitudesReference();
+        REQUIRE(first.getName() == "UU.CCUT.HHE.01");
+        REQUIRE(second.getName() == "UU.CCUT.HHN.01");
+        REQUIRE(first.getValue() == east.getValue());
+        REQUIRE(second.getValue() == north.getValue());
     }
 
     SECTION("Amplitudes by move")

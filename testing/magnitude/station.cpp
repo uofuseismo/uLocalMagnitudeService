@@ -1,5 +1,6 @@
 #include <array>
 #include <cmath>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -8,6 +9,7 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include "uLocalMagnitudeService/magnitude/station.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
+#include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
@@ -70,9 +72,22 @@ Magnitude::Amplitude amplitude(const std::string &network,
     return result;
 }
 
-/// An observation from testing/data/amp-ml-uu80157466.csv - Ml 2.04 for
+/// Creates an observation.
+Magnitude::Observation observation(const Magnitude::Amplitude &amplitude1,
+                                   const Magnitude::Amplitude &amplitude2,
+                                   const double epicentralDistance,
+                                   const std::optional<double> &depth)
+{
+    Magnitude::Observation result;
+    result.setAmplitudes(std::pair {amplitude1, amplitude2});
+    result.setEpicentralDistance(epicentralDistance);
+    if (depth){result.setDepth(*depth);}
+    return result;
+}
+
+/// A station from testing/data/amp-ml-uu80157466.csv - Ml 2.04 for
 /// evid 80157466 (magid 121968).  AQMS stores the amplitudes in cm.
-struct Observation
+struct UtahRecord
 {
     const char *station;
     double amplitudeEastInCentimeters;
@@ -83,7 +98,7 @@ struct Observation
     double stationMagnitude;
 };
 
-constexpr std::array<Observation, 6> observations
+constexpr std::array<UtahRecord, 6> utahRecords
 {{
     {"CCUT", 0.03459206596016884, 0.015187045093625784,  0.31,
      66775.14936328208,  2.8, 2.204987145462916},
@@ -99,10 +114,10 @@ constexpr std::array<Observation, 6> observations
      36945.35548051267,  2.3, 1.9717725974441087}
 }};
 
-/// An observation from testing/data/amp-ml-uu80157536.csv - Ml 1.58 for
+/// A station from testing/data/amp-ml-uu80157536.csv - Ml 1.58 for
 /// evid 80157536 (magid 121938) in Yellowstone.  AQMS stores the amplitudes
 /// in cm and the distances are epicentral.
-struct YellowstoneObservation
+struct YellowstoneRecord
 {
     const char *network;
     const char *station;
@@ -116,7 +131,7 @@ struct YellowstoneObservation
     double stationMagnitude;
 };
 
-constexpr std::array<YellowstoneObservation, 8> yellowstoneObservations
+constexpr std::array<YellowstoneRecord, 8> yellowstoneRecords
 {{
     {"US", "BOZ", "BH1", "BH2", "00", 0.012647671159356833,
      0.01141107827425003,   0.17, 107589.10395903757, 2.0137894296247505},
@@ -150,36 +165,45 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station - AQMS",
           "[magnitudeStation]")
 {
     const auto distance = utahDistanceCorrections();
-    for (const auto &observation : observations)
+    for (const auto &record : utahRecords)
     {
-        const std::string name{observation.station};
+        const std::string name{record.station};
         INFO("Station: " << name);
         const Magnitude::Station station{
-            stationCorrection("UU", name, observation.stationCorrection),
+            stationCorrection("UU", name, record.stationCorrection),
             distance};
         REQUIRE(station.isInitialized());
         REQUIRE_THAT(station.getStationCorrection(),
-                     Catch::Matchers::WithinAbs(observation.stationCorrection,
+                     Catch::Matchers::WithinAbs(record.stationCorrection,
                                                 1.e-14));
-        REQUIRE_THAT(station.getDistanceCorrection(observation.distanceInMeters, depth),
-                     Catch::Matchers::WithinAbs(observation.distanceCorrection,
+        REQUIRE_THAT(station.getDistanceCorrection(record.distanceInMeters,
+                                                   depth),
+                     Catch::Matchers::WithinAbs(record.distanceCorrection,
                                                 1.e-14));
         const auto east
             = amplitude("UU", name, "HHE", "01",
                         centimetersToMillimeters
-                       *observation.amplitudeEastInCentimeters);
+                       *record.amplitudeEastInCentimeters);
         const auto north
             = amplitude("UU", name, "HHN", "01",
                         centimetersToMillimeters
-                       *observation.amplitudeNorthInCentimeters);
+                       *record.amplitudeNorthInCentimeters);
+        // Utah doesn't need the depth but it can be there
         const auto magnitude
-            = station(std::pair {east, north}, observation.distanceInMeters, depth);
+            = station(observation(east, north, record.distanceInMeters,
+                                  depth));
         REQUIRE_THAT(magnitude,
-                     Catch::Matchers::WithinAbs(observation.stationMagnitude,
+                     Catch::Matchers::WithinAbs(record.stationMagnitude,
                                                 1.e-10));
+        const auto magnitudeNoDepth
+            = station(observation(east, north, record.distanceInMeters,
+                                  std::nullopt));
+        REQUIRE_THAT(magnitudeNoDepth,
+                     Catch::Matchers::WithinAbs(magnitude, 1.e-14));
         // Order of the channels doesn't matter
         const auto magnitudeReversed
-            = station(std::pair {north, east}, observation.distanceInMeters, depth);
+            = station(observation(north, east, record.distanceInMeters,
+                                  depth));
         REQUIRE_THAT(magnitudeReversed,
                      Catch::Matchers::WithinAbs(magnitude, 1.e-14));
     }
@@ -189,32 +213,36 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station - AQMS Yellowstone",
           "[magnitudeStation]")
 {
     const auto distance = yellowstoneDistanceCorrections();
-    for (const auto &observation : yellowstoneObservations)
+    for (const auto &record : yellowstoneRecords)
     {
-        const std::string network{observation.network};
-        const std::string name{observation.station};
+        const std::string network{record.network};
+        const std::string name{record.station};
         INFO("Station: " << network << "." << name);
         const Magnitude::Station station{
-            stationCorrection(network, name, observation.stationCorrection),
+            stationCorrection(network, name, record.stationCorrection),
             distance};
         const auto amplitude1
-            = amplitude(network, name, observation.channel1,
-                        observation.locationCode,
+            = amplitude(network, name, record.channel1, record.locationCode,
                         centimetersToMillimeters
-                       *observation.amplitude1InCentimeters);
+                       *record.amplitude1InCentimeters);
         const auto amplitude2
-            = amplitude(network, name, observation.channel2,
-                        observation.locationCode,
+            = amplitude(network, name, record.channel2, record.locationCode,
                         centimetersToMillimeters
-                       *observation.amplitude2InCentimeters);
+                       *record.amplitude2InCentimeters);
         // AQMS interpolates the Yellowstone table at the hypocentral distance
         const auto magnitude
-            = station(std::pair {amplitude1, amplitude2},
-                      observation.epicentralDistanceInMeters,
-                      yellowstoneDepthInMeters);
+            = station(observation(amplitude1, amplitude2,
+                                  record.epicentralDistanceInMeters,
+                                  yellowstoneDepthInMeters));
         REQUIRE_THAT(magnitude,
-                     Catch::Matchers::WithinAbs(observation.stationMagnitude,
+                     Catch::Matchers::WithinAbs(record.stationMagnitude,
                                                 1.e-10));
+        // Hypocentral distance needs the depth
+        REQUIRE_THROWS_AS(
+            station(observation(amplitude1, amplitude2,
+                                record.epicentralDistanceInMeters,
+                                std::nullopt)),
+            std::invalid_argument);
     }
 }
 
@@ -228,6 +256,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station",
     const auto north = amplitude("UU", "CCUT", "HHN", "01", 0.15187045093625784);
     constexpr double distanceInMeters{66775.14936328208};
     constexpr double expectedMagnitude{2.204987145462916};
+    const auto ccut = observation(east, north, distanceInMeters, depth);
 
     SECTION("Formula")
     {
@@ -235,14 +264,14 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station",
         const auto east1 = amplitude("UU", "CCUT", "HHE", "01", 3);
         const auto north1 = amplitude("UU", "CCUT", "HHN", "01", 1);
         // log10(0.5*0.5*(3 + 1)) = 0
-        REQUIRE_THAT(station(std::pair {east1, north1}, 0, depth),
+        REQUIRE_THAT(station(observation(east1, north1, 0, depth)),
                      Catch::Matchers::WithinAbs(1.4 + 0.31, 1.e-14));
-        REQUIRE_THAT(station(std::pair {east1, north1}, 100000, depth),
+        REQUIRE_THAT(station(observation(east1, north1, 100000, depth)),
                      Catch::Matchers::WithinAbs(3.0 + 0.31, 1.e-14));
         const auto east2 = amplitude("UU", "CCUT", "HHE", "01", 20);
         const auto north2 = amplitude("UU", "CCUT", "HHN", "01", 20);
         // log10(0.5*20) = 1
-        REQUIRE_THAT(station(std::pair {east2, north2}, 0, depth),
+        REQUIRE_THAT(station(observation(east2, north2, 0, depth)),
                      Catch::Matchers::WithinAbs(1 + 1.4 + 0.31, 1.e-14));
     }
 
@@ -275,7 +304,8 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station",
     {
         const auto east1 = amplitude("UU", "CCUT", "HHE", "", 0.3459206596016884);
         const auto north1 = amplitude("UU", "CCUT", "HHN", "  ", 0.15187045093625784);
-        REQUIRE_THAT(station(std::pair {east1, north1}, distanceInMeters, depth),
+        REQUIRE_THAT(station(observation(east1, north1, distanceInMeters,
+                                         depth)),
                      Catch::Matchers::WithinAbs(expectedMagnitude, 1.e-10));
     }
 
@@ -283,81 +313,38 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station",
     {
         REQUIRE_THROWS_AS(station.getDistanceCorrection(-1, depth),
                           std::invalid_argument);
-        REQUIRE_THROWS_AS(station(std::pair {east, north}, -1, depth),
-                          std::invalid_argument);
     }
 
-    SECTION("Amplitudes need values and identifiers")
+    SECTION("Observation needs amplitudes and a distance")
     {
-        Magnitude::Amplitude noValue;
-        noValue.setIdentifier(north.getIdentifier());
-        REQUIRE_THROWS_AS(station(std::pair {east, noValue}, distanceInMeters, depth),
-                          std::invalid_argument);
-        REQUIRE_THROWS_AS(station(std::pair {noValue, east}, distanceInMeters, depth),
-                          std::invalid_argument);
+        const Magnitude::Observation empty;
+        REQUIRE_THROWS_AS(station(empty), std::invalid_argument);
 
-        Magnitude::Amplitude noIdentifier;
-        noIdentifier.setValue(0.15187045093625784);
-        REQUIRE_THROWS_AS(station(std::pair {east, noIdentifier},
-                                  distanceInMeters, depth),
-                          std::invalid_argument);
-        REQUIRE_THROWS_AS(station(std::pair {noIdentifier, east},
-                                  distanceInMeters, depth),
-                          std::invalid_argument);
-    }
+        Magnitude::Observation noAmplitudes;
+        noAmplitudes.setEpicentralDistance(distanceInMeters);
+        noAmplitudes.setDepth(depth);
+        REQUIRE_THROWS_AS(station(noAmplitudes), std::invalid_argument);
 
-    SECTION("Same channel is rejected")
-    {
-        REQUIRE_THROWS_AS(station(std::pair {east, east}, distanceInMeters, depth),
-                          std::invalid_argument);
-    }
-
-    SECTION("Different stations are rejected")
-    {
-        const auto otherNetwork
-            = amplitude("WY", "CCUT", "HHN", "01", 0.15187045093625784);
-        REQUIRE_THROWS_AS(station(std::pair {east, otherNetwork},
-                                  distanceInMeters, depth),
-                          std::invalid_argument);
-        const auto otherStation
-            = amplitude("UU", "LCMT", "HHN", "01", 0.15187045093625784);
-        REQUIRE_THROWS_AS(station(std::pair {east, otherStation},
-                                  distanceInMeters, depth),
-                          std::invalid_argument);
+        Magnitude::Observation noDistance;
+        noDistance.setAmplitudes(std::pair {east, north});
+        noDistance.setDepth(depth);
+        REQUIRE_THROWS_AS(station(noDistance), std::invalid_argument);
     }
 
     SECTION("Station must match the station correction")
     {
         const auto eastOther = amplitude("UU", "LCMT", "HHE", "01", 2.7);
         const auto northOther = amplitude("UU", "LCMT", "HHN", "01", 3.3);
-        REQUIRE_THROWS_AS(station(std::pair {eastOther, northOther},
-                                  distanceInMeters, depth),
-                          std::invalid_argument);
-    }
-
-    SECTION("Different location codes are rejected")
-    {
-        const auto otherLocation
-            = amplitude("UU", "CCUT", "HHN", "02", 0.15187045093625784);
-        REQUIRE_THROWS_AS(station(std::pair {east, otherLocation},
-                                  distanceInMeters, depth),
-                          std::invalid_argument);
-    }
-
-    SECTION("Different instruments are rejected")
-    {
-        // HH vs EN
-        const auto otherBand
-            = amplitude("UU", "CCUT", "ENN", "01", 0.15187045093625784);
-        REQUIRE_THROWS_AS(station(std::pair {east, otherBand},
-                                  distanceInMeters, depth),
-                          std::invalid_argument);
-        // HH vs HN
-        const auto otherInstrument
-            = amplitude("UU", "CCUT", "HNN", "01", 0.15187045093625784);
-        REQUIRE_THROWS_AS(station(std::pair {east, otherInstrument},
-                                  distanceInMeters, depth),
-                          std::invalid_argument);
+        REQUIRE_THROWS_AS(
+            station(observation(eastOther, northOther, distanceInMeters,
+                                depth)),
+            std::invalid_argument);
+        // Same station name on a different network
+        const auto eastWY = amplitude("WY", "CCUT", "HHE", "01", 2.7);
+        const auto northWY = amplitude("WY", "CCUT", "HHN", "01", 3.3);
+        REQUIRE_THROWS_AS(
+            station(observation(eastWY, northWY, distanceInMeters, depth)),
+            std::invalid_argument);
     }
 
     SECTION("Copy and move")
@@ -365,7 +352,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station",
         // Copy constructor
         const Magnitude::Station copy{station};
         REQUIRE(copy.isInitialized());
-        REQUIRE_THAT(copy(std::pair {east, north}, distanceInMeters, depth),
+        REQUIRE_THAT(copy(ccut),
                      Catch::Matchers::WithinAbs(expectedMagnitude, 1.e-10));
 
         // Copy assignment
@@ -374,19 +361,19 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Station",
         copyAssigned = copy;
         REQUIRE_THAT(copyAssigned.getStationCorrection(),
                      Catch::Matchers::WithinAbs(0.31, 1.e-14));
-        REQUIRE_THAT(copyAssigned(std::pair {east, north}, distanceInMeters, depth),
+        REQUIRE_THAT(copyAssigned(ccut),
                      Catch::Matchers::WithinAbs(expectedMagnitude, 1.e-10));
 
         // Move constructor
         Magnitude::Station moved{std::move(copyAssigned)};
-        REQUIRE_THAT(moved(std::pair {east, north}, distanceInMeters, depth),
+        REQUIRE_THAT(moved(ccut),
                      Catch::Matchers::WithinAbs(expectedMagnitude, 1.e-10));
 
         // Move assignment
         Magnitude::Station moveAssigned{stationCorrection("UU", "LCMT", -0.12),
                                         distance};
         moveAssigned = std::move(moved);
-        REQUIRE_THAT(moveAssigned(std::pair {east, north}, distanceInMeters, depth),
+        REQUIRE_THAT(moveAssigned(ccut),
                      Catch::Matchers::WithinAbs(expectedMagnitude, 1.e-10));
     }
 }

@@ -5,8 +5,10 @@
 #include <utility>
 #include "uLocalMagnitudeService/magnitude/station.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
+#include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
 #include "uLocalMagnitudeService/corrections/distance.hpp"
+#include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
 #include "uLocalMagnitudeService/corrections/station.hpp"
 #include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 
@@ -80,77 +82,45 @@ bool Station::isInitialized() const noexcept
 }
 
 /// Finally, do something science-y and compute a station magnitude
-double Station::operator()(
-    const std::pair<Amplitude, Amplitude> &amplitudes,
-    const double epicentralDistance,
-    const double eventDepth) const
+double Station::operator()(const Observation &observation) const
 {
     if (!isInitialized())
-    {
+    {   
         throw std::runtime_error("Station magnitude class not initialized");
-    }
-    if (!amplitudes.first.hasValue())
-    {
-        throw std::invalid_argument("No amplitude on first amplitude");
-    }
-    if (!amplitudes.second.hasValue())
-    {
-        throw std::invalid_argument("No amplitude on second amplitude");
-    }
-    if (!amplitudes.first.hasIdentifier())
-    {   
-        throw std::invalid_argument(
-           "No stream identifier on first amplitude");
     }   
-    if (!amplitudes.second.hasIdentifier())
+    if (!observation.hasAmplitudes())
+    {
+        throw std::invalid_argument("Amplitudes not set");
+    }
+    if (!observation.hasEpicentralDistance())
+    {
+        throw std::invalid_argument("Epicentral distance not set");
+    }
+    // Does this observation correspond to this station correction?
+    auto stationName = observation.getStationName();
+    auto correctionStationName = pImpl->mStationCorrection.getName();
+    if (stationName != correctionStationName)
     {   
-        throw std::invalid_argument(
-           "No stream identifier on second amplitude");
-    }
-    // Need a few things to match up based on NSCL
-    auto streamIdentifier1 = amplitudes.first.getIdentifier();
-    auto streamIdentifier2 = amplitudes.second.getIdentifier();
-    if (streamIdentifier1.toString() == streamIdentifier2.toString())
-    {
-        throw std::invalid_argument("Amplitude observations from same channel");
-    }
-    // Now need to match the network/station to match (and this needs to match
-    // our station correction)
-    const Corrections::StationIdentifier stationIdentifier1{streamIdentifier1};
-    const Corrections::StationIdentifier stationIdentifier2{streamIdentifier2};
-    if (stationIdentifier1.toString() != stationIdentifier2.toString())
-    {
-        throw std::invalid_argument(
-           "Amplitude observations made on different stations");
-    }
-    // Only need one check (transitive b/c stationId1 == stationId2
-    if (stationIdentifier1.toString() != pImpl->mStationCorrection.getName())
-    {
         throw std::invalid_argument(
              "Amplitude observations from "
-           + stationIdentifier1.toString()
+           + stationName
            + " does not match this correction "
-           + pImpl->mStationCorrection.getName());
+           + correctionStationName);
     }
-    // Check the location code b/c it's easy
-    if (streamIdentifier1.getLocationCode() != 
-        streamIdentifier2.getLocationCode())
+    auto epicentralDistance = observation.getEpicentralDistance();
+    double eventDepth{0};
+    if (pImpl->mDistanceCorrection.getDistanceType() ==
+        Corrections::DistanceOptions::Type::Hypocentral)
     {
-        throw std::invalid_argument(
-            "Amplitude observations made on different streams");
+        if (!observation.hasDepth())
+        {
+            throw std::invalid_argument("Event depth not set on observation");
+        }
+        eventDepth = observation.getDepth();
     }
-    // Check everything but the last letter (component) on channel
-    auto channel1 = streamIdentifier1.getChannel();
-    auto channel2 = streamIdentifier2.getChannel();
-    if (channel1.substr(0, channel1.size() - 1) !=
-        channel2.substr(0, channel2.size() - 1))
-    {
-        throw std::invalid_argument(
-            "Amplitude observations made on different components - "
-           + channel1 + " " + channel2);
-    }
-    // Anti-climatic but finally apply the station magnitude formula:
+    // Apply the station magnitude formula:
     //  log10(AvgAmp/2) + C_d + C_s
+    const auto &amplitudes = observation.getAmplitudesReference();
     auto amplitude1 = amplitudes.first.getValue();
     auto amplitude2 = amplitudes.second.getValue();
     auto averageAmplitude = 0.5*(amplitude1 + amplitude2);

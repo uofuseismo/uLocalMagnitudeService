@@ -134,6 +134,16 @@ std::pair<Amplitude, Amplitude> Observation::getAmplitudes() const
     return pImpl->mAmplitudes;
 }
 
+const std::pair<Amplitude, Amplitude> &
+    Observation::getAmplitudesReference() const
+{
+    if (!hasAmplitudes())
+    {
+        throw std::runtime_error("Amplitudes not set");
+    }
+    return pImpl->mAmplitudes;
+}
+
 std::string Observation::getStationName() const
 {
     if (!hasAmplitudes())
