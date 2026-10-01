@@ -48,11 +48,13 @@ public:
 
     //void compute(const std::vector<Amplitude> &amplitudes);   
     //[[nodiscard]] Summary operator()(const std::vector<Observation> &observations) const;
+
     /// @brief Destructor.
     ~Network();
-    
     /// @brief Move assignment.
     Network& operator=(Network &&network) noexcept;
+    /// @brief Copy assignment.
+    //Network& operator=(const Network &network);
 
     Network() = delete;
 private:
