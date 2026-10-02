@@ -14,7 +14,6 @@
 //NOLINTNEXTLINE(misc-include-cleaner)
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculator.hpp"
-#include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
 #include "uLocalMagnitudeService/magnitude/stationMagnitude.hpp"
