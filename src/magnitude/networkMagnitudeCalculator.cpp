@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -209,94 +210,67 @@ NetworkMagnitudeCalculator::getStationCorrection(
 NetworkMagnitudeCalculator::~NetworkMagnitudeCalculator() = default;
 
 /// Apply
-NetworkMagnitude
+std::expected<NetworkMagnitude, NetworkMagnitudeCalculator::ErrorCode>
 NetworkMagnitudeCalculator::operator()(
-    const std::vector<Observation> &observations) const
+    const std::vector<Observation> &observations) const noexcept
 {
     if (observations.empty())
     {
-        throw std::invalid_argument("No observations provided");
+        return std::unexpected(ErrorCode::NoObservations); 
     }
     // Check the observations
     for (const auto &observation : observations)
     {
         if (!observation.hasAmplitudes())
         {
-            throw std::invalid_argument("Observation missing amplitudes");
+            return std::unexpected(ErrorCode::ObservationMissingAmplitudes);
         }
         if (!observation.hasEpicentralDistance())
         {
-            throw std::invalid_argument(
-                observation.getStationName() + " missing epicentral distance");
+            return std::unexpected(ErrorCode::ObservationMissingDistance);
         }
         if (pImpl->mRequiresDepthCorrection && !observation.hasDepth())
         {
-            throw std::invalid_argument(
-                observation.getStationName() + " missing source depth");
+            return std::unexpected(ErrorCode::ObservationMissingDepth);
         }
     }
-    // Deal with duplicates (can't repeat an observation at a site) and
-    // stations missing a station correction
+    // A station can only be observed once
+    std::set<std::string> stationNames;
+    for (const auto &observation : observations)
+    {
+        if (!stationNames.insert(observation.getStationName()).second)
+        {
+            return std::unexpected(ErrorCode::DuplicateObservations);
+        }
+    }
+    // Stations without a correction can't produce a station magnitude
     struct WorkItem
-    {   
+    {
         Observation observation;
-        std::vector<int> observationIndices;
         std::expected<StationMagnitude, StationMagnitudeCalculator::ErrorCode> stationMagnitude;
-    };  
+    };
     std::vector<WorkItem> workItems;
     workItems.reserve(observations.size());
-    auto nObservations = static_cast<int> (observations.size());
-    std::vector<int> matchedStation(nObservations, -1);
-    std::vector<bool> hasStationCorrection(nObservations, false); 
-    for (int i = 0; i < nObservations; ++i)
+    for (const auto &observation : observations)
     {
-        if (matchedStation[i] != -1){continue;} // Already got it
-        auto stationName_i = observations[i].getStationName();
-        hasStationCorrection[i]
-            = pImpl->mStationMagnitudeCalculatorMap.contains(stationName_i);
-        if (matchedStation[i] != -1){continue;} // Already got it
-        std::vector<int> observationIndices;
-        observationIndices.reserve(nObservations);
-        observationIndices.push_back(i);
-        for (int j = i + 1; j < nObservations; ++j)
+        if (pImpl->mStationMagnitudeCalculatorMap.contains(
+                observation.getStationName()))
         {
-            if (stationName_i == observations[j].getStationName())
-            {
-                observationIndices.push_back(j);
-                hasStationCorrection[j] = hasStationCorrection[i];
-                matchedStation[j] = i;
-            }
+            workItems.push_back(WorkItem {observation, {}});
         }
-        if (observationIndices.size() > 1)
+        else
         {
             SPDLOG_LOGGER_WARN(pImpl->mLogger,
-                "{} observed {} times - using the first observation",
-                stationName_i, observationIndices.size());
+                "No station correction for {} - skipping",
+                observation.getStationName());
         }
-        if (!hasStationCorrection[i])
-        {
-            SPDLOG_LOGGER_WARN(pImpl->mLogger,
-                "No station correction for {} - skipping", stationName_i);
-        }
-        // Unique and by this point not done - let's do it
-        if (hasStationCorrection[i] && matchedStation[i] == -1)
-        {
-            WorkItem workItem
-            {
-                observations[i],
-                std::move(observationIndices)
-            };
-            workItems.push_back(std::move(workItem));
-        }   
     }
     // We can quit now (can still get worse)
     auto minObservationsRequired
         = pImpl->mOptions.getMinimumNumberOfStationMagnitudes();
     if (static_cast<int> (workItems.size()) < minObservationsRequired)
     {
-        throw std::invalid_argument("Require at least "
-                                  + std::to_string(minObservationsRequired)
-                                  + " unique station magnitudes"); 
+        return std::unexpected(ErrorCode::TooFewObservations);
     }
     // Compute the station magnitudes
     auto computeStationMagnitude = [&](WorkItem &workItem)
@@ -315,7 +289,9 @@ NetworkMagnitudeCalculator::operator()(
     if (pImpl->mOptions.getStrategy() !=
         NetworkMagnitudeCalculatorOptions::Strategy::Average)
     {
-        throw std::runtime_error("Unhandled network magnitude strategy");
+        SPDLOG_LOGGER_ERROR(pImpl->mLogger,
+                            "Unhandled network magnitude strategy");
+        return std::unexpected(ErrorCode::Algorithm);
     }
     // Average every station magnitude we could compute - no trimming
     int nStationMagnitudes{0};
@@ -337,12 +313,21 @@ NetworkMagnitudeCalculator::operator()(
     }
     if (nStationMagnitudes < std::max(1, minObservationsRequired))
     {
-        throw std::invalid_argument("Computed "
-                                  + std::to_string(nStationMagnitudes)
-                                  + " station magnitudes but require at least "
-                                  + std::to_string(minObservationsRequired));
+        return std::unexpected(ErrorCode::TooFewObservations);
     }
+    auto averageMagnitude = sum/static_cast<double> (nStationMagnitudes);
     NetworkMagnitude networkMagnitude;
-    networkMagnitude.setValue(sum/static_cast<double> (nStationMagnitudes));
+    try
+    {
+        networkMagnitude.setValue(averageMagnitude);
+    }
+    catch (const std::exception &e)
+    {
+        SPDLOG_LOGGER_ERROR(pImpl->mLogger,
+                            "Failed to set magnitude {} because {}",
+                            averageMagnitude, 
+                            e.what());
+        return std::unexpected(ErrorCode::Algorithm);
+    }
     return networkMagnitude;
 }

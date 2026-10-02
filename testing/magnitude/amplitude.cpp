@@ -58,6 +58,25 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Amplitude", "[amplitude]")
                      Catch::Matchers::WithinAbs(value, 1.e-14));
     }
 
+    SECTION("Non-finite values are rejected")
+    {
+        // NaN <= 0 is false so NaN must be caught explicitly
+        Amplitude amplitude;
+        REQUIRE_THROWS_AS(
+            amplitude.setValue(std::numeric_limits<double>::quiet_NaN()),
+            std::invalid_argument);
+        REQUIRE_THROWS_AS(
+            amplitude.setValue(std::numeric_limits<double>::infinity()),
+            std::invalid_argument);
+        REQUIRE_THROWS_AS(
+            amplitude.setValue(-std::numeric_limits<double>::infinity()),
+            std::invalid_argument);
+        REQUIRE_FALSE(amplitude.hasValue());
+        // Huge but finite is fine
+        REQUIRE_NOTHROW(
+            amplitude.setValue(std::numeric_limits<double>::max()));
+    }
+
     SECTION("Identifier")
     {
         Amplitude amplitude;

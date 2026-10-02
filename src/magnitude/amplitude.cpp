@@ -1,3 +1,4 @@
+#include <cmath>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -55,6 +56,10 @@ Amplitude::~Amplitude() = default;
 /// Value
 void Amplitude::setValue(const double value)
 {
+    if (!std::isfinite(value))
+    {
+        throw std::invalid_argument("Amplitude is not finite");
+    }
     if (value <= 0)
     {
         throw std::invalid_argument("Amplitude value must be positive");

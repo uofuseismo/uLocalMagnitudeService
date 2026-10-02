@@ -2,8 +2,12 @@
 #define PROGRAM_OPTIONS_SERVICE_APPLICATION_HPP
 #include <chrono>
 #include <string>
+#include <boost/algorithm/string/case_conv.hpp>
+#include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
-#include "uLocalMagnitudeService/corrections/stationOptions.hpp"
+#include "uLocalMagnitudeService/corrections/stationsSet.hpp"
+#include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
+//#include "uLocalMagnitudeService/magnitude/stationMagnitudeCalculatorOptions.hpp"
 #include "uLocalMagnitudeService/grpc/serverOptions.hpp"
 #include "otelOptions.hpp"
 #include "secretFile.hpp"
@@ -22,6 +26,8 @@ struct ProgramOptions
     std::string applicationName{APPLICATION_NAME};
     std::chrono::seconds printSummaryInterval{std::chrono::minutes {15}};
     ULocalMagnitudeService::GRPC::ServerOptions grpcServerOptions;
+    ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculatorOptions
+        networkMagnitudeCalculatorOptions;
     int verbosity{3};
     bool exportLogs{false};
     bool exportLogsWithHTTP{true};
@@ -56,6 +62,42 @@ struct ProgramOptions
                                  summaryIntervalInMinutes);
     options.printSummaryInterval
         = std::chrono::minutes {summaryIntervalInMinutes};
+
+    // Network magnitude options
+    ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculatorOptions
+        networkMagnitudeCalculatorOptions;
+    auto minStationMagnitudes
+        = propertyTree.get<int>
+          ("NetworkMagnitude.minimumNumberOfStationMagnitudes",
+           networkMagnitudeCalculatorOptions.getMinimumNumberOfStationMagnitudes());
+    networkMagnitudeCalculatorOptions.setMinimumNumberOfStationMagnitudes(
+        minStationMagnitudes);
+    auto networkMagnitudeStrategy
+        = propertyTree.get<std::string>
+          ("NetworkMagnitude.strategy", "average");
+    boost::algorithm::to_lower(networkMagnitudeStrategy);
+    if (networkMagnitudeStrategy == "average")
+    {
+        networkMagnitudeCalculatorOptions.setStrategy(
+           ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculatorOptions
+              ::Strategy::Average);
+    }
+    else
+    {
+        throw std::invalid_argument("Unhandled network mag strategy " 
+                                  + networkMagnitudeStrategy 
+                                  + "; only 'average' implemented");
+    }
+    auto distanceCorrectionsOptions
+        = ULocalMagnitudeService::Corrections::DistanceOptions::
+            fromInitializationFile(iniFile, "DistanceCorrections");
+    ULocalMagnitudeService::Corrections::Distance
+        distanceCorrections{distanceCorrectionsOptions};
+    networkMagnitudeCalculatorOptions.setDistanceCorrections(distanceCorrections);
+    auto stationCorrections
+        = ULocalMagnitudeService::Corrections::StationsSet::
+            fromInitializationFile(iniFile, "StationCorrections");
+    networkMagnitudeCalculatorOptions.setStationCorrections(stationCorrections);
 
     // GRPC data packet client options
     options.grpcServerOptions

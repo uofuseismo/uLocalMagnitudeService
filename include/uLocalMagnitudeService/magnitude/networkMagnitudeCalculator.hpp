@@ -1,5 +1,6 @@
 #ifndef ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_MAGNITUDE_CALCULATOR_HPP
 #define ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_MAGNITUDE_CALCULATOR_HPP
+#include <expected>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -26,6 +27,20 @@ namespace ULocalMagnitudeService::Magnitude
 class NetworkMagnitudeCalculator
 {
 public:
+    enum class ErrorCode
+    {
+        // User error
+        NoObservations,  /*!< No observations provide. */
+        ObservationMissingAmplitudes, /*!< At least one observation is missing amplitudes. */
+        ObservationMissingDistance,   /*!< Observation missing source-receiver epicentral distance. */
+        ObservationMissingDepth,      /*!< Depth corrections are used an the observation lacks that. */
+        DuplicateObservations,        /*!< There is a duplicate observation. */
+        TooFewObservations,  /*!< Too few observations available to compute a network magnitude. */
+        // Server error
+        Uninitialized,   /*!< Class not initialized. */
+        Algorithm        /*!< Algorithm error. */
+    };
+public:
     /// @brief Constructs the network magnitude calculator.
     /// @param[in] options  The network magnitude options.
     /// @param[in] logger   The logging utility.
@@ -50,7 +65,7 @@ public:
     [[nodiscard]] std::optional<double> getStationCorrection(const Corrections::StationIdentifier &identifier) const;
 
     /// @brief Computes the network magnitude from the given observations.
-    [[nodiscard]] NetworkMagnitude operator()(const std::vector<Observation> &observations) const;
+    [[nodiscard]] auto operator()(const std::vector<Observation> &observations) const noexcept -> std::expected<NetworkMagnitude, ErrorCode>;
 
     /// @brief Destructor.
     ~NetworkMagnitudeCalculator();

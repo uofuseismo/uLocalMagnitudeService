@@ -1,4 +1,5 @@
 #include <array>
+#include <expected>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -26,6 +27,7 @@
 using namespace ULocalMagnitudeService;
 using Magnitude::NetworkMagnitudeCalculator;
 using Magnitude::NetworkMagnitudeCalculatorOptions;
+using ErrorCode = NetworkMagnitudeCalculator::ErrorCode;
 
 namespace
 {
@@ -107,6 +109,16 @@ Magnitude::Observation observation(const std::string &network,
     result.setEpicentralDistance(epicentralDistance);
     if (depth){result.setDepth(*depth);}
     return result;
+}
+
+/// Requires the network magnitude calculation failed with the given error.
+void requireError(
+    const std::expected<Magnitude::NetworkMagnitude,
+                        NetworkMagnitudeCalculator::ErrorCode> &result,
+    const NetworkMagnitudeCalculator::ErrorCode expected)
+{
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error() == expected);
 }
 
 NetworkMagnitudeCalculatorOptions utahOptions()
@@ -246,17 +258,18 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculator - obser
 
     SECTION("Valid observations")
     {
-        REQUIRE_NOTHROW(utah(std::vector {ccut, lcmt}));
+        REQUIRE(utah(std::vector {ccut, lcmt}).has_value());
         // Utah is epicentral so the depth isn't needed
-        REQUIRE_NOTHROW(utah(std::vector {
+        REQUIRE(utah(std::vector {
             observation("UU", "CCUT", 66775.14936328208, std::nullopt),
-            observation("UU", "LCMT", 31787.222423682797, std::nullopt)}));
+            observation("UU", "LCMT", 31787.222423682797, std::nullopt)})
+            .has_value());
     }
 
     SECTION("No observations")
     {
-        REQUIRE_THROWS_AS(utah(std::vector<Magnitude::Observation> {}),
-                          std::invalid_argument);
+        requireError(utah(std::vector<Magnitude::Observation> {}),
+                     ErrorCode::NoObservations);
     }
 
     SECTION("Incomplete observations")
@@ -264,16 +277,16 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculator - obser
         Magnitude::Observation noAmplitudes;
         noAmplitudes.setEpicentralDistance(10000);
         noAmplitudes.setDepth(depth);
-        REQUIRE_THROWS_AS(utah(std::vector {ccut, lcmt, noAmplitudes}),
-                          std::invalid_argument);
+        requireError(utah(std::vector {ccut, lcmt, noAmplitudes}),
+                     ErrorCode::ObservationMissingAmplitudes);
 
         Magnitude::Observation noDistance;
         noDistance.setAmplitudes(
             std::pair {amplitude("UU", "PKCU", "HHE", 0.35),
                        amplitude("UU", "PKCU", "HHN", 0.15)});
         noDistance.setDepth(depth);
-        REQUIRE_THROWS_AS(utah(std::vector {ccut, lcmt, noDistance}),
-                          std::invalid_argument);
+        requireError(utah(std::vector {ccut, lcmt, noDistance}),
+                     ErrorCode::ObservationMissingDistance);
     }
 
     SECTION("The average")
@@ -289,9 +302,27 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculator - obser
                                        amplitude("UU", "LCMT", "HHN", 10)});
         lcmt0.setEpicentralDistance(0);
         const auto networkMagnitude = utah(std::vector {ccut0, lcmt0});
-        REQUIRE(networkMagnitude.hasValue());
-        REQUIRE_THAT(networkMagnitude.getValue(),
+        REQUIRE(networkMagnitude.has_value());
+        REQUIRE(networkMagnitude->hasValue());
+        REQUIRE_THAT(networkMagnitude->getValue(),
                      Catch::Matchers::WithinAbs(0.5*(1.71 + 2.28), 1.e-12));
+    }
+
+    SECTION("An average outside of [-10, 10] is an algorithm error")
+    {
+        // log10(0.5*1.e12) + 1.4 + C_s is about 13 at both stations
+        Magnitude::Observation ccutHuge;
+        ccutHuge.setAmplitudes(
+            std::pair {amplitude("UU", "CCUT", "HHE", 1.e12),
+                       amplitude("UU", "CCUT", "HHN", 1.e12)});
+        ccutHuge.setEpicentralDistance(0);
+        Magnitude::Observation lcmtHuge;
+        lcmtHuge.setAmplitudes(
+            std::pair {amplitude("UU", "LCMT", "HHE", 1.e12),
+                       amplitude("UU", "LCMT", "HHN", 1.e12)});
+        lcmtHuge.setEpicentralDistance(0);
+        requireError(utah(std::vector {ccutHuge, lcmtHuge}),
+                     ErrorCode::Algorithm);
     }
 
     SECTION("Station magnitudes that can't be computed don't count")
@@ -299,12 +330,14 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculator - obser
         // Past the 600 km Utah table
         const auto tooFar = observation("UU", "PKCU", 700000, depth);
         const auto withTooFar = utah(std::vector {ccut, lcmt, tooFar});
-        REQUIRE_THAT(withTooFar.getValue(),
-                     Catch::Matchers::WithinAbs(
-                         utah(std::vector {ccut, lcmt}).getValue(), 1.e-14));
+        const auto without = utah(std::vector {ccut, lcmt});
+        REQUIRE(withTooFar.has_value());
+        REQUIRE(without.has_value());
+        REQUIRE_THAT(withTooFar->getValue(),
+                     Catch::Matchers::WithinAbs(without->getValue(), 1.e-14));
         // and can leave too few
-        REQUIRE_THROWS_AS(utah(std::vector {ccut, tooFar}),
-                          std::invalid_argument);
+        requireError(utah(std::vector {ccut, tooFar}),
+                     ErrorCode::TooFewObservations);
     }
 
     SECTION("Hypocentral corrections need the depth")
@@ -312,34 +345,50 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculator - obser
         auto options = utahOptions();
         options.setDistanceCorrections(yellowstoneDistanceCorrections());
         const NetworkMagnitudeCalculator hypocentral{options, nullptr};
-        REQUIRE_NOTHROW(hypocentral(std::vector {ccut, lcmt}));
+        REQUIRE(hypocentral(std::vector {ccut, lcmt}).has_value());
         const auto noDepth
             = observation("UU", "PKCU", 20000, std::nullopt);
-        REQUIRE_THROWS_AS(hypocentral(std::vector {ccut, lcmt, noDepth}),
-                          std::invalid_argument);
+        requireError(hypocentral(std::vector {ccut, lcmt, noDepth}),
+                     ErrorCode::ObservationMissingDepth);
     }
 
-    SECTION("Need enough unique stations with corrections")
+    SECTION("A station can only be observed once")
+    {
+        requireError(utah(std::vector {ccut, ccut}),
+                     ErrorCode::DuplicateObservations);
+        requireError(utah(std::vector {ccut, lcmt, ccut}),
+                     ErrorCode::DuplicateObservations);
+        // Even if the amplitudes or distance differ
+        const auto ccutAgain = observation("UU", "CCUT", 20000, depth);
+        requireError(utah(std::vector {ccut, lcmt, ccutAgain}),
+                     ErrorCode::DuplicateObservations);
+        // Applies to stations without a correction too
+        const auto unknown = observation("UU", "CTU", 20000, depth);
+        requireError(utah(std::vector {ccut, lcmt, unknown, unknown}),
+                     ErrorCode::DuplicateObservations);
+        // Same station name on another network is a different station
+        const auto otherNetwork = observation("WY", "CCUT", 20000, depth);
+        REQUIRE(utah(std::vector {ccut, lcmt, otherNetwork}).has_value());
+    }
+
+    SECTION("Need enough stations with corrections")
     {
         // The default minimum is 2
-        REQUIRE_THROWS_AS(utah(std::vector {ccut}), std::invalid_argument);
-        // A repeated station only counts once
-        REQUIRE_THROWS_AS(utah(std::vector {ccut, ccut}),
-                          std::invalid_argument);
+        requireError(utah(std::vector {ccut}), ErrorCode::TooFewObservations);
         // Stations without a correction don't count
         const auto unknown = observation("UU", "CTU", 20000, depth);
         const auto otherNetwork = observation("WY", "CCUT", 20000, depth);
-        REQUIRE_THROWS_AS(utah(std::vector {ccut, unknown, otherNetwork}),
-                          std::invalid_argument);
-        REQUIRE_NOTHROW(utah(std::vector {ccut, unknown, lcmt, ccut}));
+        requireError(utah(std::vector {ccut, unknown, otherNetwork}),
+                     ErrorCode::TooFewObservations);
+        REQUIRE(utah(std::vector {ccut, unknown, lcmt}).has_value());
         // Raise the bar
         auto options = utahOptions();
         options.setMinimumNumberOfStationMagnitudes(3);
         const NetworkMagnitudeCalculator strict{options, nullptr};
-        REQUIRE_THROWS_AS(strict(std::vector {ccut, lcmt, ccut}),
-                          std::invalid_argument);
+        requireError(strict(std::vector {ccut, lcmt}),
+                     ErrorCode::TooFewObservations);
         const auto pkcu = observation("UU", "PKCU", 65753.37585962987, depth);
-        REQUIRE_NOTHROW(strict(std::vector {ccut, lcmt, pkcu}));
+        REQUIRE(strict(std::vector {ccut, lcmt, pkcu}).has_value());
     }
 }
 
@@ -396,8 +445,9 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculator - AQMS 
     SECTION("Reproduces AQMS")
     {
         const auto networkMagnitude = calculator(makeObservations("", 1));
-        REQUIRE(networkMagnitude.hasValue());
-        REQUIRE_THAT(networkMagnitude.getValue(),
+        REQUIRE(networkMagnitude.has_value());
+        REQUIRE(networkMagnitude->hasValue());
+        REQUIRE_THAT(networkMagnitude->getValue(),
                      Catch::Matchers::WithinAbs(expectedMagnitude, 1.e-10));
     }
 
@@ -406,7 +456,8 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculator - AQMS 
         // 1000x the amplitude is 3 magnitude units at one of six stations
         const auto networkMagnitude
             = calculator(makeObservations("PKCU", 1000));
-        REQUIRE_THAT(networkMagnitude.getValue(),
+        REQUIRE(networkMagnitude.has_value());
+        REQUIRE_THAT(networkMagnitude->getValue(),
                      Catch::Matchers::WithinAbs(expectedMagnitude + 3./6.,
                                                 1.e-10));
     }
