@@ -25,7 +25,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Station", "[station]")
         const Station station{options};
         REQUIRE(station.isInitialized());
         REQUIRE(station.getName() == "WY.YFT");
-        REQUIRE_THAT(station(), Catch::Matchers::WithinAbs(correction, 1.e-14));
+        REQUIRE_THAT(station().value(), Catch::Matchers::WithinAbs(correction, 1.e-14));
     }
 
     SECTION("Options are copied in")
@@ -38,7 +38,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Station", "[station]")
         options.setIdentifier(otherIdentifier);
         options.setCorrection(-0.25);
         REQUIRE(station.getName() == "WY.YFT");
-        REQUIRE_THAT(station(), Catch::Matchers::WithinAbs(correction, 1.e-14));
+        REQUIRE_THAT(station().value(), Catch::Matchers::WithinAbs(correction, 1.e-14));
     }
 
     SECTION("Incomplete options are rejected")
@@ -60,7 +60,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Station", "[station]")
         {
             REQUIRE(result.isInitialized());
             REQUIRE(result.getName() == "WY.YFT");
-            REQUIRE_THAT(result(),
+            REQUIRE_THAT(result().value(),
                          Catch::Matchers::WithinAbs(correction, 1.e-14));
         };
 

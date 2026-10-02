@@ -3,7 +3,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
-
+#include <spdlog/spdlog.h>
 namespace ULocalMagnitudeService::Corrections
 {
  class Distance;
@@ -11,9 +11,9 @@ namespace ULocalMagnitudeService::Corrections
 }
 namespace ULocalMagnitudeService::Magnitude
 {
+ class NetworkMagnitude;
  class NetworkMagnitudeCalculatorOptions;
  class Observation;
- class Residual;
 }
 
 namespace ULocalMagnitudeService::Magnitude
@@ -28,9 +28,11 @@ class NetworkMagnitudeCalculator
 public:
     /// @brief Constructs the network magnitude calculator.
     /// @param[in] options  The network magnitude options.
+    /// @param[in] logger   The logging utility.
     /// @throws std::invalid_argument if the station or distance corrections
     ///         are not set.
-    explicit NetworkMagnitudeCalculator(const NetworkMagnitudeCalculatorOptions &options);
+    NetworkMagnitudeCalculator(const NetworkMagnitudeCalculatorOptions &options,
+                               std::shared_ptr<spdlog::logger> logger);
     /// @brief Copy constructor.
     NetworkMagnitudeCalculator(const NetworkMagnitudeCalculator &calculator);
     /// @brief Move constructor.
@@ -47,8 +49,8 @@ public:
     /// @throws std::runtime_error if \c isInitialized() is false.
     [[nodiscard]] std::optional<double> getStationCorrection(const Corrections::StationIdentifier &identifier) const;
 
-    //void compute(const std::vector<Amplitude> &amplitudes);   
-    //[[nodiscard]] Summary operator()(const std::vector<Observation> &observations) const;
+    /// @brief Computes the network magnitude from the given observations.
+    [[nodiscard]] NetworkMagnitude operator()(const std::vector<Observation> &observations) const;
 
     /// @brief Destructor.
     ~NetworkMagnitudeCalculator();

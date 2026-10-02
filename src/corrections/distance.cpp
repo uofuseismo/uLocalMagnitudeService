@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <expected>
 #include <iterator>
 #include <memory>
 #include <stdexcept>
@@ -11,8 +12,6 @@
 #endif
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
-
-#define MAX_DISTANCE_METERS 21000000
 
 using namespace ULocalMagnitudeService::Corrections;
 
@@ -67,6 +66,7 @@ public:
     DistanceOptions mDistanceOptions;
     std::vector<double> mAbsissas;
     std::vector<double> mValues;
+    double mMaximumDistance{0};
     bool mLinearInterpolation{false};
     bool mInitialized{false};
 };
@@ -97,6 +97,9 @@ Distance::Distance(const DistanceOptions &options) :
         pImpl->mAbsissas.push_back(correction.first);
         pImpl->mValues.push_back(correction.second);
     }   
+    pImpl->mMaximumDistance =
+        *std::ranges::max_element(pImpl->mAbsissas.begin(),
+                                  pImpl->mAbsissas.end());
     pImpl->mInitialized = true;
 }
 
@@ -141,6 +144,16 @@ std::vector<std::pair<double, double>> Distance::getCorrections() const
     return pImpl->mDistanceOptions.getCorrections();
 }
 
+/// Maximum distance
+double Distance::getMaximumDistance() const
+{
+    if (!isInitialized())
+    {   
+        throw std::runtime_error("Distance corrections not initialized");
+    }   
+    return pImpl->mMaximumDistance;
+}
+
 /// Initialized?
 bool Distance::isInitialized() const noexcept
 {
@@ -158,20 +171,20 @@ DistanceOptions::Type Distance::getDistanceType() const
 }
 
 /// Operator to get it done
-double Distance::operator()(const double distance) const
+std::expected<double, Distance::ErrorCode> 
+Distance::operator()(const double distance) const noexcept
 {
     if (!isInitialized())
-    {   
-        throw std::runtime_error("Distance corrections not initialized");
-    }   
+    {
+        return std::unexpected(ErrorCode::Uninitialized);
+    }
     if (distance < 0)
     {   
-        throw std::invalid_argument("Interpolation distance is negative");
+        return std::unexpected(ErrorCode::NegativeDistance);
     }   
-    if (distance > MAX_DISTANCE_METERS)
+    if (distance > pImpl->mMaximumDistance)
     {   
-        throw std::invalid_argument("Interpolation distance cannote exceed "
-                                  + std::to_string(MAX_DISTANCE_METERS));
+        return std::unexpected(ErrorCode::StationTooFar);
     }   
     auto isNearest 
        = (pImpl->mDistanceOptions.getInterpolation() ==
@@ -188,24 +201,23 @@ double Distance::operator()(const double distance) const
     }
 }
 
-double Distance::operator()(const double epicentralDistance,
-                            const double sourceDepth) const
+std::expected<double, Distance::ErrorCode>
+Distance::operator()(const double epicentralDistance,
+                     const double sourceDepth) const noexcept
 {
     if (!isInitialized())
     {
-        throw std::runtime_error("Distance correction class not initialized");
+        return std::unexpected(ErrorCode::Uninitialized);
     }
     if (epicentralDistance < 0)
     {
-        throw std::invalid_argument(
-            "Epicentral distance cannot be negative");
+        return std::unexpected(ErrorCode::NegativeDistance);
     }
     if (getDistanceType() == DistanceOptions::Type::Hypocentral)
     {
         if (sourceDepth < -8600 || sourceDepth > 900000)
         {
-            throw std::invalid_argument(
-                "Source depth must be between -8600 and 900,000");
+            return std::unexpected(ErrorCode::InvalidSourceDepth);
         }
         auto hypocentralDistance = std::hypot(epicentralDistance, sourceDepth);
         return this->operator()(hypocentralDistance);

@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <expected>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
@@ -29,6 +30,14 @@ DistanceOptions uussOptions(const std::string &table)
 Distance fromUUSSTable(const std::string &table)
 {
     return Distance {uussOptions(table)};
+}
+
+/// Requires the distance correction failed with the given error.
+void requireError(const std::expected<double, Distance::ErrorCode> &result,
+                  const Distance::ErrorCode expected)
+{
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error() == expected);
 }
 
 void checkCorrections(const std::vector<std::pair<double, double>> &expected,
@@ -371,10 +380,13 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance", "[distance]")
         const Distance distance{options};
         REQUIRE(distance.getDistanceType() ==
                 DistanceOptions::Type::Epicentral);
-        REQUIRE_THAT(distance(5, 0),   Catch::Matchers::WithinAbs(1.5, 1.e-12));
-        REQUIRE_THAT(distance(5, 20),  Catch::Matchers::WithinAbs(1.5, 1.e-12));
-        REQUIRE_THAT(distance(5, -20), Catch::Matchers::WithinAbs(1.5, 1.e-12));
-        REQUIRE_THROWS_AS(distance(-1, 0), std::invalid_argument);
+        REQUIRE_THAT(distance(5, 0).value(),   Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(distance(5, 20).value(),  Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(distance(5, -20).value(), Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        requireError(distance(-1, 0), Distance::ErrorCode::NegativeDistance);
+        // The depth isn't checked when it isn't used
+        REQUIRE(distance(5, -8601).has_value());
+        REQUIRE(distance(5, 900001).has_value());
     }
 
     SECTION("Hypocentral distance uses the depth")
@@ -385,27 +397,61 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance", "[distance]")
         REQUIRE(distance.getDistanceType() ==
                 DistanceOptions::Type::Hypocentral);
         // 3-4-5 triangle: hypocentral distance of 5 m
-        REQUIRE_THAT(distance(3, 4),  Catch::Matchers::WithinAbs(1.5, 1.e-12));
-        REQUIRE_THAT(distance(4, 3),  Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(distance(3, 4).value(),  Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(distance(4, 3).value(),  Catch::Matchers::WithinAbs(1.5, 1.e-12));
         // Above the datum is fine
-        REQUIRE_THAT(distance(3, -4), Catch::Matchers::WithinAbs(1.5, 1.e-12));
-        REQUIRE_THAT(distance(5, 0),  Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(distance(3, -4).value(), Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(distance(5, 0).value(),  Catch::Matchers::WithinAbs(1.5, 1.e-12));
         // Directly above the source
-        REQUIRE_THAT(distance(0, 20), Catch::Matchers::WithinAbs(3.0, 1.e-12));
-        REQUIRE_THROWS_AS(distance(-1, 4), std::invalid_argument);
-        // Depth bounds
-        REQUIRE_NOTHROW(distance(10, -8600));
-        REQUIRE_NOTHROW(distance(10, 900000));
-        REQUIRE_THROWS_AS(distance(10, -8601), std::invalid_argument);
-        REQUIRE_THROWS_AS(distance(10, 900001), std::invalid_argument);
+        REQUIRE_THAT(distance(0, 20).value(), Catch::Matchers::WithinAbs(3.0, 1.e-12));
+        requireError(distance(-1, 4), Distance::ErrorCode::NegativeDistance);
+        // The depth can push an epicentrally close station past the table
+        REQUIRE(distance(20, 0).has_value());
+        requireError(distance(20, 25), Distance::ErrorCode::StationTooFar);
+        // Depth bounds are checked before the distance
+        requireError(distance(10, -8601),
+                     Distance::ErrorCode::InvalidSourceDepth);
+        requireError(distance(10, 900001),
+                     Distance::ErrorCode::InvalidSourceDepth);
+    }
+
+    SECTION("Hypocentral depth bounds")
+    {
+        // Needs a table that reaches out past the deepest allowed source
+        DistanceOptions wide;
+        wide.setInterpolation(DistanceOptions::Interpolation::Linear);
+        wide.setType(DistanceOptions::Type::Hypocentral);
+        wide.setCorrections({{0, 1.0}, {1000000, 2.0}});
+        const Distance distance{wide};
+        REQUIRE(distance(10, -8600).has_value());
+        REQUIRE(distance(10, 900000).has_value());
+        requireError(distance(10, -8601),
+                     Distance::ErrorCode::InvalidSourceDepth);
+        requireError(distance(10, 900001),
+                     Distance::ErrorCode::InvalidSourceDepth);
     }
 
     SECTION("Invalid distances")
     {
         const Distance distance{options};
-        REQUIRE_THROWS_AS(distance(-1.0), std::invalid_argument);
-        REQUIRE_NOTHROW(distance(21000000.0));
-        REQUIRE_THROWS_AS(distance(21000001.0), std::invalid_argument);
+        requireError(distance(-1.0), Distance::ErrorCode::NegativeDistance);
+        // The table ends at 30 m
+        REQUIRE(distance.getMaximumDistance() == 30);
+        REQUIRE(distance(30.0) == 4.0);
+        requireError(distance(30.001), Distance::ErrorCode::StationTooFar);
+        requireError(distance(21000000.0), Distance::ErrorCode::StationTooFar);
+    }
+
+    SECTION("Maximum distance is the largest table distance")
+    {
+        DistanceOptions unsorted;
+        unsorted.setCorrections({{30, 4.0}, {50, 5.0}, {0, 1.0}});
+        unsorted.setInterpolation(DistanceOptions::Interpolation::Nearest);
+        unsorted.setType(DistanceOptions::Type::Epicentral);
+        const Distance distance{unsorted};
+        REQUIRE(distance.getMaximumDistance() == 50);
+        REQUIRE(distance(50) == 5.0);
+        requireError(distance(51), Distance::ErrorCode::StationTooFar);
     }
 
     SECTION("Nearest")
@@ -420,20 +466,20 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance", "[distance]")
         REQUIRE(distance(20) == 2.0); // Tie
         REQUIRE(distance(21) == 4.0);
         REQUIRE(distance(30) == 4.0);
-        REQUIRE(distance(1000) == 4.0);
+        requireError(distance(1000), Distance::ErrorCode::StationTooFar);
     }
 
     SECTION("Linear")
     {
         options.setInterpolation(DistanceOptions::Interpolation::Linear);
         const Distance distance{options};
-        REQUIRE_THAT(distance(0),    Catch::Matchers::WithinAbs(1.0, 1.e-12));
-        REQUIRE_THAT(distance(5),    Catch::Matchers::WithinAbs(1.5, 1.e-12));
-        REQUIRE_THAT(distance(10),   Catch::Matchers::WithinAbs(2.0, 1.e-12));
-        REQUIRE_THAT(distance(20),   Catch::Matchers::WithinAbs(3.0, 1.e-12));
-        REQUIRE_THAT(distance(25),   Catch::Matchers::WithinAbs(3.5, 1.e-12));
-        REQUIRE_THAT(distance(30),   Catch::Matchers::WithinAbs(4.0, 1.e-12));
-        REQUIRE_THAT(distance(1000), Catch::Matchers::WithinAbs(4.0, 1.e-12));
+        REQUIRE_THAT(distance(0).value(),  Catch::Matchers::WithinAbs(1.0, 1.e-12));
+        REQUIRE_THAT(distance(5).value(),  Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(distance(10).value(), Catch::Matchers::WithinAbs(2.0, 1.e-12));
+        REQUIRE_THAT(distance(20).value(), Catch::Matchers::WithinAbs(3.0, 1.e-12));
+        REQUIRE_THAT(distance(25).value(), Catch::Matchers::WithinAbs(3.5, 1.e-12));
+        REQUIRE_THAT(distance(30).value(), Catch::Matchers::WithinAbs(4.0, 1.e-12));
+        requireError(distance(1000), Distance::ErrorCode::StationTooFar);
     }
 
     SECTION("Linear saturates below the first node")
@@ -459,7 +505,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance", "[distance]")
             const Distance distance{single};
             REQUIRE(distance(0) == 0.25);
             REQUIRE(distance(5000) == 0.25);
-            REQUIRE(distance(100000) == 0.25);
+            requireError(distance(100000), Distance::ErrorCode::StationTooFar);
         }
     }
 
@@ -470,15 +516,15 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance", "[distance]")
         // Exercising the copy constructor is the point
         // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
         const Distance copy{distance};
-        REQUIRE_THAT(copy(5), Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(copy(5).value(), Catch::Matchers::WithinAbs(1.5, 1.e-12));
         Distance copyAssigned{options};
         copyAssigned = copy;
-        REQUIRE_THAT(copyAssigned(5), Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(copyAssigned(5).value(), Catch::Matchers::WithinAbs(1.5, 1.e-12));
         Distance moved{std::move(copyAssigned)};
-        REQUIRE_THAT(moved(5), Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(moved(5).value(), Catch::Matchers::WithinAbs(1.5, 1.e-12));
         Distance moveAssigned{options};
         moveAssigned = std::move(moved);
-        REQUIRE_THAT(moveAssigned(5), Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        REQUIRE_THAT(moveAssigned(5).value(), Catch::Matchers::WithinAbs(1.5, 1.e-12));
         checkCorrections({{0, 1.0}, {10, 2.0}, {30, 4.0}},
                          moveAssigned.getCorrections());
     }
@@ -548,12 +594,22 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance - Utah and Yellowstone"
         REQUIRE(atKm(yellowstoneLinear, 2.9) == 0.64);
     }
 
-    SECTION("Further than the table goes takes the last correction")
+    SECTION("Further than the table goes is too far")
     {
-        REQUIRE(atKm(utahNearest, 601.0)  == 4.9);
-        REQUIRE(atKm(utahNearest, 5000.0) == 4.9);
-        REQUIRE(atKm(yellowstoneLinear, 181.0)  == 3.67);
-        REQUIRE(atKm(yellowstoneLinear, 5000.0) == 3.67);
+        REQUIRE(utahNearest.getMaximumDistance() == 600000);
+        REQUIRE(yellowstoneLinear.getMaximumDistance() == 180000);
+        requireError(atKm(utahNearest, 601.0),
+                     Distance::ErrorCode::StationTooFar);
+        requireError(atKm(utahNearest, 5000.0),
+                     Distance::ErrorCode::StationTooFar);
+        requireError(atKm(yellowstoneLinear, 181.0),
+                     Distance::ErrorCode::StationTooFar);
+        requireError(atKm(yellowstoneLinear, 5000.0),
+                     Distance::ErrorCode::StationTooFar);
+        // Yellowstone is hypocentral so the depth can push it past the table
+        REQUIRE(yellowstoneLinear(179000, 0).has_value());
+        requireError(yellowstoneLinear(179000, 20000),
+                     Distance::ErrorCode::StationTooFar);
     }
 
     SECTION("The two regions are different curves, not an offset")
@@ -576,8 +632,8 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance - Utah and Yellowstone"
         REQUIRE(atKm(yellowstoneLinear, 80.0)  == 3.17);
         REQUIRE(atKm(yellowstoneLinear, 110.0) == 3.06);
         REQUIRE(atKm(yellowstoneLinear, 140.0) == 3.37);
-        REQUIRE(atKm(yellowstoneLinear, 110.0)
-              < atKm(yellowstoneLinear, 80.0));
+        REQUIRE(atKm(yellowstoneLinear, 110.0).value()
+              < atKm(yellowstoneLinear, 80.0).value());
     }
 
     SECTION("Linear interpolation")
@@ -588,25 +644,29 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance - Utah and Yellowstone"
             DistanceOptions::Interpolation::Linear);
         const Distance utahLinear{utahLinearOptions};
         // Nodes are unchanged
-        REQUIRE_THAT(atKm(utahLinear, 30.0),
+        REQUIRE_THAT(atKm(utahLinear, 30.0).value(),
                      Catch::Matchers::WithinAbs(2.1, 1.e-12));
         // Midpoints
-        REQUIRE_THAT(atKm(utahLinear, 32.5),
+        REQUIRE_THAT(atKm(utahLinear, 32.5).value(),
                      Catch::Matchers::WithinAbs(2.2, 1.e-12));
-        REQUIRE_THAT(atKm(utahLinear, 72.5),
+        REQUIRE_THAT(atKm(utahLinear, 72.5).value(),
                      Catch::Matchers::WithinAbs(2.825, 1.e-12));
-        REQUIRE_THAT(atKm(yellowstoneLinear, 4.5),
+        REQUIRE_THAT(atKm(yellowstoneLinear, 4.5).value(),
                      Catch::Matchers::WithinAbs(0.68, 1.e-12));
-        // Saturates at the extrema
-        REQUIRE_THAT(atKm(yellowstoneLinear, 0.0),
+        // Saturates below the first node and stops at the last
+        REQUIRE_THAT(atKm(yellowstoneLinear, 0.0).value(),
                      Catch::Matchers::WithinAbs(0.64, 1.e-12));
-        REQUIRE_THAT(atKm(utahLinear, 700.0),
+        REQUIRE_THAT(atKm(utahLinear, 600.0).value(),
                      Catch::Matchers::WithinAbs(4.9, 1.e-12));
+        requireError(atKm(utahLinear, 700.0),
+                     Distance::ErrorCode::StationTooFar);
     }
 
     SECTION("Negative distances are rejected")
     {
-        REQUIRE_THROWS_AS(utahNearest(-1.0), std::invalid_argument);
-        REQUIRE_NOTHROW(utahNearest(0.0));
+        requireError(utahNearest(-1.0), Distance::ErrorCode::NegativeDistance);
+        requireError(utahNearest(-1.0, 0),
+                     Distance::ErrorCode::NegativeDistance);
+        REQUIRE(utahNearest(0.0).has_value());
     }
 }

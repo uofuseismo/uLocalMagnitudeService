@@ -1,3 +1,4 @@
+#include <expected>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -71,11 +72,11 @@ bool Station::isInitialized() const noexcept
 }
 
 /// Operator
-double Station::operator()() const
+std::expected<double, Station::ErrorCode> Station::operator()() const noexcept
 {
     if (!isInitialized())
     {
-        throw std::runtime_error("Station correction not initialized");
+        return std::unexpected(ErrorCode::Uninitialized);
     }
     return pImpl->mCorrection;
 }

@@ -78,14 +78,6 @@ public:
     /// @result True indicates the distance type was set.
     [[nodiscard]] bool hasType() const noexcept;
 
-    /* 
-    /// @brief Sets a maximum distance after which point the model is invalid.
-    /// @param[in] maximumDistance   The maximum model distance.
-    void setMaximumDistance(double maximumDistance);
-    /// @result The maximum model distance.
-    [[nodiscard]] double getMaximumDistance() const noexcept;
-    */
-
     /// @brief Creates the distance corrections options from an initialization
     ///        file.  The section must look like:
     ///        @code

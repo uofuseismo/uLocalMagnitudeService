@@ -91,18 +91,26 @@ Stations::operator()(const std::string &identifier) const
 {
     if (!isInitialized())
     {   
-        return std::unexpected(Stations::ErrorCode::Uninitialized);
+        return std::unexpected(ErrorCode::Uninitialized);
     }   
     if (identifier.empty())
     {
-        return std::unexpected(Stations::ErrorCode::InvalidStation);
+        return std::unexpected(ErrorCode::InvalidStation);
     }
     auto correction = pImpl->mCorrections.getCorrection(identifier);
     if (correction != std::nullopt)
     {
-        return correction->operator()();
+        auto correctionResult = correction->operator()();
+        if (correctionResult.has_value())
+        {
+            return *correctionResult;
+        }
+        else
+        {
+            return std::unexpected(ErrorCode::UninitializedCorrection);
+        }
     }
-    return std::unexpected(Stations::ErrorCode::StationDoesNotExist);
+    return std::unexpected(ErrorCode::StationDoesNotExist);
 }
 
 /// Get corrections - for debugging
@@ -116,9 +124,17 @@ std::map<std::string, double> Stations::getCorrections() const
     auto corrections = pImpl->mCorrections.getCorrections();
     for (const auto &correction : corrections)
     {
-        result.insert_or_assign(
-           correction.second.getName(),
-           correction.second.operator()());
+        auto correctionResult = correction.second.operator()();
+        if (correctionResult.has_value())
+        {
+            result.insert_or_assign(
+               correction.second.getName(), *correctionResult);
+        }
+        else
+        {
+            throw std::runtime_error("Unitialized correction for "
+                                   + correction.second.getName());
+        }
     }
     return result;
 } 

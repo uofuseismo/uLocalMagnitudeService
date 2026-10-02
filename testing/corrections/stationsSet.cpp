@@ -23,7 +23,7 @@ void checkCorrection(const StationsSet &set,
     const auto correction = set.getCorrection(name);
     REQUIRE(correction.has_value());
     REQUIRE(correction->getName() == name);
-    REQUIRE_THAT((*correction)(),
+    REQUIRE_THAT((*correction)().value(),
                  Catch::Matchers::WithinAbs(expected, 1.e-14));
 }
 
@@ -67,11 +67,11 @@ TEST_CASE("ULocalMagnitudeService::Corrections::StationsSet", "[stationsSet]")
         REQUIRE(corrections.contains("WY.YFT"));
         REQUIRE(corrections.contains("WY.YMR"));
         REQUIRE(corrections.contains("UU.CWU"));
-        REQUIRE_THAT(corrections.at("WY.YFT")(),
+        REQUIRE_THAT(corrections.at("WY.YFT")().value(),
                      Catch::Matchers::WithinAbs(0.18, 1.e-14));
-        REQUIRE_THAT(corrections.at("WY.YMR")(),
+        REQUIRE_THAT(corrections.at("WY.YMR")().value(),
                      Catch::Matchers::WithinAbs(-0.12, 1.e-14));
-        REQUIRE_THAT(corrections.at("UU.CWU")(),
+        REQUIRE_THAT(corrections.at("UU.CWU")().value(),
                      Catch::Matchers::WithinAbs(0.05, 1.e-14));
         // Keys match the station names
         for (const auto &[name, station] : corrections)
@@ -87,7 +87,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::StationsSet", "[stationsSet]")
         REQUIRE_FALSE(set.insert(makeStation("WY", "YFT", 0.5)));
         const auto corrections = set.getCorrections();
         REQUIRE(corrections.size() == 1);
-        REQUIRE_THAT(corrections.at("WY.YFT")(),
+        REQUIRE_THAT(corrections.at("WY.YFT")().value(),
                      Catch::Matchers::WithinAbs(0.18, 1.e-14));
     }
 
@@ -108,10 +108,10 @@ TEST_CASE("ULocalMagnitudeService::Corrections::StationsSet", "[stationsSet]")
         REQUIRE(set.insert(makeStation("WY", "YFT", 0.5), true));
         const auto corrections = set.getCorrections();
         REQUIRE(corrections.size() == 2);
-        REQUIRE_THAT(corrections.at("WY.YFT")(),
+        REQUIRE_THAT(corrections.at("WY.YFT")().value(),
                      Catch::Matchers::WithinAbs(0.5, 1.e-14));
         // Other stations are untouched
-        REQUIRE_THAT(corrections.at("WY.YMR")(),
+        REQUIRE_THAT(corrections.at("WY.YMR")().value(),
                      Catch::Matchers::WithinAbs(-0.12, 1.e-14));
     }
 
@@ -132,7 +132,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::StationsSet", "[stationsSet]")
         if (hit.has_value()) // Placates clang-tidy
         {
             REQUIRE(hit->getName() == "WY.YFT");
-            REQUIRE_THAT((*hit)(), Catch::Matchers::WithinAbs(0.18, 1.e-14));
+            REQUIRE_THAT((*hit)().value(), Catch::Matchers::WithinAbs(0.18, 1.e-14));
         }
         REQUIRE_FALSE(set.getCorrection("WY.YMR").has_value());
         REQUIRE_FALSE(set.getCorrection("").has_value());
@@ -159,9 +159,9 @@ TEST_CASE("ULocalMagnitudeService::Corrections::StationsSet", "[stationsSet]")
         {
             const auto corrections = result.getCorrections();
             REQUIRE(corrections.size() == 2);
-            REQUIRE_THAT(corrections.at("WY.YFT")(),
+            REQUIRE_THAT(corrections.at("WY.YFT")().value(),
                          Catch::Matchers::WithinAbs(0.18, 1.e-14));
-            REQUIRE_THAT(corrections.at("UU.CWU")(),
+            REQUIRE_THAT(corrections.at("UU.CWU")().value(),
                          Catch::Matchers::WithinAbs(0.05, 1.e-14));
         };
 

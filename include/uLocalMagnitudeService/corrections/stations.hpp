@@ -21,9 +21,10 @@ class Stations
 public:
     enum class ErrorCode
     {
-        InvalidStation,      /*!< The station name is invalid - e.g., empty. */
-        StationDoesNotExist, /*!< No correction exists for this station. */
-        Uninitialized        /*!< The corrections class is not initialized. */
+        InvalidStation,          /*!< The station name is invalid - e.g., empty. */
+        StationDoesNotExist,     /*!< No correction exists for this station. */
+        UninitializedCorrection, /*!< A station correction was not initialized. */ 
+        Uninitialized            /*!< The corrections class is not initialized. */
     };
 public:
     /// @brief Defines the correction for each station.

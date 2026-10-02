@@ -1,17 +1,15 @@
 #include <cmath>
+#include <expected>
 #include <memory>
 #include <stdexcept>
-#include <string>
 #include <utility>
 #include "uLocalMagnitudeService/magnitude/stationMagnitudeCalculator.hpp"
 #include "uLocalMagnitudeService/magnitude/stationMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
-#include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
 #include "uLocalMagnitudeService/corrections/station.hpp"
-#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 
 using namespace ULocalMagnitudeService::Magnitude;
 
@@ -89,31 +87,29 @@ bool StationMagnitudeCalculator::isInitialized() const noexcept
 }
 
 /// Finally, do something science-y and compute a station magnitude
-StationMagnitude
-StationMagnitudeCalculator::operator()(const Observation &observation) const
+std::expected<StationMagnitude, StationMagnitudeCalculator::ErrorCode> 
+StationMagnitudeCalculator::operator()(
+    const Observation &observation) const noexcept 
 {
     if (!isInitialized())
     {   
-        throw std::runtime_error("Station magnitude calculator not initialized");
+        return std::unexpected(ErrorCode::Uninitialized);
+        //throw std::runtime_error("Station magnitude calculator not initialized");
     }   
     if (!observation.hasAmplitudes())
     {
-        throw std::invalid_argument("Amplitudes not set");
+        return std::unexpected(ErrorCode::NoAmplitudes);
     }
     if (!observation.hasEpicentralDistance())
     {
-        throw std::invalid_argument("Epicentral distance not set");
+        return std::unexpected(ErrorCode::NoEpicentralDistance);
     }
     // Does this observation correspond to this station correction?
     auto stationName = observation.getStationName();
     auto correctionStationName = pImpl->mStationCorrection.getName();
     if (stationName != correctionStationName)
-    {   
-        throw std::invalid_argument(
-             "Amplitude observations from "
-           + stationName
-           + " does not match this correction "
-           + correctionStationName);
+    {
+        return std::unexpected(ErrorCode::StationCorrectionMismatch);
     }
     auto epicentralDistance = observation.getEpicentralDistance();
     double eventDepth{0};
@@ -122,7 +118,7 @@ StationMagnitudeCalculator::operator()(const Observation &observation) const
     {
         if (!observation.hasDepth())
         {
-            throw std::invalid_argument("Event depth not set on observation");
+            return std::unexpected(ErrorCode::NoEventDepth);
         }
         eventDepth = observation.getDepth();
     }
@@ -132,9 +128,27 @@ StationMagnitudeCalculator::operator()(const Observation &observation) const
     auto amplitude1 = amplitudes.first.getValue();
     auto amplitude2 = amplitudes.second.getValue();
     auto averageAmplitude = 0.5*(amplitude1 + amplitude2);
-    auto distanceCorrection
+    double distanceCorrection{0};
+    auto distanceCorrectionResult
         = getDistanceCorrection(epicentralDistance, eventDepth);
-    auto stationCorrection = getStationCorrection();
+    if (distanceCorrectionResult.has_value())
+    {
+        distanceCorrection = *distanceCorrectionResult;
+    }
+    else
+    {
+         return std::unexpected(distanceCorrectionResult.error());
+    }
+    double stationCorrection{0};
+    auto stationCorrectionResult = getStationCorrection();
+    if (stationCorrectionResult.has_value())
+    {
+        stationCorrection = *stationCorrectionResult;
+    }
+    else
+    {
+        return std::unexpected(stationCorrectionResult.error());
+    }
     auto uncorrectedStationMagnitude = std::log10(0.5*averageAmplitude);
     auto stationMagnitude
         = uncorrectedStationMagnitude + distanceCorrection + stationCorrection;
@@ -147,27 +161,72 @@ StationMagnitudeCalculator::operator()(const Observation &observation) const
     return result;
 }
 
-double StationMagnitudeCalculator::getDistanceCorrection(
+std::expected<double, StationMagnitudeCalculator::ErrorCode>
+StationMagnitudeCalculator::getDistanceCorrection(
     const double epicentralDistance,
-    const double eventDepth) const
-{
-    if (!isInitialized())
-    {   
-        throw std::runtime_error("Station magnitude calculator not initialized");
-    } 
-    if (epicentralDistance < 0)
-    {   
-        throw std::invalid_argument("Distance must be positive");
-    }   
-    return pImpl->mDistanceCorrection.operator()(epicentralDistance,
-                                                 eventDepth);
-}
-
-double StationMagnitudeCalculator::getStationCorrection() const
+    const double eventDepth) const noexcept
 {
     if (!isInitialized())
     {
-        throw std::runtime_error("Station magnitude calculator not initialized");
+        return std::unexpected(ErrorCode::Uninitialized);
     }
-    return pImpl->mStationCorrection.operator()();
+    if (epicentralDistance < 0)
+    {
+        return std::unexpected(ErrorCode::NegativeDistance);
+    }
+    auto distanceCorrection
+        =  pImpl->mDistanceCorrection.operator()(epicentralDistance,
+                                                 eventDepth);
+
+    if (distanceCorrection.has_value())
+    {
+        return *distanceCorrection;
+    }
+    else if (distanceCorrection.error() ==
+             Corrections::Distance::ErrorCode::NegativeDistance)
+    {
+        return std::unexpected(ErrorCode::NegativeDistance);
+    }
+    else if (distanceCorrection.error() ==
+             Corrections::Distance::ErrorCode::StationTooFar)
+    {
+        return std::unexpected(ErrorCode::StationTooFar);
+    }
+    else if (distanceCorrection.error() ==
+             Corrections::Distance::ErrorCode::InvalidSourceDepth)
+    {
+        return std::unexpected(ErrorCode::InvalidDepth);
+    }
+    else if (distanceCorrection.error() ==
+             Corrections::Distance::ErrorCode::Uninitialized)
+    {
+         return std::unexpected(ErrorCode::UnitializedDistanceCorrection);
+    }
+    else
+    {
+         return std::unexpected(ErrorCode::Algorithmic);
+    }
+}
+
+std::expected<double, StationMagnitudeCalculator::ErrorCode> 
+StationMagnitudeCalculator::getStationCorrection() const noexcept
+{
+    if (!isInitialized())
+    {
+        return std::unexpected(ErrorCode::Uninitialized);        
+    }
+    auto stationCorrectionResult = pImpl->mStationCorrection.operator()();;
+    if (stationCorrectionResult.has_value())
+    {
+        return *stationCorrectionResult;
+    }
+    else if (stationCorrectionResult.error() ==
+             Corrections::Station::ErrorCode::Uninitialized)
+    {
+        return std::unexpected(ErrorCode::UnitializedStationCorrection);
+    }
+    else
+    {
+        return std::unexpected(ErrorCode::Algorithmic);
+    }
 }

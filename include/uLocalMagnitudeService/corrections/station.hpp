@@ -1,5 +1,6 @@
 #ifndef ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_STATION_HPP
 #define ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_STATION_HPP
+#include <expected>
 #include <memory>
 #include <string>
 
@@ -17,6 +18,11 @@ namespace ULocalMagnitudeService::Corrections
 class Station
 {
 public:
+    enum class ErrorCode
+    {
+        Uninitialized         /*!< The calculator is not initialized. */
+    }; 
+public:
     /// @brief Constructor. 
     /// @param[in] options  Defines the station correction options.
     /// @throws std::invalid_argument if the identifier or correction is not set.
@@ -26,12 +32,11 @@ public:
     /// @brief Move constructor. 
     Station(Station &&station) noexcept;
 
-    /// @result True indicates teh class is initialized.
+    /// @result True indicates the class is initialized.
     [[nodiscard]] bool isInitialized() const noexcept;
 
     /// @result The station (site) correction.  This is in magnititude units.
-    /// @throws std::runtime_error if \c isInitialized() is false.
-    [[nodiscard]] double operator()() const;
+    [[nodiscard]] auto operator()() const noexcept -> std::expected<double, ErrorCode>;
     /// @result The station name.
     /// @throws std::runtime_error if \c isInitialized() is false.
     [[nodiscard]] std::string getName() const;

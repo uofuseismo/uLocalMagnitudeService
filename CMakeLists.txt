@@ -82,6 +82,7 @@ set(LIBRARY_SRC
     #src/grpc/magnitudeService.cpp
     src/grpc/serverOptions.cpp
     src/magnitude/amplitude.cpp
+    src/magnitude/networkMagnitude.cpp
     src/magnitude/networkMagnitudeCalculator.cpp
     src/magnitude/networkMagnitudeCalculatorOptions.cpp
     src/magnitude/observation.cpp
@@ -100,6 +101,7 @@ set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/corrections/stationsSet.hpp
     include/${PROJECT_NAME}/grpc/serverOptions.hpp
     include/${PROJECT_NAME}/magnitude/amplitude.hpp
+    include/${PROJECT_NAME}/magnitude/networkMagnitude.hpp
     include/${PROJECT_NAME}/magnitude/networkMagnitudeCalculator.hpp
     include/${PROJECT_NAME}/magnitude/networkMagnitudeCalculatorOptions.hpp
     include/${PROJECT_NAME}/magnitude/observation.hpp
@@ -216,6 +218,7 @@ if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
                   testing/grpc/serverOptions.cpp
                   testing/grpc/serverOptionsIni.cpp
                   testing/magnitude/amplitude.cpp
+                  testing/magnitude/networkMagnitude.cpp
                   testing/magnitude/networkMagnitudeCalculator.cpp
                   testing/magnitude/networkMagnitudeCalculatorOptions.cpp
                   testing/magnitude/observation.cpp

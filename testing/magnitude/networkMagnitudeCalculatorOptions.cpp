@@ -76,7 +76,7 @@ void checkUtahOptions(const NetworkMagnitudeCalculatorOptions &options)
     REQUIRE(stations.getCorrections().size() == 2);
     const auto ccut = stations.getCorrection("UU.CCUT");
     REQUIRE(ccut.has_value());
-    REQUIRE_THAT((*ccut)(), Catch::Matchers::WithinAbs(0.31, 1.e-14));
+    REQUIRE_THAT((*ccut)().value(), Catch::Matchers::WithinAbs(0.31, 1.e-14));
     REQUIRE(options.getMinimumNumberOfStationMagnitudes() == 3);
     REQUIRE(options.getStrategy() == NetworkMagnitudeCalculatorOptions::Strategy::Average);
     REQUIRE_NOTHROW(options.validate());
@@ -123,7 +123,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculatorOptions"
         distance = options.getDistanceCorrections();
         REQUIRE(distance.getDistanceType() ==
                 Corrections::DistanceOptions::Type::Hypocentral);
-        REQUIRE_THAT(distance(30000),
+        REQUIRE_THAT(distance(30000).value(),
                      Catch::Matchers::WithinAbs(2.11, 1.e-12));
     }
 
