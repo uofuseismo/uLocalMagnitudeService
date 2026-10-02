@@ -1,7 +1,10 @@
 #ifndef ULOCAL_MAGNITUDE_SERVICE_TESTING_DISTANCE_TABLES_HPP
 #define ULOCAL_MAGNITUDE_SERVICE_TESTING_DISTANCE_TABLES_HPP
+#include <cstdint>
 #include <filesystem>
+#include <format>
 #include <fstream>
+#include <random>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -55,14 +58,17 @@ inline const std::vector<std::pair<double, double>> yellowstoneCorrections
 };
 
 /// Writes an initialization file to the temporary directory and removes it
-/// when it goes out of scope.
+/// when it goes out of scope.  ctest runs test cases in parallel processes
+/// so the name gets a random suffix - otherwise one test can delete a file
+/// another test is about to read.
 class TemporaryIniFile
 {
 public:
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     TemporaryIniFile(const std::string &name, const std::string &contents) :
         mPath(std::filesystem::temp_directory_path()
-            / ("uLocalMagnitudeService_" + name + ".ini"))
+            / ("uLocalMagnitudeService_" + name + "_"
+             + std::format("{:016x}", randomSuffix()) + ".ini"))
     {
         std::ofstream file(mPath);
         file << contents;
@@ -79,6 +85,11 @@ public:
         return mPath;
     }
 private:
+    static std::uint64_t randomSuffix()
+    {
+        std::random_device device;
+        return (static_cast<std::uint64_t> (device()) << 32U) | device();
+    }
     std::filesystem::path mPath;
 };
 

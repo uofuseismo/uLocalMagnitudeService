@@ -1,5 +1,8 @@
+#include <cstdint>
 #include <filesystem>
+#include <format>
 #include <fstream>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <system_error>
@@ -11,14 +14,19 @@ using namespace ULocalMagnitudeService::GRPC;
 namespace
 {
 /// Writes a file to the temporary directory and removes it when it goes out
-/// of scope.
+/// of scope.  ctest runs test cases in parallel processes so the name gets a
+/// random suffix (ahead of the extension) to keep tests from deleting each
+/// other's files.
 class TemporaryFile
 {
 public:
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     TemporaryFile(const std::string &name, const std::string &contents) :
         mPath(std::filesystem::temp_directory_path()
-            / ("uLocalMagnitudeService_serverOptions_" + name))
+            / ("uLocalMagnitudeService_serverOptions_"
+             + std::filesystem::path {name}.stem().string() + "_"
+             + std::format("{:016x}", randomSuffix())
+             + std::filesystem::path {name}.extension().string()))
     {
         std::ofstream file(mPath);
         file << contents;
@@ -35,6 +43,11 @@ public:
         return mPath;
     }
 private:
+    static std::uint64_t randomSuffix()
+    {
+        std::random_device device;
+        return (static_cast<std::uint64_t> (device()) << 32U) | device();
+    }
     std::filesystem::path mPath;
 };
 
