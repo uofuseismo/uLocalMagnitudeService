@@ -3,10 +3,6 @@
 #include <memory>
 #include <spdlog/logger.h>
 
-namespace ULocalMagnitudeService::Magnitude
-{
- class NetworkMagnitudeCalculatorOptions;
-}
 namespace ULocalMagnitudeService::GRPC
 {
  class MagnitudeServiceOptions;
@@ -18,7 +14,8 @@ class MagnitudeService
 {
 public:
     
-    MagnitudeService(std::shared_ptr<spdlog::logger> logger);
+    MagnitudeService(const MagnitudeServiceOptions &options,
+                     std::shared_ptr<spdlog::logger> logger);
     /// @brief Destructor.
     ~MagnitudeService();
  

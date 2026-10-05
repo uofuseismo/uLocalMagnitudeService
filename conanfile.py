@@ -24,7 +24,7 @@ class uLocalMagnitudeServiceConan(ConanFile):
 
    def requirements(self):
        # dependencies
-       self.requires("grpc/1.83.0")
+       self.requires("grpc/1.84.0")
        self.requires("opentelemetry-cpp/1.26.0")
        self.requires("protobuf/6.33.5")
        self.requires("boost/1.91.0")
