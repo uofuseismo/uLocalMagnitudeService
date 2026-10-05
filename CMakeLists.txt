@@ -118,6 +118,7 @@ set(PROTO_SRC
     uLocalMagnitudeServiceAPI/v1/magnitude/service.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.proto
+    uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_request.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_response.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_identifier.proto
