@@ -6,6 +6,14 @@
 #include <utility>
 #include <spdlog/spdlog.h>
 #include <spdlog/logger.h>
+#include <grpcpp/server_builder.h>
+#include <grpcpp/server_context.h>
+#include <grpcpp/security/server_credentials.h>
+#include <grpcpp/support/status.h>
+#include <grpcpp/support/server_callback.h>
+#include <grpcpp/support/time.h> //NOLINT
+#include <grpcpp/impl/channel_argument_option.h>
+#include <grpc/impl/compression_types.h>
 //NOLINTNEXTLINE(misc-include-cleaner)
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "uLocalMagnitudeService/grpc/magnitudeService.hpp"
@@ -15,6 +23,12 @@
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculator.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/service.grpc.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_request.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_response.pb.h"
 #include "validateClient.hpp"
 
 using namespace ULocalMagnitudeService::GRPC;
@@ -22,7 +36,7 @@ using namespace ULocalMagnitudeService::GRPC;
 namespace ULMSAPI = ULocalMagnitudeServiceAPI;
 
 class MagnitudeService::MagnitudeServiceImpl :
-    public ULMSAPI::V1::Magnitude::CallbackService
+    public ULMSAPI::V1::Magnitude::MagnitudeService::CallbackService
 {
 public:
     /// @brief Constructor
