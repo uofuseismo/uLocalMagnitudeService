@@ -23,7 +23,7 @@ public:
     MagnitudeService(const MagnitudeService &) = delete;
     MagnitudeService(MagnitudeService &&) noexcept = delete;
     MagnitudeService &operator=(const MagnitudeService &) = delete;
-    MagnitudeService &oeprator=(MagnitudeService &&) noexcept = delete;
+    MagnitudeService &operator=(MagnitudeService &&) noexcept = delete;
 private:
     class MagnitudeServiceImpl;
     std::unique_ptr<MagnitudeServiceImpl> pImpl;

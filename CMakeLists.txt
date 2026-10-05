@@ -79,6 +79,7 @@ set(LIBRARY_SRC
     src/corrections/stationOptions.cpp
     src/corrections/stations.cpp
     src/corrections/stationsSet.cpp
+    src/grpc/magnitudeService.cpp
     src/grpc/magnitudeServiceOptions.cpp
     src/grpc/serverOptions.cpp
     src/magnitude/amplitude.cpp
