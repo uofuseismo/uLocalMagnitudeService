@@ -15,5 +15,5 @@ message StationMagnitudesFromAmplitudesRequest {
    repeated StationAmplitudeMeasurement station_amplitude_measurements = 2;
    /// The source depth in meters relative to sea-level.  This must be between 
    /// -8600 and 800,000.  This increases positive down.
-   double depth = 2;
+   double depth = 3;
 }
