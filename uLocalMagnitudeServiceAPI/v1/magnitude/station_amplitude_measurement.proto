@@ -8,6 +8,7 @@ import "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.proto";
  * Defines a (peak-to-peak) amplitude measurement made at a station.
  * At UUSS station local magnitudes are computed by averaging amplitudes
  * observed on a pair of non-vertical channels at a station.
+ */
 message StationAmplitudeMeasurement {
    /// The amplitude measured on the first channel (e.g., HHE).
    Amplitude amplitude_stream_1 = 1;
