@@ -56,7 +56,7 @@ public:
     [[nodiscard]] bool hasStation() const noexcept;
 
     /// @result String representation - e.g. "UU.CWU".
-    /// @throws std::runtime_erorr if \c hasStation() or \c hasNetwork() is false.
+    /// @throws std::runtime_error if \c hasStation() or \c hasNetwork() is false.
     [[nodiscard]] std::string toString() const;
 
     /// @brief Creates the station identifier message from this class.
