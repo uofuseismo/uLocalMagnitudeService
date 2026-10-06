@@ -25,6 +25,7 @@
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculator.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
 #include "uLocalMagnitudeService/metrics/singleton.hpp"
+#include "uLocalMagnitudeService/version.hpp"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/service.grpc.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.pb.h"
@@ -88,6 +89,109 @@ public:
     }
 
     ///----------------------------------------------------------------------///
+    /// @brief Station magnitudes                                            ///
+    ///----------------------------------------------------------------------///
+    grpc::ServerUnaryReactor
+        *ComputeStationMagnitudesFromAmplitudes(
+            grpc::CallbackServerContext *context,
+            const ULMSAPIV1::StationMagnitudesFromAmplitudesRequest *request,
+            ULMSAPIV1::StationMagnitudesFromAmplitudesResponse *response) override
+    {   
+        class Reactor : public grpc::ServerUnaryReactor
+        {
+        public:
+            Reactor(grpc::CallbackServerContext *context,
+                const ULMSAPIV1::StationMagnitudesFromAmplitudesRequest &request,
+                ULMSAPIV1::StationMagnitudesFromAmplitudesResponse *response,
+                const GRPC::ServerOptions &grpcOptions,
+                const bool isSecured, 
+                const Magnitude::NetworkMagnitudeCalculator &calculator,
+                std::shared_ptr<spdlog::logger> logger) :
+             mLogger(std::move(logger))
+            {
+                auto &metrics = Metrics::Singleton::getInstance();
+                // Validate the client?
+                if (isSecured)
+                {
+                    auto accessToken = grpcOptions.getAccessToken();
+                    if (accessToken)
+                    {
+                        if (!::validateClient(context, *accessToken))
+                        {
+                            SPDLOG_LOGGER_WARN(mLogger,
+                                            "Unauthorized client - {} rejected",
+                                             context->peer());
+                            metrics.incrementUnauthenticatedCounter(mRouteName);
+                            Finish({grpc::StatusCode::UNAUTHENTICATED,
+                                    "Invalid access token"});
+                            return;
+                        }
+                    }
+                }
+                // Copy the request identifier
+                std::string requestIdentifier{context->peer()};
+                *response->mutable_version()
+                    = ULocalMagnitudeService::Version::getVersionWithTag();
+                if (request.has_identifier())
+                {
+                    requestIdentifier = requestIdentifier
+                                      + " ("
+                                      + request.identifier()
+                                      + ")";
+//                    *response->mutable_identifier() = request.identifier();
+                }
+
+                mSuccess = true;
+                Finish(grpc::Status::OK);
+                SPDLOG_LOGGER_DEBUG(
+                    mLogger,
+                    "Successfully found station corrections for {}",
+                    requestIdentifier);
+
+            }
+        private:
+            void OnDone() override
+            {
+                if (mLogger)
+                {
+                    SPDLOG_LOGGER_DEBUG(mLogger,
+                                        "{} RPC completed", mRouteName);
+                }
+                auto &metrics = Metrics::Singleton::getInstance();
+                if (mSuccess)
+                {
+                    metrics.incrementSuccessCounter(mRouteName);
+                    const auto endTime = std::chrono::steady_clock::now();
+                    auto elapsedTime
+                        = std::chrono::duration<double>
+                          (mRPCStartTime - endTime);
+                    metrics.recordRouteDuration(elapsedTime, mRouteName);
+                }
+                delete this;
+            }
+            void OnCancel() override
+            {
+                if (mLogger)
+                {
+                   SPDLOG_LOGGER_DEBUG(mLogger,
+                                       "{} RPC canceled", mRouteName);
+                }
+            }
+//private:
+            std::shared_ptr<spdlog::logger> mLogger{nullptr};
+            const std::chrono::time_point<std::chrono::steady_clock> mRPCStartTime
+            {
+                std::chrono::steady_clock::now()
+            };
+            const std::string mRouteName
+            {
+                "ComputeStationMagnitudesFromAmplitudes"
+            };
+            bool mSuccess{false};
+        };
+     }
+
+    ///----------------------------------------------------------------------///
     /// @brief Station corrections                                           ///
     ///----------------------------------------------------------------------///
     grpc::ServerUnaryReactor
@@ -118,8 +222,8 @@ public:
                         if (!::validateClient(context, *accessToken))
                         {
                             SPDLOG_LOGGER_WARN(mLogger,
-                                              "Unauthorized client {} rejected",
-                                               context->peer());
+                                            "Unauthorized client - {} rejected",
+                                             context->peer());
                             metrics.incrementUnauthenticatedCounter(mRouteName);
                             Finish({grpc::StatusCode::UNAUTHENTICATED,
                                     "Invalid access token"});
@@ -215,7 +319,7 @@ public:
                 if (mLogger)
                 {
                     SPDLOG_LOGGER_DEBUG(mLogger,
-                                        "GetStationCorrections RPC completed");
+                                        "{} RPC completed", mRouteName);
                 }
                 auto &metrics = Metrics::Singleton::getInstance();
                 if (mSuccess)
@@ -234,7 +338,7 @@ public:
                 if (mLogger)
                 {
                    SPDLOG_LOGGER_DEBUG(mLogger,
-                                       "GetStationCorrections RPC canceled");
+                                       "{} RPC canceled", mRouteName);
                 }
             }
 //private:
