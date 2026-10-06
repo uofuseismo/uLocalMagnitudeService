@@ -62,6 +62,7 @@ StreamIdentifier::StreamIdentifier(StreamIdentifier &&identifier) noexcept
 }
 
 /// Build from a protobuf
+template<>
 StreamIdentifier::StreamIdentifier(
     const ULocalMagnitudeServiceAPI::V1::Magnitude::StreamIdentifier
         &identifier)

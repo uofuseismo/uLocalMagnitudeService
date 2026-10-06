@@ -2,10 +2,6 @@
 #define ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_STREAM_IDENTIFIER_HPP
 #include <memory>
 #include <string>
-namespace ULocalMagnitudeServiceAPI::V1::Magnitude
-{
- class StreamIdentifier;
-}
 namespace ULocalMagnitudeService::Magnitude
 {
 /// @class StreamIdentifier streamIdentifier.hpp
@@ -26,7 +22,8 @@ public:
     /// @brief Creates the stream identifier class from a proto file.
     /// @throws std::invalid_argument if the network, station, or channel
     ///         are not set.
-    explicit StreamIdentifier(const ULocalMagnitudeServiceAPI::V1::Magnitude::StreamIdentifier &identifier);
+    template<typename U>
+    explicit StreamIdentifier(const U &identifier);
 
     /// @brief Sets the network code.
     /// @param[in] network   The network code - e.g., UU.  

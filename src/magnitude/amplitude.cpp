@@ -36,6 +36,51 @@ Amplitude::Amplitude(Amplitude &&amplitude) noexcept
     *this = std::move(amplitude);
 }
 
+/// Build from a protobuf
+template<>
+Amplitude::Amplitude(
+    const ULocalMagnitudeServiceAPI::V1::Magnitude::Amplitude &amplitude)
+{
+    if (!amplitude.has_stream_identifier())
+    {   
+        throw std::invalid_argument("Stream identifier not set.");
+    }   
+    if (!amplitude.has_value())
+    {   
+        throw std::invalid_argument("Amplitude value not set.");
+    }   
+    if (!amplitude.has_units())
+    {   
+        throw std::invalid_argument("Amplitude units not set.");
+    }   
+    namespace API = ULocalMagnitudeServiceAPI::V1::Magnitude;
+    Amplitude thisAmplitude;
+    auto units = amplitude.units();
+    if (units == API::Amplitude_Units_UNKNOWN)
+    {
+        throw std::invalid_argument("Units not specified");
+    }
+    else if (units == API::Amplitude_Units_MILLIMETERS)
+    {
+        thisAmplitude.setValue(amplitude.value());
+    }
+    else if (units == API::Amplitude_Units_CENTIMETERS)
+    {
+        thisAmplitude.setValue(amplitude.value()*10);
+    }
+    else if (units == API::Amplitude_Units_METERS)
+    {
+        thisAmplitude.setValue(amplitude.value()*1000);
+    }
+    else
+    {
+        throw std::runtime_error("Unhandled units logic");
+    }
+    StreamIdentifier streamIdentifier{amplitude.stream_identifier()};
+    thisAmplitude.setIdentifier(std::move(streamIdentifier));
+    *this = std::move(thisAmplitude);
+}
+
 /// Copy assignment
 Amplitude &Amplitude::operator=(const Amplitude &amplitude)
 {
@@ -135,3 +180,22 @@ std::string Amplitude::getName() const
     }
     return pImpl->mIdentifier.toString();
 }
+
+/// Protobuf
+template<>
+ULocalMagnitudeServiceAPI::V1::Magnitude::Amplitude
+Amplitude::toMessage() const
+{
+    ULocalMagnitudeServiceAPI::V1::Magnitude::Amplitude result; 
+    auto streamIdentifier
+        = getIdentifier().toMessage
+          <
+              ULocalMagnitudeServiceAPI::V1::Magnitude::StreamIdentifier
+          > ();
+    *result.mutable_stream_identifier() = std::move(streamIdentifier);
+    result.set_value(getValue());
+    result.set_units(
+       ULocalMagnitudeServiceAPI::V1::Magnitude::Amplitude_Units_MILLIMETERS);
+    return result;
+}
+

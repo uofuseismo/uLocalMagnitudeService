@@ -2,10 +2,6 @@
 #define ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_AMPLITUDE_HPP
 #include <memory>
 #include <string>
-namespace ULocalMagnitudeService::V1::Magnitude
-{
- class Amplitude;
-}
 namespace ULocalMagnitudeService::Magnitude
 {
  class StreamIdentifier;
@@ -28,7 +24,8 @@ public:
     /// @brief Creates the amplitude from a protobuf definition.
     /// @throws std::invalid_argument if the stream identifier is invalid
     ///         or the amplitude value is not positive.
-    explicit Amplitude(const ULocalMagnitudeService::V1::Magnitude &amplitude);
+    template<typename U>
+    explicit Amplitude(const U &amplitude);
 
     /// @brief Defines the amplitude in millimeters.
     /// @param[in] amplitude  The amplitude value.
