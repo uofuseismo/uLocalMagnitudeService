@@ -11,10 +11,10 @@ message StationCorrectionsResponse {
   message StationCorrection {
      /// The station identifier.
      StationIdentifier station_identifier = 1;
-     /// The correction.  This value is directly added to the station
+     /// The vaue of the correction.  This value is directly added to the station
      /// magnitude - i.e., this is the C_s in the relation:
      ///    Station Magnitude = log10(A) + C_d + C_s
-     double correction = 2 [default = 0];
+     double value = 2 [default = 0];
      /// A flag indicating the corrections exists.
      bool exists = 3;
   };  
