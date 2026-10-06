@@ -21,6 +21,6 @@ message StationCorrectionsResponse {
   /// The identifier corresponding to the response.
   string identifier = 1 [default = ""];
   /// The station corrections.
-  repeated double station_corrections = 2;
+  repeated StationCorrection station_corrections = 2;
 }
 
