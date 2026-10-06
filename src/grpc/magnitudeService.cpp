@@ -160,23 +160,27 @@ public:
                                  = grpcStationIdentifier;
                              if (correction)
                              {
-                                 stationCorrection.set_correction(*correction);
+                                 stationCorrection.set_value(*correction);
                                  stationCorrection.set_exists(true);
                              }
                              else
                              {
-                                 stationCorrection.set_correction(0);
+                                 stationCorrection.set_value(0);
                                  stationCorrection.set_exists(false);
                              }
+                             response->mutable_station_corrections()->Add(
+                                 std::move(stationCorrection));
                         }
                         catch (const std::invalid_argument &e)
                         {
+                            metrics.incrementClientErrorCounter(mRouteName);
                             Finish({grpc::StatusCode::INVALID_ARGUMENT,
                                     "Malformed station identifier"});
                             return;
                         }
                         catch (const std::exception &e)
                         {
+                            metrics.incrementServerErrorCounter(mRouteName);
                             SPDLOG_LOGGER_WARN(
                                mLogger,
                                "Failed to get station corrections because {}",

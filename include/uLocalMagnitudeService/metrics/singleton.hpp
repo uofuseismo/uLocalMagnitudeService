@@ -37,6 +37,11 @@ public:
     /// @result The server errors for each RPC.
     std::map<std::string, int64_t> getServerErrorCounters() const;
 
+    /// @brief Increments the number of client errors in an RPC.
+    void incrementClientErrorCounter(const std::string &route); 
+    /// @result The client errors for each RPC.
+    std::map<std::string, int64_t> getClientErrorCounters() const;
+
     /// @brief Sets the route recorder.
     void setRouteRecorderCallback(const std::function<void (const std::chrono::duration<double> &,
                                                             const std::string &)> &callback);

@@ -78,6 +78,27 @@ std::map<std::string, int64_t> Singleton::getServerErrorCounters() const
     return mServerErrorCounterMap;
 }
 
+/// Client error
+void Singleton::incrementClientErrorCounter(const std::string &route)
+{
+    if (route.empty()){return;}
+    {   
+    const std::scoped_lock lock{mMutex};
+    auto it = mClientErrorCounterMap.find(route);
+    if (it != mClientErrorCounterMap.end())
+    {   
+        it->second = it->second + 1;
+        return;
+    }   
+    mClientErrorCounterMap.insert( {route, 1} );
+    }   
+}
+
+std::map<std::string, int64_t> Singleton::getClientErrorCounters() const
+{
+    const std::scoped_lock lock{mMutex};
+    return mClientErrorCounterMap;
+}
 
 /// Route duration
 void Singleton::recordRouteDuration(
