@@ -14,7 +14,7 @@ message Amplitude {
        MILLIMETERS = 1, /// The amplitude was measured in units of millimeters (pretty common).
        CENTIMETERS = 2, /// The amplitude was measured in units of centimeters (sometimes happens).
        METERS = 3       /// The amplitdue was measured in units of meters (uncommon).
-   }
+   };
    /// The stream identifier on which the amplitude was made.
    StreamIdentifier stream_identifier = 1;
    /// The observed amplitude.  This must be positive.
