@@ -18,7 +18,7 @@ message StationCorrectionsResponse {
      /// A flag indicating the corrections exists.
      bool exists = 3;
   };  
-  /// The identifier corresponding to the response.
+  /// The identifier corresponding to the request.
   string identifier = 1 [default = ""];
   /// The station corrections.
   repeated StationCorrection station_corrections = 2;
