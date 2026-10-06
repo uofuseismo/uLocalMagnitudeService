@@ -74,7 +74,7 @@ Amplitude::Amplitude(
     }
     else
     {
-        throw std::runtime_error("Unhandled units logic");
+        throw std::invalid_argument("Unhandled units");
     }
     StreamIdentifier streamIdentifier{amplitude.stream_identifier()};
     thisAmplitude.setIdentifier(std::move(streamIdentifier));

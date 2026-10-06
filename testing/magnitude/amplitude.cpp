@@ -7,6 +7,8 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.pb.h"
 
 using namespace ULocalMagnitudeService::Magnitude;
 
@@ -199,5 +201,166 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Amplitude", "[amplitude]")
         REQUIRE(moveAssigned.getName() == "UU.CWU.HHE.01");
         REQUIRE_THAT(moveAssigned.getValue(),
                      Catch::Matchers::WithinAbs(value, 1.e-14));
+    }
+}
+
+TEST_CASE("ULocalMagnitudeService::Magnitude::Amplitude - protobuf",
+          "[amplitude]")
+{
+    namespace API = ULocalMagnitudeServiceAPI::V1::Magnitude;
+    API::StreamIdentifier identifierMessage;
+    identifierMessage.set_network("UU");
+    identifierMessage.set_station("CCUT");
+    identifierMessage.set_channel("HHE");
+    identifierMessage.set_location_code("01");
+    // UU.CCUT.HHE for evid 80157466 - AQMS stores this in cm
+    constexpr double valueInCentimeters{0.03459206596016884};
+
+    API::Amplitude message;
+    *message.mutable_stream_identifier() = identifierMessage;
+    message.set_value(10*valueInCentimeters);
+    message.set_units(API::Amplitude_Units_MILLIMETERS);
+
+    SECTION("From message")
+    {
+        const Amplitude amplitude{message};
+        REQUIRE(amplitude.getName() == "UU.CCUT.HHE.01");
+        REQUIRE_THAT(amplitude.getValue(),
+                     Catch::Matchers::WithinRel(10*valueInCentimeters,
+                                                1.e-14));
+    }
+
+    SECTION("Units are converted to millimeters")
+    {
+        message.set_value(valueInCentimeters);
+        message.set_units(API::Amplitude_Units_CENTIMETERS);
+        REQUIRE_THAT(Amplitude {message}.getValue(),
+                     Catch::Matchers::WithinRel(10*valueInCentimeters,
+                                                1.e-14));
+
+        message.set_value(valueInCentimeters/100);
+        message.set_units(API::Amplitude_Units_METERS);
+        REQUIRE_THAT(Amplitude {message}.getValue(),
+                     Catch::Matchers::WithinRel(10*valueInCentimeters,
+                                                1.e-14));
+    }
+
+    SECTION("Units are required")
+    {
+        auto noUnits = message;
+        noUnits.clear_units();
+        REQUIRE_THROWS_AS(Amplitude {noUnits}, std::invalid_argument);
+
+        auto unknownUnits = message;
+        unknownUnits.set_units(API::Amplitude_Units_UNKNOWN);
+        REQUIRE_THROWS_AS(Amplitude {unknownUnits}, std::invalid_argument);
+    }
+
+    SECTION("Units the server doesn't know about are rejected")
+    {
+        // The enum is open so a newer client can send a value this server
+        // was never built with
+        auto futureUnits = message;
+        futureUnits.set_units(static_cast<API::Amplitude_Units> (99));
+        REQUIRE_THROWS(Amplitude {futureUnits});
+    }
+
+    SECTION("Value is required and must be positive and finite")
+    {
+        auto noValue = message;
+        noValue.clear_value();
+        REQUIRE_THROWS_AS(Amplitude {noValue}, std::invalid_argument);
+
+        for (const double value : {0.0, -0.35,
+                                   std::numeric_limits<double>::quiet_NaN(),
+                                   std::numeric_limits<double>::infinity()})
+        {
+            INFO("Value: " << value);
+            auto badValue = message;
+            badValue.set_value(value);
+            REQUIRE_THROWS_AS(Amplitude {badValue}, std::invalid_argument);
+        }
+    }
+
+    SECTION("Conversion can't overflow a finite value")
+    {
+        // Finite in meters but not in millimeters
+        auto huge = message;
+        huge.set_value(std::numeric_limits<double>::max());
+        huge.set_units(API::Amplitude_Units_METERS);
+        REQUIRE_THROWS_AS(Amplitude {huge}, std::invalid_argument);
+    }
+
+    SECTION("A valid stream identifier is required")
+    {
+        auto noIdentifier = message;
+        noIdentifier.clear_stream_identifier();
+        REQUIRE_THROWS_AS(Amplitude {noIdentifier}, std::invalid_argument);
+
+        auto noStation = message;
+        noStation.mutable_stream_identifier()->clear_station();
+        REQUIRE_THROWS_AS(Amplitude {noStation}, std::invalid_argument);
+    }
+
+    SECTION("To message")
+    {
+        StreamIdentifier identifier;
+        identifier.setNetwork("UU");
+        identifier.setStation("CCUT");
+        identifier.setChannel("HHN");
+        identifier.setLocationCode("01");
+        Amplitude amplitude;
+        amplitude.setIdentifier(identifier);
+        amplitude.setValue(0.15187045093625784);
+        const auto result = amplitude.toMessage<API::Amplitude> ();
+        // Always written in millimeters
+        REQUIRE(result.units() == API::Amplitude_Units_MILLIMETERS);
+        REQUIRE(result.value() == 0.15187045093625784);
+        REQUIRE(result.stream_identifier().network() == "UU");
+        REQUIRE(result.stream_identifier().station() == "CCUT");
+        REQUIRE(result.stream_identifier().channel() == "HHN");
+        REQUIRE(result.stream_identifier().location_code() == "01");
+    }
+
+    SECTION("To message requires a value and an identifier")
+    {
+        REQUIRE_THROWS_AS(Amplitude {}.toMessage<API::Amplitude> (),
+                          std::runtime_error);
+
+        Amplitude noIdentifier;
+        noIdentifier.setValue(0.35);
+        REQUIRE_THROWS_AS(noIdentifier.toMessage<API::Amplitude> (),
+                          std::runtime_error);
+
+        StreamIdentifier identifier;
+        identifier.setNetwork("UU");
+        identifier.setStation("CCUT");
+        identifier.setChannel("HHN");
+        identifier.setLocationCode("01");
+        Amplitude noValue;
+        noValue.setIdentifier(identifier);
+        REQUIRE_THROWS_AS(noValue.toMessage<API::Amplitude> (),
+                          std::runtime_error);
+    }
+
+    SECTION("Round trip through the wire format")
+    {
+        // Sent in cm, comes back out in mm
+        message.set_value(valueInCentimeters);
+        message.set_units(API::Amplitude_Units_CENTIMETERS);
+        API::Amplitude received;
+        REQUIRE(received.ParseFromString(message.SerializeAsString()));
+        const Amplitude amplitude{received};
+
+        API::Amplitude echoed;
+        REQUIRE(echoed.ParseFromString(
+            amplitude.toMessage<API::Amplitude> ().SerializeAsString()));
+        REQUIRE(echoed.units() == API::Amplitude_Units_MILLIMETERS);
+        REQUIRE_THAT(echoed.value(),
+                     Catch::Matchers::WithinRel(10*valueInCentimeters,
+                                                1.e-14));
+        const Amplitude again{echoed};
+        REQUIRE(again.getName() == amplitude.getName());
+        REQUIRE(again.getValue() == amplitude.getValue());
     }
 }
