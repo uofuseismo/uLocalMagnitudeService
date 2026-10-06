@@ -27,11 +27,13 @@ message StationMagnitudesFromAmplitudesResponse {
       /// applied.  
       bool used_station_correction = 6;
    } 
-   /// The correspondingstation magnitudes.
-   repeated StationMagnitude station_magnitudes = 1;
+   /// The identifier corresponding to the response.
+   string identifier = 1 [default = ""];
    /// Algorithm version.
    string version = 2;
+   /// The correspondingstation magnitudes.
+   repeated StationMagnitude station_magnitudes = 3;
    /// Additional comments from processing and a place for things like API
    /// deprecation notices.
-   string notices = 3 [default = ""];
+   string notices = 4 [default = ""];
 }
