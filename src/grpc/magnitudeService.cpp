@@ -18,6 +18,7 @@
 //NOLINTNEXTLINE(misc-include-cleaner)
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "uLocalMagnitudeService/grpc/magnitudeService.hpp"
+#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 #include "uLocalMagnitudeService/grpc/magnitudeServiceOptions.hpp"
 #include "uLocalMagnitudeService/grpc/serverOptions.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitude.hpp"
@@ -45,12 +46,10 @@ public:
     MagnitudeServiceImpl
     (
         const MagnitudeServiceOptions &options,
-        std::shared_ptr<spdlog::logger> logger,
-        const std::function<void (double, const std::string &)> &recordDuration
+        std::shared_ptr<spdlog::logger> logger
     ) :
         mOptions(options),
-        mLogger(std::move(logger)),
-        mRouteDurationRecorder(recordDuration)
+        mLogger(std::move(logger))
     {
         if (!mOptions.hasGRPCOptions())
         {
@@ -76,6 +75,16 @@ public:
             = std::make_unique<Magnitude::NetworkMagnitudeCalculator> (
                  mOptions.getNetworkMagnitudeCalculatorOptions(),
                  mLogger);
+        if (mCalculator == nullptr)
+        {
+            throw std::runtime_error(
+                "Failed to create network magnitude calculator");
+        }
+        if (!mCalculator->isInitialized())
+        {
+            throw std::runtime_error(
+                "Failed to initialize network magnitude calculator");
+        }
     }
 
     ///----------------------------------------------------------------------///
@@ -93,16 +102,13 @@ public:
             Reactor(grpc::CallbackServerContext *context,
                     const ULMSAPIV1::StationCorrectionsRequest &request,
                     ULMSAPIV1::StationCorrectionsResponse *response,
-                    const ServerOptions &options,
+                    const GRPC::ServerOptions &grpcOptions,
                     const bool isSecured, 
-                    const Magnitude::NetworkMagnitudeCalculator *networkCalculator,
-                    std::shared_ptr<spdlog::logger> logger,
-                    const std::function<void (double, const std::string &)> &recordDuration) :
-                mLogger(std::move(logger)),
-                mRouteDurationRecorder(recordDuration) 
+                    const Magnitude::NetworkMagnitudeCalculator &calculator,
+                    std::shared_ptr<spdlog::logger> logger) :
+                mLogger(std::move(logger))
             {
                 auto &metrics = Metrics::Singleton::getInstance();
-/*
                 // Validate the client?
                 if (isSecured)
                 {
@@ -114,7 +120,7 @@ public:
                             SPDLOG_LOGGER_WARN(mLogger,
                                               "Unauthorized client {} rejected",
                                                context->peer());
-                            metrics.incrementInvalidAccessCounter();
+                            metrics.incrementUnauthenticatedCounter(mRouteName);
                             Finish({grpc::StatusCode::UNAUTHENTICATED,
                                     "Invalid access token"});
                             return;
@@ -137,11 +143,53 @@ public:
                 // Do it
                 try
                 {
-
+                    namespace UCorrections
+                        = ULocalMagnitudeService::Corrections;
+                    for (const auto &grpcStationIdentifier :
+                         request.station_identifiers())
+                    {
+                        try
+                        {
+                             const UCorrections::StationIdentifier
+                                 identifier{grpcStationIdentifier};
+                             auto correction
+                                 = calculator.getStationCorrection(identifier);
+                             ULMSAPIV1::StationCorrectionsResponse
+                                      ::StationCorrection stationCorrection;
+                             *stationCorrection.mutable_station_identifier()
+                                 = grpcStationIdentifier;
+                             if (correction)
+                             {
+                                 stationCorrection.set_correction(*correction);
+                                 stationCorrection.set_exists(true);
+                             }
+                             else
+                             {
+                                 stationCorrection.set_correction(0);
+                                 stationCorrection.set_exists(false);
+                             }
+                        }
+                        catch (const std::invalid_argument &e)
+                        {
+                            Finish({grpc::StatusCode::INVALID_ARGUMENT,
+                                    "Malformed station identifier"});
+                            return;
+                        }
+                        catch (const std::exception &e)
+                        {
+                            SPDLOG_LOGGER_WARN(
+                               mLogger,
+                               "Failed to get station corrections because {}",
+                               std::string{e.what()});
+                            Finish({grpc::StatusCode::INTERNAL,
+                               "Server error - contact developer"});
+                            return;
+                        }
+                    }
                 }
                 catch (const std::exception &e)
                 {
-                    metrics.incrementServerErrorCounter();
+                    metrics.incrementServerErrorCounter(mRouteName);
                     SPDLOG_LOGGER_WARN(
                         mLogger,
                         "Failed to get station corrections because {}",
@@ -156,7 +204,6 @@ public:
                     mLogger,
                     "Successfully found station corrections for {}",
                     requestIdentifier);
-*/
             }
         private:
             void OnDone() override
@@ -188,8 +235,6 @@ public:
             }
 //private:
             std::shared_ptr<spdlog::logger> mLogger{nullptr};
-            std::function<void (double, const std::string &)>
-                mRouteDurationRecorder;
             const std::chrono::time_point<std::chrono::steady_clock> mRPCStartTime
             {
                 std::chrono::steady_clock::now()
@@ -197,22 +242,19 @@ public:
             const std::string mRouteName{"GetStationCorrections"};
             bool mSuccess{false};
         };
-/*
         return new Reactor(context,
                            *request,
                            response,
-                           mSecured,
                            mGRPCOptions,
-                           *mStreamDequeMap,
-                           mLogger,
-                           mRecordDurationForMetrics);
-*/
+                           mSecured,
+                           *mCalculator,
+                           mLogger);
     }
 //private:
     MagnitudeServiceOptions mOptions;
     std::shared_ptr<spdlog::logger> mLogger{nullptr};
-    std::function<void (double, const std::string &)> mRouteDurationRecorder;
     std::unique_ptr<Magnitude::NetworkMagnitudeCalculator> mCalculator{nullptr};
+    GRPC::ServerOptions mGRPCOptions;
     bool mSecured{false};
 };
 

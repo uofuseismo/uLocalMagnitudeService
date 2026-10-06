@@ -24,8 +24,18 @@ public:
 
     /// @brief Increments the number of successful RPCs.
     void incrementSuccessCounter(const std::string &route);
-    /// @result The success counts for each route. 
+    /// @result The success counts for each RPC. 
     std::map<std::string, int64_t> getSuccessCounters() const;
+
+    /// @brief Increments the number of unauthenticated access attempts to an RPC.
+    void incrementUnauthenticatedCounter(const std::string &route); 
+    /// @result The unauthenticated access attempts for each RPC.
+    std::map<std::string, int64_t> getUnauthenticatedCounters() const;
+
+    /// @brief Increments the number of server errors in an RPC.
+    void incrementServerErrorCounter(const std::string &route); 
+    /// @result The server errors for each RPC.
+    std::map<std::string, int64_t> getServerErrorCounters() const;
 
     /// @brief Sets the route recorder.
     void setRouteRecorderCallback(const std::function<void (const std::chrono::duration<double> &,
@@ -40,9 +50,10 @@ private:
     Singleton() = default;
     ~Singleton() = default;
     mutable std::mutex mMutex;
-    std::map<std::string, int64_t> mServerErrorCounterMap; // 500 response codes
-    std::map<std::string, int64_t> mClientErrorCounterMap; // 400 response codes
-    std::map<std::string, int64_t> mSuccessCounterMap;     // 200 response codes
+    std::map<std::string, int64_t> mServerErrorCounterMap;     // 500 response codes
+    std::map<std::string, int64_t> mClientErrorCounterMap;     // 400 response codes
+    std::map<std::string, int64_t> mUnauthenticatedCounterMap; // 401 response code
+    std::map<std::string, int64_t> mSuccessCounterMap;         // 200 response codes
     bool mHaveDurationCallback{false};
 };
 /// @brief Initializes the metrics singleton once and for all.  This is to be

@@ -23,7 +23,7 @@ public:
     Amplitude(Amplitude &&amplitude) noexcept;
     /// @brief Creates the amplitude from a protobuf definition.
     /// @throws std::invalid_argument if the stream identifier is invalid
-    ///         or the amplitude value is not finite.
+    ///         or the amplitude value is not postive and not finite.
     /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::Amplitude.
     ///       Any other type fails to link.
     template<typename U>
@@ -61,7 +61,7 @@ public:
     [[nodiscard]] bool hasIdentifier() const noexcept; 
 
     /// @brief Creates the amplitude message from this class.
-    /// @result The stream identifier in the desired protobuf message format. 
+    /// @result The amplitude in the desired protobuf message format. 
     /// @throws std::runtime_error if  \c hasIdentifier() or \c hasValue() is false.
     /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::Amplitude.
     ///       Any other type fails to link.

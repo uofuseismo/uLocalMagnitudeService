@@ -28,6 +28,12 @@ public:
     /// @throws std::invalid_argument if the \c identifier.hasNetwork() or
     ///         \c identifier.hasStation() is false.
     explicit StationIdentifier(const Magnitude::StreamIdentifier &identifier);
+    /// @brief Creates the station identifier class from a proto file.
+    /// @throws std::invalid_argument if the network or station are not set.
+    /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::StationIdentifier.
+    ///       Any other type fails to link.
+    template<typename U>
+    explicit StationIdentifier(const U &identifier);
 
     /// @brief Sets the network code.
     /// @param[in] network   The network code - e.g., UU.  
@@ -52,6 +58,14 @@ public:
     /// @result String representation - e.g. "UU.CWU".
     /// @throws std::runtime_erorr if \c hasStation() or \c hasNetwork() is false.
     [[nodiscard]] std::string toString() const;
+
+    /// @brief Creates the station identifier message from this class.
+    /// @result The station identifier in the desired protobuf message format. 
+    /// @throws std::runtime_error if  \c hasNetwork() or \c hasStation() is false.
+    /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::StationIdentifier.
+    ///       Any other type fails to link.
+    template<typename U> [[nodiscard]] U toMessage() const;
+
 
     /// @brief Destructor.
     ~StationIdentifier();

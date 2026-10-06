@@ -35,6 +35,51 @@ std::map<std::string, int64_t> Singleton::getSuccessCounters() const
     return mSuccessCounterMap;
 }
 
+void Singleton::incrementUnauthenticatedCounter(const std::string &route)
+{
+    if (route.empty()){return;}
+    {   
+    const std::scoped_lock lock{mMutex};
+    auto it = mUnauthenticatedCounterMap.find(route);
+    if (it != mUnauthenticatedCounterMap.end())
+    {   
+        it->second = it->second + 1;
+        return;
+    }
+    mUnauthenticatedCounterMap.insert( {route, 1} );
+    }   
+}
+
+std::map<std::string, int64_t> Singleton::getUnauthenticatedCounters() const
+{
+    const std::scoped_lock lock{mMutex};
+    return mUnauthenticatedCounterMap;
+}
+
+/// Server error
+void Singleton::incrementServerErrorCounter(const std::string &route)
+{
+    if (route.empty()){return;}
+    {   
+    const std::scoped_lock lock{mMutex};
+    auto it = mServerErrorCounterMap.find(route);
+    if (it != mServerErrorCounterMap.end())
+    {   
+        it->second = it->second + 1;
+        return;
+    }   
+    mServerErrorCounterMap.insert( {route, 1} );
+    }   
+}
+
+std::map<std::string, int64_t> Singleton::getServerErrorCounters() const
+{
+    const std::scoped_lock lock{mMutex};
+    return mServerErrorCounterMap;
+}
+
+
+/// Route duration
 void Singleton::recordRouteDuration(
     const std::chrono::duration<double> &duration,
     const std::string &routeName)

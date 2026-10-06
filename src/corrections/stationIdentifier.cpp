@@ -7,6 +7,7 @@
 #include <utility>
 #include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_identifier.pb.h"
 
 using namespace ULocalMagnitudeService::Corrections;
 
@@ -61,6 +62,25 @@ StationIdentifier::StationIdentifier(
     stationIdentifier.setNetwork(identifier.getNetwork());
     stationIdentifier.setStation(identifier.getStation());
     *this = stationIdentifier;
+}
+
+template<>
+StationIdentifier::StationIdentifier(
+    const ULocalMagnitudeServiceAPI::V1::Magnitude::StationIdentifier
+        &identifier)
+{
+    if (!identifier.has_network())
+    {
+        throw std::invalid_argument("Network not set on protobuf");
+    }
+    if (!identifier.has_station())
+    {
+        throw std::invalid_argument("Station not set on protobuf");
+    }
+    StationIdentifier thisIdentifier;
+    thisIdentifier.setNetwork(identifier.network());
+    thisIdentifier.setStation(identifier.station());
+    *this = std::move(thisIdentifier);
 }
 
 
@@ -150,3 +170,14 @@ std::string StationIdentifier::toString() const
     return result; 
 }
  
+/// Protobuf
+template<>
+ULocalMagnitudeServiceAPI::V1::Magnitude::StationIdentifier
+StationIdentifier::toMessage() const
+{
+    ULocalMagnitudeServiceAPI::V1::Magnitude::StationIdentifier result;
+    result.set_network(getNetwork());
+    result.set_station(getStation());
+    return result;
+}
+

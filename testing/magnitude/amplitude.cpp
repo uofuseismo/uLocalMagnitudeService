@@ -262,7 +262,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Amplitude - protobuf",
         // was never built with
         auto futureUnits = message;
         futureUnits.set_units(static_cast<API::Amplitude_Units> (99));
-        REQUIRE_THROWS(Amplitude {futureUnits});
+        REQUIRE_THROWS_AS(Amplitude {futureUnits}, std::invalid_argument);
     }
 
     SECTION("Value is required and must be positive and finite")
