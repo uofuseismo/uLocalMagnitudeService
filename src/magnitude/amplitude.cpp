@@ -5,6 +5,8 @@
 #include <utility>
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.pb.h"
 
 using namespace ULocalMagnitudeService::Magnitude;
 

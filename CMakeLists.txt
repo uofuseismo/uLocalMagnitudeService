@@ -112,11 +112,10 @@ set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/magnitude/streamIdentifier.hpp
     include/${PROJECT_NAME}/metrics/singleton.hpp
     include/${PROJECT_NAME}/version.hpp)
-set(PROTO_SRC
+set(PROTO_MESSAGE_SRC
     uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/service.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.proto
@@ -124,6 +123,10 @@ set(PROTO_SRC
     uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_response.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_identifier.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.proto
+    )
+set(PROTO_SRC
+    ${PROTO_MESSAGE_SRC}
+    uLocalMagnitudeServiceAPI/v1/magnitude/service.proto
     )
 
 if (BUILD_SHARED_LIBS)
@@ -227,7 +230,9 @@ if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
                   testing/magnitude/observation.cpp
                   testing/magnitude/stationMagnitude.cpp
                   testing/magnitude/stationMagnitudeCalculator.cpp
-                  testing/magnitude/streamIdentifier.cpp)
+                  testing/magnitude/streamIdentifier.cpp
+                  ${PROTO_MESSAGE_SRC}
+                  )
    set_target_properties(unitTests PROPERTIES
                          CXX_STANDARD 23
                          CXX_STANDARD_REQUIRED YES
@@ -237,9 +242,22 @@ if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
                               PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
    target_link_libraries(unitTests
                          PRIVATE spdlog::spdlog_header_only
+                                 gRPC::grpc gRPC::grpc++
                                  uLocalMagnitudeService::libuLocalMagnitudeService
                                  protobuf::libprotobuf
                                  Catch2::Catch2WithMain)
+   add_test(NAME unitTests
+            COMMAND $<TARGET_FILE:unitTests>)
+   protobuf_generate(TARGET unitTests
+                     LANGUAGE cpp 
+                     )
+   protobuf_generate(TARGET unitTests
+                     LANGUAGE grpc
+                     PLUGIN "protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
+                     PLUGIN_OPTIONS generate_mock_code=true
+                     GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
+                    )   
+
    include(Catch)
    catch_discover_tests(unitTests)
 endif()

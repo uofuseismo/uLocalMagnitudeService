@@ -7,6 +7,7 @@
 #include <utility>
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
 //#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.pb.h"
 
 using namespace ULocalMagnitudeService::Magnitude;
 
@@ -58,6 +59,38 @@ StreamIdentifier::StreamIdentifier(const StreamIdentifier &identifier)
 StreamIdentifier::StreamIdentifier(StreamIdentifier &&identifier) noexcept
 {
     *this = std::move(identifier);
+}
+
+/// Build from a protobuf
+StreamIdentifier::StreamIdentifier(
+    const ULocalMagnitudeServiceAPI::V1::Magnitude::StreamIdentifier
+        &identifier)
+{
+    if (!identifier.has_network())
+    {
+        throw std::invalid_argument("Network not set on protobuf");
+    }
+    if (!identifier.has_station())
+    {
+        throw std::invalid_argument("Station not set on protobuf");
+    }
+    if (!identifier.has_channel())
+    {
+        throw std::invalid_argument("Channel not set on protobuf");
+    }
+    StreamIdentifier thisIdentifier;
+    thisIdentifier.setNetwork(identifier.network());
+    thisIdentifier.setStation(identifier.station());
+    thisIdentifier.setChannel(identifier.channel());
+    if (identifier.has_location_code())
+    {
+        thisIdentifier.setLocationCode(identifier.location_code());
+    }
+    else
+    {
+        thisIdentifier.setLocationCode("");
+    }
+    *this = std::move(thisIdentifier);
 }
 
 /// Copy assignment
@@ -184,3 +217,17 @@ std::string StreamIdentifier::toString() const
     return result; 
 }
  
+/// Protobuf
+template<>
+ULocalMagnitudeServiceAPI::V1::Magnitude::StreamIdentifier
+StreamIdentifier::toMessage() const
+{
+    ULocalMagnitudeServiceAPI::V1::Magnitude::StreamIdentifier result;
+    result.set_network(getNetwork());
+    result.set_station(getStation());
+    result.set_channel(getChannel());
+    result.set_location_code(getLocationCode());
+    return result;
+}
+
+

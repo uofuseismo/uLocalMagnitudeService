@@ -2,6 +2,10 @@
 #define ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_STREAM_IDENTIFIER_HPP
 #include <memory>
 #include <string>
+namespace ULocalMagnitudeServiceAPI::V1::Magnitude
+{
+ class StreamIdentifier;
+}
 namespace ULocalMagnitudeService::Magnitude
 {
 /// @class StreamIdentifier streamIdentifier.hpp
@@ -19,6 +23,10 @@ public:
     StreamIdentifier(const StreamIdentifier &identifier);
     /// @brief Move constructor.
     StreamIdentifier(StreamIdentifier &&identifier) noexcept;
+    /// @brief Creates the stream identifier class from a proto file.
+    /// @throws std::invalid_argument if the network, station, or channel
+    ///         are not set.
+    explicit StreamIdentifier(const ULocalMagnitudeServiceAPI::V1::Magnitude::StreamIdentifier &identifier);
 
     /// @brief Sets the network code.
     /// @param[in] network   The network code - e.g., UU.  
@@ -63,6 +71,13 @@ public:
     /// @throws std::runtime_error if \c hasStation(), \c hasNetwork(),
     ///         \c hasChannel(), or \c hasLocationCode()  is false.
     [[nodiscard]] std::string toString() const;
+
+    /// @brief Creates the stream identifier message from this class.
+    /// @result The stream identifier in the desired protobuf message format. 
+    /// @throws std::runtime_error if  \c hasStation(), \c hasNetwork(),
+    ///         \c hasChannel(), or \c hasLocationCode()  is false.
+    template<typename U> [[nodiscard]] U toMessage() const;
+
 
     /// @brief Destructor.
     ~StreamIdentifier();

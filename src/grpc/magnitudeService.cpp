@@ -1,3 +1,4 @@
+#include <chrono>
 #include <exception>
 #include <functional>
 #include <memory>
@@ -22,6 +23,7 @@
 #include "uLocalMagnitudeService/magnitude/networkMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculator.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
+#include "uLocalMagnitudeService/metrics/singleton.hpp"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/service.grpc.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.pb.h"
@@ -33,22 +35,22 @@
 
 using namespace ULocalMagnitudeService::GRPC;
 
-namespace ULMSAPI = ULocalMagnitudeServiceAPI;
+namespace ULMSAPIV1 = ULocalMagnitudeServiceAPI::V1::Magnitude;
 
 class MagnitudeService::MagnitudeServiceImpl :
-    public ULMSAPI::V1::Magnitude::MagnitudeService::CallbackService
+    public ULMSAPIV1::MagnitudeService::CallbackService
 {
 public:
     /// @brief Constructor
     MagnitudeServiceImpl
     (
         const MagnitudeServiceOptions &options,
-        std::shared_ptr<spdlog::logger> logger//,
-//        const std::function<void (double, const std::string &)> &recordDuration
+        std::shared_ptr<spdlog::logger> logger,
+        const std::function<void (double, const std::string &)> &recordDuration
     ) :
         mOptions(options),
-        mLogger(std::move(logger))
-//        mRecordDurationForMetrics(recordDuration)
+        mLogger(std::move(logger)),
+        mRouteDurationRecorder(recordDuration)
     {
         if (!mOptions.hasGRPCOptions())
         {
@@ -76,26 +78,31 @@ public:
                  mLogger);
     }
 
-/*
-    /// @brief Station corrections 
+    ///----------------------------------------------------------------------///
+    /// @brief Station corrections                                           ///
+    ///----------------------------------------------------------------------///
     grpc::ServerUnaryReactor
         *GetStationCorrections(
             grpc::CallbackServerContext *context,
-            const ULMSAPI::V1::StationCorrectionsRequest *request,
-            ULMSAPI::V1::StationCorrectionsResponse *response) override
+            const ULMSAPIV1::StationCorrectionsRequest *request,
+            ULMSAPIV1::StationCorrectionsResponse *response) override
     {
         class Reactor : public grpc::ServerUnaryReactor
         {
         public:
             Reactor(grpc::CallbackServerContext *context,
-                    const ULMSAPI::V1::StationCorrectionsRequest &request,
-                    ULMSAPI::V1::StationCorrectionsResponse *response,
+                    const ULMSAPIV1::StationCorrectionsRequest &request,
+                    ULMSAPIV1::StationCorrectionsResponse *response,
                     const ServerOptions &options,
                     const bool isSecured, 
+                    const Magnitude::NetworkMagnitudeCalculator *networkCalculator,
                     std::shared_ptr<spdlog::logger> logger,
                     const std::function<void (double, const std::string &)> &recordDuration) :
+                mLogger(std::move(logger)),
+                mRouteDurationRecorder(recordDuration) 
             {
                 auto &metrics = Metrics::Singleton::getInstance();
+/*
                 // Validate the client?
                 if (isSecured)
                 {
@@ -149,8 +156,8 @@ public:
                     mLogger,
                     "Successfully found station corrections for {}",
                     requestIdentifier);
+*/
             }
-        };
         private:
             void OnDone() override
             {
@@ -159,18 +166,15 @@ public:
                     SPDLOG_LOGGER_DEBUG(mLogger,
                                         "GetStationCorrections RPC completed");
                 }
-                auto &metrics = MetricsSingleton::getInstance();
-                //metrics.decrementNumberOfClients();
+                auto &metrics = Metrics::Singleton::getInstance();
                 if (mSuccess)
                 {
-                    metrics.incrementSuccessfulRPCCounter();
+                    metrics.incrementSuccessCounter(mRouteName);
                     const auto endTime = std::chrono::steady_clock::now();
-                    auto elapsedTimeNanoSeconds
-                        = std::chrono::duratino<std::chrono::nanoseconds>
-                          (mRPCStartTime - endTime).count();
                     auto elapsedTime
-                        = static_cast<double> (elapsedTimeNanoSeconds)*1.e-9;
-                    mRecordDurationCallback(elapsedTime, "GetStationCorrections");
+                        = std::chrono::duration<double>
+                          (mRPCStartTime - endTime);
+                    metrics.recordRouteDuration(elapsedTime, mRouteName);
                 }
                 delete this;
             }
@@ -185,13 +189,15 @@ public:
 //private:
             std::shared_ptr<spdlog::logger> mLogger{nullptr};
             std::function<void (double, const std::string &)>
-                mRecordDurationCallback;
-            const auto mRPCStartTime
+                mRouteDurationRecorder;
+            const std::chrono::time_point<std::chrono::steady_clock> mRPCStartTime
             {
                 std::chrono::steady_clock::now()
             };
+            const std::string mRouteName{"GetStationCorrections"};
             bool mSuccess{false};
         };
+/*
         return new Reactor(context,
                            *request,
                            response,
@@ -200,8 +206,8 @@ public:
                            *mStreamDequeMap,
                            mLogger,
                            mRecordDurationForMetrics);
-    }
 */
+    }
 //private:
     MagnitudeServiceOptions mOptions;
     std::shared_ptr<spdlog::logger> mLogger{nullptr};
