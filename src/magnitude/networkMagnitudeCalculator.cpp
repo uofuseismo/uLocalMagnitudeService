@@ -165,7 +165,7 @@ bool NetworkMagnitudeCalculator::requiresEventDepth() const
     {
         throw std::runtime_error("Network magnitude not initialized");
     }
-    pImpl->mRequiresDepthCorrection;
+    return pImpl->mRequiresDepthCorrection;
 }
 
 /// The distance corrections
@@ -218,11 +218,80 @@ NetworkMagnitudeCalculator::getStationCorrection(
 /// Destructor
 NetworkMagnitudeCalculator::~NetworkMagnitudeCalculator() = default;
 
+/// Computes a station magnitude from an observation.
+std::expected
+<
+    StationMagnitude,
+    NetworkMagnitudeCalculator::StationCalculatorErrorCode
+>
+NetworkMagnitudeCalculator::computeStationMagnitude(
+    const Observation &observation) const noexcept
+{
+    if (!isInitialized())
+    {   
+        return std::unexpected(StationCalculatorErrorCode::Uninitialized);
+    }   
+    if (!observation.hasAmplitudes())
+    {
+        return std::unexpected(
+            StationCalculatorErrorCode::ObservationMissingAmplitudes);
+    }
+    if (!observation.hasEpicentralDistance())
+    {
+        return std::unexpected(
+            StationCalculatorErrorCode::ObservationMissingDistance);
+    }
+    if (pImpl->mRequiresDepthCorrection && !observation.hasDepth())
+    {
+        return std::unexpected(
+            StationCalculatorErrorCode::ObservationMissingDepth);
+    }
+    const auto stationName = observation.getStationName();
+    const auto it = pImpl->mStationMagnitudeCalculatorMap.find(stationName);
+    if (it != pImpl->mStationMagnitudeCalculatorMap.end())
+    {
+        auto stationMagnitudeResult = it->second.operator()(observation);
+        if (stationMagnitudeResult.has_value())
+        {
+            return *stationMagnitudeResult;
+        }
+        else if (stationMagnitudeResult.error() ==
+                 StationMagnitudeCalculator::ErrorCode::NegativeDistance)
+        {
+            return std::unexpected(
+                StationCalculatorErrorCode::NegativeDistance);
+        }
+        else if (stationMagnitudeResult.error() ==
+                 StationMagnitudeCalculator::ErrorCode::StationTooFar)
+        {
+            return std::unexpected(
+                StationCalculatorErrorCode::StationTooFar);
+        }
+        else if (stationMagnitudeResult.error() ==
+                 StationMagnitudeCalculator::ErrorCode::InvalidDepth)
+        {
+            return std::unexpected(
+                StationCalculatorErrorCode::InvalidDepth);
+        }
+        else
+        {
+            return std::unexpected(
+                StationCalculatorErrorCode::Algorithm);
+        }
+    }
+    return std::unexpected(
+        StationCalculatorErrorCode::ObservationHasNoCorrection); 
+}
+
 /// Apply
 std::expected<NetworkMagnitude, NetworkMagnitudeCalculator::ErrorCode>
 NetworkMagnitudeCalculator::operator()(
     const std::vector<Observation> &observations) const noexcept
 {
+    if (!isInitialized())
+    {   
+        return std::unexpected(ErrorCode::Uninitialized);
+    }   
     if (observations.empty())
     {
         return std::unexpected(ErrorCode::NoObservations); 

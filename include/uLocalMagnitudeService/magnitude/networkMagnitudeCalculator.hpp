@@ -15,6 +15,7 @@ namespace ULocalMagnitudeService::Magnitude
  class NetworkMagnitude;
  class NetworkMagnitudeCalculatorOptions;
  class Observation;
+ class StationMagnitude;
 }
 
 namespace ULocalMagnitudeService::Magnitude
@@ -27,6 +28,7 @@ namespace ULocalMagnitudeService::Magnitude
 class NetworkMagnitudeCalculator
 {
 public:
+    /// @brief Network calculator error codes.
     enum class ErrorCode
     {
         // User error
@@ -36,6 +38,25 @@ public:
         ObservationMissingDepth,      /*!< Depth corrections are used an the observation lacks that. */
         DuplicateObservations,        /*!< There is a duplicate observation. */
         TooFewObservations,  /*!< Too few observations available to compute a network magnitude. */
+        // User errors at a station level
+        ObservationHasNoCorrection,   /*!< This observation has not corresponding station correciton. */
+        NegativeDistance,             /*!< A negative epicentral distance was encountered. */
+        StationTooFar,                /*!< The source-receiver distance is too large. */ 
+        // Server error
+        Uninitialized,   /*!< Class not initialized. */
+        Algorithm        /*!< Algorithm error. */
+    };
+    /// @brief Error codes for the station calculator facade.
+    enum class StationCalculatorErrorCode
+    {
+        // User error
+        ObservationMissingAmplitudes, /*!< At least one observation is missing amplitudes. */
+        ObservationMissingDistance,   /*!< Observation missing source-receiver epicentral distance. */
+        ObservationMissingDepth,      /*!< Depth corrections are used an the observation lacks that. */
+        ObservationHasNoCorrection,   /*!< This observation has not corresponding station correciton. */
+        NegativeDistance,             /*!< A negative epicentral distance was encountered. */
+        StationTooFar,                /*!< The source-receiver distance is too large. */ 
+        InvalidDepth,                 /*!< The depth is out the range [-8600, 900000]. */
         // Server error
         Uninitialized,   /*!< Class not initialized. */
         Algorithm        /*!< Algorithm error. */
@@ -67,6 +88,9 @@ public:
     /// @result The station correction for the provided station.
     /// @throws std::runtime_error if \c isInitialized() is false.
     [[nodiscard]] std::optional<double> getStationCorrection(const Corrections::StationIdentifier &identifier) const;
+
+    /// @result The station magnitude corresponding to the observation.
+    [[nodiscard]] auto computeStationMagnitude(const Observation &observation) const noexcept -> std::expected<StationMagnitude, StationCalculatorErrorCode>;
 
     /// @brief Computes the network magnitude from the given observations.
     [[nodiscard]] auto operator()(const std::vector<Observation> &observations) const noexcept -> std::expected<NetworkMagnitude, ErrorCode>;
