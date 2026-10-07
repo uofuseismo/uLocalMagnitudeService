@@ -8,7 +8,7 @@
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
-//#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitude.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitude.pb.h"
 
 using namespace ULocalMagnitudeService::Magnitude;
 
@@ -176,4 +176,15 @@ StationMagnitude::getAmplitudes() const
 bool StationMagnitude::hasAmplitudes() const noexcept
 {
     return pImpl->mHasAmplitudes;
+}
+
+/// To message
+template<>
+ULocalMagnitudeServiceAPI::V1::Magnitude::StationMagnitude
+StationMagnitude::toMessage() const
+{
+    ULocalMagnitudeServiceAPI::V1::Magnitude::StationMagnitude result;
+    result.set_magnitude(getValue());
+    resul
+    return result;
 }
