@@ -24,6 +24,7 @@
 #include "uLocalMagnitudeService/magnitude/networkMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculator.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
+#include "uLocalMagnitudeService/magnitude/stationMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/metrics/singleton.hpp"
 #include "uLocalMagnitudeService/version.hpp"
@@ -172,7 +173,13 @@ public:
                                 grpcMeasurement,
                                 depth
                             };
-                            //calculator->
+                            auto stationMagnitude
+                                = calculator.computeStationMagnitude(
+                                    observation);
+                            if (stationMagnitude.has_value())
+                            {
+
+                            }
                         }
                         catch (const std::invalid_argument &e)
                         {

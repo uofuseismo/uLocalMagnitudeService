@@ -2,6 +2,11 @@
 #define ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_STATION_MAGNITUDE_HPP
 #include <memory>
 #include <string>
+#include <utility>
+namespace ULocalMagnitudeService::Magnitude
+{
+ class Amplitude;
+}
 namespace ULocalMagnitudeService::Magnitude
 {
 /// @class StationMagnitude stationMagnitude.hpp
@@ -54,15 +59,23 @@ public:
     /// @result True indicates the distance correction was set.
     [[nodiscard]] bool hasDistanceCorrection() const noexcept;
 
-    /// @brief Sets the name of the station.
-    /// @param[in] name  The station name - e.g., UU.CWU.
-    /// @throws std::invalid_argument if the name is empty.
-    void setStationName(const std::string &name);
+    /// @brief Sets the amplitudes that went into building the station magnitude.
+    /// @param[in] amplitudes  The measured amplitudes on the non-vertical
+    ///                        channels.
+    /// @throws std::invalid_argument if amplitudes correspond to the same
+    ///         stream, either amplitude is missing an identifier or value,
+    ///         or the identifiers indicate a sensor mismatch - e.g.,
+    ///         an amplitude on UU.CWU.HHE.01 and UU.CWU.ENN.01 or 
+    ///         US.DUG.HH1.00 and US.DUG.HH2.02.
+    void setAmplitudes(const std::pair<Amplitude, Amplitude> &amplitudes);
+    /// @result The amplitudes that went into making the station magnitude.
+    /// @throws std::runtime_error if \c hasAmplitudes() is false.
+    [[nodiscard]] std::pair<Amplitude, Amplitude> getAmplitudes() const;
+    /// @result True indicates that the amplitudes were set.
+    [[nodiscard]] bool hasAmplitudes() const noexcept;
     /// @result The station name - e.g., UU.CWU.
-    /// @throws std::runtime_error if \c hasStationName() is false.
+    /// @throws std::runtime_error if \c hasAmplitudes() is false.
     [[nodiscard]] std::string getStationName() const;
-    /// @result True indicates the station name was set.
-    [[nodiscard]] bool hasStationName() const noexcept;
 
     /// @brief Destructor.
     ~StationMagnitude();

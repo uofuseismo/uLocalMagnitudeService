@@ -4,16 +4,22 @@
 #include <string>
 #include <utility>
 #include "uLocalMagnitudeService/magnitude/stationMagnitude.hpp"
+#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
+#include "uLocalMagnitudeService/magnitude/amplitude.hpp"
+#include "uLocalMagnitudeService/magnitude/observation.hpp"
+#include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
 
 using namespace ULocalMagnitudeService::Magnitude;
 
 class StationMagnitude::StationMagnitudeImpl
 {
 public:
+    std::pair<Amplitude, Amplitude> mAmplitudes;
     std::string mStationName;
     double mValue{0};
     double mStationCorrection{0};
     double mDistanceCorrection{0};
+    bool mHasAmplitudes{false};
     bool mHasValue{false};
     bool mHasStationCorrection{false};
     bool mHasDistanceCorrection{false};
@@ -131,22 +137,42 @@ bool StationMagnitude::hasDistanceCorrection() const noexcept
 }
 
 /// Station name
-void StationMagnitude::setStationName(const std::string &name)
-{
-    if (name.empty())
-    {
-        throw std::invalid_argument("Station name is empty");
-    }
-    pImpl->mStationName = name;
-}
-
 std::string StationMagnitude::getStationName() const
 {
-    if (!hasStationName()){throw std::runtime_error("Station name not set");}
+    if (!hasAmplitudes()){throw std::runtime_error("Amplitudes not set");}
     return pImpl->mStationName;
 }
 
-bool StationMagnitude::hasStationName() const noexcept
+/// Amplitudes
+void StationMagnitude::setAmplitudes(
+    const std::pair<Amplitude, Amplitude> &amplitudes)
 {
-    return !pImpl->mStationName.empty();
+    Observation observation;
+    observation.setAmplitudes(amplitudes); // Handle error checking
+    pImpl->mAmplitudes = observation.getAmplitudes();
+    const StreamIdentifier streamIdentifier
+    {
+        pImpl->mAmplitudes.first.getIdentifier()
+    };
+    const Corrections::StationIdentifier stationIdentifier
+    {
+        streamIdentifier
+    };  
+    pImpl->mStationName = stationIdentifier.toString();
+    pImpl->mHasAmplitudes = true;
+}
+
+std::pair<Amplitude, Amplitude>
+StationMagnitude::getAmplitudes() const
+{
+    if (!hasAmplitudes())
+    {
+        throw std::runtime_error("Amplitudes not set");
+    }
+    return pImpl->mAmplitudes;
+} 
+
+bool StationMagnitude::hasAmplitudes() const noexcept
+{
+    return pImpl->mHasAmplitudes;
 }

@@ -154,7 +154,14 @@ StationMagnitudeCalculator::operator()(
         = uncorrectedStationMagnitude + distanceCorrection + stationCorrection;
     // Package up the output
     StationMagnitude result;
-    result.setStationName(stationName);
+    try
+    {
+        result.setAmplitudes(amplitudes);
+    }
+    catch (...)
+    {
+        return std::unexpected(ErrorCode::Algorithmic);
+    }
     result.setValue(stationMagnitude);
     result.setStationCorrection(stationCorrection);
     result.setDistanceCorrection(distanceCorrection);
