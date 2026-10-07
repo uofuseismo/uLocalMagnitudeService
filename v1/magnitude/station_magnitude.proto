@@ -14,7 +14,7 @@ message StationMagnitude {
    Amplitude amplitude_2 = 2;
    /// The station magnitude.  To compute the uncorrected magnitude use:
    ///   uncorrected = magnitude - station_correction - distance_correction
-   double magnitude = 3;
+   double value = 3;
    /// The station correction that was added to the station magnitude.
    double station_correction = 4;
    /// The distance correction that was added to station magnitude.
