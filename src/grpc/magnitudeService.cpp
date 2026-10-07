@@ -178,7 +178,7 @@ public:
                                     observation);
                             if (stationMagnitude.has_value())
                             {
-
+                                
                             }
                         }
                         catch (const std::invalid_argument &e)
