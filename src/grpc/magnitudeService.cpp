@@ -34,6 +34,7 @@
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitude.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_request.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_response.pb.h"
 #include "validateClient.hpp"
@@ -168,7 +169,7 @@ public:
                     {
                         try
                         {
-                            Magnitude::Observation observation
+                            const Magnitude::Observation observation
                             {
                                 grpcMeasurement,
                                 depth
@@ -178,7 +179,11 @@ public:
                                     observation);
                             if (stationMagnitude.has_value())
                             {
-                                
+                                auto stationMagnitudeMessage
+                                    = stationMagnitude->toMessage
+                                      <ULMSAPIV1::StationMagnitude> ();
+                                response->mutable_station_magnitudes()->Add(
+                                    std::move(stationMagnitudeMessage));
                             }
                         }
                         catch (const std::invalid_argument &e)
@@ -260,6 +265,13 @@ public:
             };
             bool mSuccess{false};
         };
+        return new Reactor(context,
+                           *request,
+                           response,
+                           mGRPCOptions,
+                           mSecured,
+                           *mCalculator,
+                           mLogger);
      }
 
     ///----------------------------------------------------------------------///

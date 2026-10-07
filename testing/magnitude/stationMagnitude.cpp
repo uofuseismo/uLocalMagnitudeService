@@ -1,17 +1,22 @@
+#include <cmath>
 #include <limits>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include "uLocalMagnitudeService/magnitude/stationMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitude.pb.h"
 
 using namespace ULocalMagnitudeService::Magnitude;
 
 namespace
 {
-constexpr double nan{std::numeric_limits<double>::quiet_NaN()};
+constexpr double notANumber{std::numeric_limits<double>::quiet_NaN()};
 constexpr double infinity{std::numeric_limits<double>::infinity()};
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -206,7 +211,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::StationMagnitude",
     SECTION("Non-finite values are rejected")
     {
         auto magnitude = makeMagnitude();
-        for (const auto bad : {nan, infinity, -infinity})
+        for (const auto bad : {notANumber, infinity, -infinity})
         {
             REQUIRE_THROWS_AS(magnitude.setValue(bad), std::invalid_argument);
             REQUIRE_THROWS_AS(magnitude.setStationCorrection(bad),
@@ -264,5 +269,135 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::StationMagnitude",
         StationMagnitude moveAssigned;
         moveAssigned = std::move(moved);
         checkMagnitude(moveAssigned);
+    }
+}
+
+TEST_CASE("ULocalMagnitudeService::Magnitude::StationMagnitude - protobuf",
+          "[stationMagnitude]")
+{
+    namespace API = ULocalMagnitudeServiceAPI::V1::Magnitude;
+
+    SECTION("To message")
+    {
+        const auto message = makeMagnitude().toMessage<API::StationMagnitude> ();
+        REQUIRE(message.has_amplitude_1());
+        REQUIRE(message.has_amplitude_2());
+        REQUIRE(message.amplitude_1().units()
+             == API::Amplitude_Units_MILLIMETERS);
+        REQUIRE(message.amplitude_1().value() == 0.3459206596016884);
+        REQUIRE(message.amplitude_2().value() == 0.15187045093625784);
+        REQUIRE(message.amplitude_1().stream_identifier().network() == "UU");
+        REQUIRE(message.amplitude_1().stream_identifier().station() == "CCUT");
+        REQUIRE(message.amplitude_1().stream_identifier().channel() == "HHE");
+        REQUIRE(message.amplitude_1().stream_identifier().location_code()
+             == "01");
+        REQUIRE(message.amplitude_2().stream_identifier().channel() == "HHN");
+        REQUIRE(message.value() == 2.204987145462916);
+        REQUIRE(message.station_correction() == 0.31);
+        REQUIRE(message.distance_correction() == 2.8);
+    }
+
+    SECTION("The uncorrected magnitude can be recovered from the message")
+    {
+        // As the proto documents:
+        //   uncorrected = value - station_correction - distance_correction
+        // and for a station magnitude uncorrected = log10(A_average/2).
+        const auto message = makeMagnitude().toMessage<API::StationMagnitude> ();
+        const double averageAmplitude
+            = 0.5*(message.amplitude_1().value()
+                 + message.amplitude_2().value());
+        REQUIRE_THAT(message.value() - message.station_correction()
+                   - message.distance_correction(),
+                     Catch::Matchers::WithinAbs(
+                         std::log10(0.5*averageAmplitude), 1.e-12));
+    }
+
+    SECTION("Amplitudes are written in the order given")
+    {
+        auto [east, north] = ccutAmplitudes();
+        auto magnitude = makeMagnitude();
+        magnitude.setAmplitudes(std::pair {north, east});
+        const auto message = magnitude.toMessage<API::StationMagnitude> ();
+        REQUIRE(message.amplitude_1().stream_identifier().channel() == "HHN");
+        REQUIRE(message.amplitude_2().stream_identifier().channel() == "HHE");
+    }
+
+    SECTION("Zero and negative values are written, not dropped")
+    {
+        auto magnitude = makeMagnitude();
+        magnitude.setValue(-0.5);
+        magnitude.setStationCorrection(0);
+        magnitude.setDistanceCorrection(0);
+        const auto message = magnitude.toMessage<API::StationMagnitude> ();
+        REQUIRE(message.has_value());
+        REQUIRE(message.has_station_correction());
+        REQUIRE(message.has_distance_correction());
+        REQUIRE(message.value() == -0.5);
+        REQUIRE(message.station_correction() == 0);
+        REQUIRE(message.distance_correction() == 0);
+    }
+
+    SECTION("To message requires everything to be set")
+    {
+        REQUIRE_THROWS_AS(
+            StationMagnitude {}.toMessage<API::StationMagnitude> (),
+            std::runtime_error);
+
+        StationMagnitude noAmplitudes;
+        noAmplitudes.setValue(2.2);
+        noAmplitudes.setStationCorrection(0.31);
+        noAmplitudes.setDistanceCorrection(2.8);
+        REQUIRE_THROWS_AS(noAmplitudes.toMessage<API::StationMagnitude> (),
+                          std::runtime_error);
+
+        StationMagnitude noValue;
+        noValue.setAmplitudes(ccutAmplitudes());
+        noValue.setStationCorrection(0.31);
+        noValue.setDistanceCorrection(2.8);
+        REQUIRE_THROWS_AS(noValue.toMessage<API::StationMagnitude> (),
+                          std::runtime_error);
+
+        StationMagnitude noStationCorrection;
+        noStationCorrection.setAmplitudes(ccutAmplitudes());
+        noStationCorrection.setValue(2.2);
+        noStationCorrection.setDistanceCorrection(2.8);
+        REQUIRE_THROWS_AS(
+            noStationCorrection.toMessage<API::StationMagnitude> (),
+            std::runtime_error);
+
+        StationMagnitude noDistanceCorrection;
+        noDistanceCorrection.setAmplitudes(ccutAmplitudes());
+        noDistanceCorrection.setValue(2.2);
+        noDistanceCorrection.setStationCorrection(0.31);
+        REQUIRE_THROWS_AS(
+            noDistanceCorrection.toMessage<API::StationMagnitude> (),
+            std::runtime_error);
+    }
+
+    SECTION("Writing a message doesn't change the station magnitude")
+    {
+        const auto magnitude = makeMagnitude();
+        const auto first = magnitude.toMessage<API::StationMagnitude> ();
+        const auto second = magnitude.toMessage<API::StationMagnitude> ();
+        REQUIRE(first.SerializeAsString() == second.SerializeAsString());
+        checkMagnitude(magnitude);
+    }
+
+    SECTION("Round trip through the wire format")
+    {
+        API::StationMagnitude parsed;
+        REQUIRE(parsed.ParseFromString(
+            makeMagnitude().toMessage<API::StationMagnitude> ()
+           .SerializeAsString()));
+        REQUIRE(parsed.value() == 2.204987145462916);
+        REQUIRE(parsed.station_correction() == 0.31);
+        REQUIRE(parsed.distance_correction() == 2.8);
+        // A client can rebuild the amplitudes
+        const Amplitude first{parsed.amplitude_1()};
+        const Amplitude second{parsed.amplitude_2()};
+        REQUIRE(first.getName() == "UU.CCUT.HHE.01");
+        REQUIRE(second.getName() == "UU.CCUT.HHN.01");
+        REQUIRE(first.getValue() == 0.3459206596016884);
+        REQUIRE(second.getValue() == 0.15187045093625784);
     }
 }
