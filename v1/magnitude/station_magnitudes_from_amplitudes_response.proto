@@ -2,7 +2,7 @@ edition = "2023";
 
 package ULocalMagnitudeServiceAPI.V1.Magnitude;
 
-import "uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.proto";
+import "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.proto";
 
 /**
  * Station magnitudes corresponding to the given amplitudes.
@@ -12,10 +12,10 @@ message StationMagnitudesFromAmplitudesResponse {
     * The station magnitude corresonding to the input measurements.
     */
    message StationMagnitude {
-      /// The stream identifier for the first channel.
-      StreamIdentifier stream_identifier_1 = 1;
-      /// The stream identifier for the second channel.
-      StreamIdentifier stream_identifier_2 = 2;
+      /// The first amplitude measurement used in the station magnitude calculation.
+      Amplitude amplitude_1 = 1;
+      /// The second amplitude measurement used in the station magnitude calculation.
+      Amplitude amplitude_2 = 2;
       /// The station magnitude.  To compute the uncorrected magnitude use:
       ///   uncorrected = magnitude - station_correction - distance_correction
       double magnitude = 3;
