@@ -23,6 +23,17 @@ public:
     Observation(const Observation &observation);
     /// @brief Move constructor.
     Observation(Observation &&observation) noexcept;
+    /// @brief Creates the observation class from a proto file.
+    /// @throws std::invalid_argument if the station amplitudes
+    ///         are not set, the amplitudes are invalid (e.g., values
+    ///         are not positive or finite, units are unknown, or
+    ///         the streams do not map to complimentary channels),
+    ///         or the epicentral distance is negative.
+    /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::StationAmplitudeMeasurement
+    ///       Any other type fails to link.
+    template<typename U>
+    explicit Observation(const U &stationAmplitudeMeasurement, double depth);
+
 
     /// @brief Sets an amplitude pair. 
     /// @param[in] amplitudes  The measured amplitudes on the non-vertical

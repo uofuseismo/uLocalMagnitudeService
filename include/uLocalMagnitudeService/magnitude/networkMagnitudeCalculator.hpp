@@ -60,6 +60,10 @@ public:
     /// @throws std::runtime_error if \c isInitialized() is false.
     [[nodiscard]] Corrections::Distance getDistanceCorrections() const;
 
+    /// @result True indicates that the event depth is required.
+    /// @throws std::runtime_error if \c isInitialized() is false.
+    [[nodiscard]] bool requiresEventDepth() const;
+
     /// @result The station correction for the provided station.
     /// @throws std::runtime_error if \c isInitialized() is false.
     [[nodiscard]] std::optional<double> getStationCorrection(const Corrections::StationIdentifier &identifier) const;

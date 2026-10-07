@@ -7,6 +7,14 @@
 #include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.pb.h"
+//#include "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.pb.h"
+
+namespace
+{
+constexpr double MIN_DEPTH{-8600};
+constexpr double MAX_DEPTH{900000};
+}
 
 using namespace ULocalMagnitudeService::Magnitude;
 
@@ -38,6 +46,47 @@ Observation::Observation(const Observation &observation)
 Observation::Observation(Observation &&observation) noexcept
 {
     *this = std::move(observation);
+}
+
+/// Create from a station amplitude measurement
+template<>
+Observation::Observation(
+    const ULocalMagnitudeServiceAPI::V1
+          ::Magnitude::StationAmplitudeMeasurement &measurement,
+    const double depth)
+{
+    if (!std::isfinite(depth))
+    {   
+        throw std::invalid_argument("Depth must be finite");
+    }
+    if (depth < MIN_DEPTH || depth > MAX_DEPTH)
+    {   
+        throw std::invalid_argument("Depth must be in range [-8600, 900000]");
+    }   
+    if (!measurement.has_epicentral_distance())
+    {
+        throw std::invalid_argument("Epicentral distance not set");
+    }
+    if (!measurement.has_amplitude_stream_1())
+    {
+        throw std::invalid_argument("First amplitude not set");
+    }
+    if (!measurement.has_amplitude_stream_2())
+    {
+        throw std::invalid_argument("Second amplitude not set");
+    }
+    Observation thisObservation;
+    Amplitude amplitude1{measurement.amplitude_stream_1()};  
+    Amplitude amplitude2{measurement.amplitude_stream_2()};
+    std::pair<Amplitude, Amplitude> amplitudePair
+    {
+        std::move(amplitude1),
+        std::move(amplitude2)
+    };
+    thisObservation.setAmplitudes(std::move(amplitudePair));
+    thisObservation.setEpicentralDistance(measurement.epicentral_distance());
+    thisObservation.setDepth(depth);
+    *this = std::move(thisObservation);
 }
 
 /// Copy assignment
@@ -199,7 +248,7 @@ void Observation::setDepth(const double depth)
     {   
         throw std::invalid_argument("Depth must be finite");
     }   
-    if (depth < -8600 || depth > 900000)
+    if (depth < MIN_DEPTH || depth > MAX_DEPTH)
     {
         throw std::invalid_argument("Depth must be in range [-8600, 900000]");
     }

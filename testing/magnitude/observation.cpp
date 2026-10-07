@@ -8,6 +8,8 @@
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.pb.h"
 
 using namespace ULocalMagnitudeService::Magnitude;
 
@@ -286,5 +288,194 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Observation", "[observation]")
         Observation moveAssigned;
         moveAssigned = std::move(moved);
         check(moveAssigned);
+    }
+}
+
+TEST_CASE("ULocalMagnitudeService::Magnitude::Observation - protobuf",
+          "[observation]")
+{
+    namespace API = ULocalMagnitudeServiceAPI::V1::Magnitude;
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+    const auto amplitudeMessage = [](const std::string &network,
+                                     const std::string &station,
+                                     const std::string &channel,
+                                     const std::string &locationCode,
+                                     const double value,
+                                     const API::Amplitude_Units units)
+    {
+        API::Amplitude result;
+        auto *identifier = result.mutable_stream_identifier();
+        identifier->set_network(network);
+        identifier->set_station(station);
+        identifier->set_channel(channel);
+        identifier->set_location_code(locationCode);
+        result.set_value(value);
+        result.set_units(units);
+        return result;
+    };
+    // UU.CCUT for evid 80157466
+    constexpr double distance{66775.14936328208};
+    constexpr double depth{7000};
+    API::StationAmplitudeMeasurement message;
+    *message.mutable_amplitude_stream_1()
+        = amplitudeMessage("UU", "CCUT", "HHE", "01", 0.3459206596016884,
+                           API::Amplitude_Units_MILLIMETERS);
+    *message.mutable_amplitude_stream_2()
+        = amplitudeMessage("UU", "CCUT", "HHN", "01", 0.15187045093625784,
+                           API::Amplitude_Units_MILLIMETERS);
+    message.set_epicentral_distance(distance);
+
+    SECTION("From message")
+    {
+        const Observation observation{message, depth};
+        checkAmplitudes(observation);
+        REQUIRE(observation.getEpicentralDistance() == distance);
+        REQUIRE(observation.getDepth() == depth);
+    }
+
+    SECTION("Amplitudes in centimeters are converted")
+    {
+        // This is how AQMS stores them
+        *message.mutable_amplitude_stream_1()
+            = amplitudeMessage("UU", "CCUT", "HHE", "01",
+                               0.03459206596016884,
+                               API::Amplitude_Units_CENTIMETERS);
+        *message.mutable_amplitude_stream_2()
+            = amplitudeMessage("UU", "CCUT", "HHN", "01",
+                               0.015187045093625784,
+                               API::Amplitude_Units_CENTIMETERS);
+        checkAmplitudes(Observation {message, depth});
+    }
+
+    SECTION("Amplitudes are kept in the order given")
+    {
+        auto swapped = message;
+        *swapped.mutable_amplitude_stream_1() = message.amplitude_stream_2();
+        *swapped.mutable_amplitude_stream_2() = message.amplitude_stream_1();
+        const Observation observation{swapped, depth};
+        REQUIRE(observation.getAmplitudes().first.getName()
+             == "UU.CCUT.HHN.01");
+        REQUIRE(observation.getAmplitudes().second.getName()
+             == "UU.CCUT.HHE.01");
+    }
+
+    SECTION("Both amplitudes are required")
+    {
+        auto noFirst = message;
+        noFirst.clear_amplitude_stream_1();
+        REQUIRE_THROWS_AS((Observation {noFirst, depth}),
+                          std::invalid_argument);
+
+        auto noSecond = message;
+        noSecond.clear_amplitude_stream_2();
+        REQUIRE_THROWS_AS((Observation {noSecond, depth}),
+                          std::invalid_argument);
+    }
+
+    SECTION("Invalid amplitudes are rejected")
+    {
+        auto unknownUnits = message;
+        unknownUnits.mutable_amplitude_stream_1()->set_units(
+            API::Amplitude_Units_UNKNOWN);
+        REQUIRE_THROWS_AS((Observation {unknownUnits, depth}),
+                          std::invalid_argument);
+
+        auto zeroValue = message;
+        zeroValue.mutable_amplitude_stream_2()->set_value(0);
+        REQUIRE_THROWS_AS((Observation {zeroValue, depth}),
+                          std::invalid_argument);
+
+        auto noStation = message;
+        noStation.mutable_amplitude_stream_1()
+                 ->mutable_stream_identifier()->clear_station();
+        REQUIRE_THROWS_AS((Observation {noStation, depth}),
+                          std::invalid_argument);
+    }
+
+    SECTION("Mismatched amplitudes are rejected")
+    {
+        const auto mismatched = [&](const API::Amplitude &second)
+        {
+            auto result = message;
+            *result.mutable_amplitude_stream_2() = second;
+            return result;
+        };
+        const auto units = API::Amplitude_Units_MILLIMETERS;
+        // Same channel twice
+        REQUIRE_THROWS_AS(
+            (Observation {mismatched(message.amplitude_stream_1()), depth}),
+            std::invalid_argument);
+        // Different stations
+        REQUIRE_THROWS_AS(
+            (Observation {mismatched(amplitudeMessage("UU", "LCMT", "HHN",
+                                                      "01", 0.15, units)),
+                          depth}),
+            std::invalid_argument);
+        // Same station name on another network
+        REQUIRE_THROWS_AS(
+            (Observation {mismatched(amplitudeMessage("WY", "CCUT", "HHN",
+                                                      "01", 0.15, units)),
+                          depth}),
+            std::invalid_argument);
+        // Different location codes
+        REQUIRE_THROWS_AS(
+            (Observation {mismatched(amplitudeMessage("UU", "CCUT", "HHN",
+                                                      "02", 0.15, units)),
+                          depth}),
+            std::invalid_argument);
+        // Different sensors - e.g., MPU's ENN with HHE in evid 80157946
+        REQUIRE_THROWS_AS(
+            (Observation {mismatched(amplitudeMessage("UU", "CCUT", "ENN",
+                                                      "01", 0.15, units)),
+                          depth}),
+            std::invalid_argument);
+    }
+
+    SECTION("Epicentral distance is required and must be valid")
+    {
+        auto noDistance = message;
+        noDistance.clear_epicentral_distance();
+        REQUIRE_THROWS_AS((Observation {noDistance, depth}),
+                          std::invalid_argument);
+
+        auto atSource = message;
+        atSource.set_epicentral_distance(0);
+        REQUIRE((Observation {atSource, depth}).getEpicentralDistance() == 0);
+
+        for (const double badDistance :
+                 {-1.0, 21000001.0,
+                  std::numeric_limits<double>::quiet_NaN(),
+                  std::numeric_limits<double>::infinity()})
+        {
+            INFO("Distance: " << badDistance);
+            auto bad = message;
+            bad.set_epicentral_distance(badDistance);
+            REQUIRE_THROWS_AS((Observation {bad, depth}),
+                              std::invalid_argument);
+        }
+    }
+
+    SECTION("Depth must be valid")
+    {
+        REQUIRE((Observation {message, -8600}).getDepth() == -8600);
+        REQUIRE((Observation {message, 900000}).getDepth() == 900000);
+        for (const double badDepth :
+                 {-8601.0, 900001.0,
+                  std::numeric_limits<double>::quiet_NaN(),
+                  std::numeric_limits<double>::infinity()})
+        {
+            INFO("Depth: " << badDepth);
+            REQUIRE_THROWS_AS((Observation {message, badDepth}),
+                              std::invalid_argument);
+        }
+    }
+
+    SECTION("Round trip through the wire format")
+    {
+        API::StationAmplitudeMeasurement parsed;
+        REQUIRE(parsed.ParseFromString(message.SerializeAsString()));
+        const Observation observation{parsed, depth};
+        checkAmplitudes(observation);
+        REQUIRE(observation.getEpicentralDistance() == distance);
     }
 }

@@ -158,7 +158,17 @@ bool NetworkMagnitudeCalculator::isInitialized() const noexcept
     return pImpl->mInitialized;
 }
 
-/// The distance corerections
+/// Need depth?
+bool NetworkMagnitudeCalculator::requiresEventDepth() const
+{
+    if (!isInitialized())
+    {
+        throw std::runtime_error("Network magnitude not initialized");
+    }
+    pImpl->mRequiresDepthCorrection;
+}
+
+/// The distance corrections
 ULocalMagnitudeService::Corrections::Distance 
     NetworkMagnitudeCalculator::getDistanceCorrections() const
 {

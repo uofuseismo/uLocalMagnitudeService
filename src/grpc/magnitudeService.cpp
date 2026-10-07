@@ -24,11 +24,13 @@
 #include "uLocalMagnitudeService/magnitude/networkMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculator.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
+#include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/metrics/singleton.hpp"
 #include "uLocalMagnitudeService/version.hpp"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/service.grpc.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_request.pb.h"
@@ -138,9 +140,71 @@ public:
                                       + " ("
                                       + request.identifier()
                                       + ")";
-//                    *response->mutable_identifier() = request.identifier();
+                    *response->mutable_identifier() = request.identifier();
                 }
-
+                SPDLOG_LOGGER_DEBUG(mLogger,
+                                    "Computing station mganitudes for {}",
+                                    requestIdentifier);
+                // Do it
+                try
+                {
+                    double depth{0};
+                    if (calculator.requiresEventDepth() && !request.has_depth())
+                    {
+                        metrics.incrementClientErrorCounter(mRouteName);
+                        Finish({grpc::StatusCode::INVALID_ARGUMENT,
+                            "Malformed request - depth not set"});
+                        return;
+                    }
+                    else
+                    {
+                        depth = (request.has_depth()) ? request.depth() : 0;
+                    }
+//                    namespace UCorrections
+//                        = ULocalMagnitudeService::Corrections;
+                    for (const auto &grpcMeasurement :
+                         request.station_amplitude_measurements())
+                    {
+                        try
+                        {
+                            Magnitude::Observation observation
+                            {
+                                grpcMeasurement,
+                                depth
+                            };
+                            //calculator->
+                        }
+                        catch (const std::invalid_argument &e)
+                        {
+                            metrics.incrementClientErrorCounter(mRouteName);
+                            Finish({grpc::StatusCode::INVALID_ARGUMENT,
+                                    "Malformed measurement"});
+                            return;
+                        }
+                        catch (const std::exception &e)
+                        {
+                            metrics.incrementServerErrorCounter(mRouteName);
+                            SPDLOG_LOGGER_WARN(
+                               mLogger,
+                               "Failed to get station magnitude because {}",
+                               std::string{e.what()});
+                            Finish({grpc::StatusCode::INTERNAL,
+                               "Server error - contact developer"});
+                            return;
+                        }
+                    }
+                }
+                catch (const std::exception &e) 
+                {
+                    metrics.incrementServerErrorCounter(mRouteName);
+                    SPDLOG_LOGGER_WARN(
+                        mLogger,
+                        "Failed to get station magnitudes because {}",
+                        std::string{e.what()});
+                    Finish({grpc::StatusCode::INTERNAL,
+                            "Server error - try using a different endpoint"});
+                    return;
+                }
                 mSuccess = true;
                 Finish(grpc::Status::OK);
                 SPDLOG_LOGGER_DEBUG(
