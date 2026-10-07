@@ -26,7 +26,7 @@ public:
     MagnitudeServiceOptions(MagnitudeServiceOptions &&options) noexcept;
 
     /// @brief Sets the gRPC server options.
-    /// @param[in] options   Options defining the undrelying gRPC service.
+    /// @param[in] options   Options defining the underlying gRPC service.
     /// @throws std::invalid_argument if options.validate() fails.
     void setGRPCOptions(const ServerOptions &options);
     /// @result The gRPC server options.

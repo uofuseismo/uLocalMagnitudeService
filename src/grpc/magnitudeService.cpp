@@ -1,23 +1,20 @@
 #include <chrono>
 #include <exception>
-#include <functional>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <spdlog/spdlog.h>
 #include <spdlog/logger.h>
-#include <grpcpp/server_builder.h>
+//NOLINTNEXTLINE(misc-include-cleaner)
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <grpcpp/server_context.h>
-#include <grpcpp/security/server_credentials.h>
 #include <grpcpp/support/status.h>
 #include <grpcpp/support/server_callback.h>
 #include <grpcpp/support/time.h> //NOLINT
-#include <grpcpp/impl/channel_argument_option.h>
-#include <grpc/impl/compression_types.h>
-//NOLINTNEXTLINE(misc-include-cleaner)
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include "uLocalMagnitudeService/grpc/magnitudeService.hpp"
+//#include <grpc/impl/compression_types.h>
+#include "magnitudeService.hpp"
 #include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 #include "uLocalMagnitudeService/grpc/magnitudeServiceOptions.hpp"
 #include "uLocalMagnitudeService/grpc/serverOptions.hpp"
@@ -28,9 +25,11 @@
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/metrics/singleton.hpp"
 #include "uLocalMagnitudeService/version.hpp"
+//NOLINTNEXTLINE(misc-include-cleaner)
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/service.grpc.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.pb.h"
+//#include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.pb.h"
+//#include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.pb.h"
+//NOLINTNEXTLINE(misc-include-cleaner)
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.pb.h"
@@ -49,25 +48,17 @@ public:
     /// @brief Constructor
     MagnitudeServiceImpl
     (
-        const MagnitudeServiceOptions &options,
+        const Magnitude::NetworkMagnitudeCalculatorOptions &calculatorOptions,
+        std::optional<std::string> &accessToken,
         std::shared_ptr<spdlog::logger> logger
     ) :
-        mOptions(options),
+        mAccessToken(accessToken),
         mLogger(std::move(logger))
     {
-        if (!mOptions.hasGRPCOptions())
-        {
-            throw std::invalid_argument("gRPC options not set for server");
-        }
-        if (!mOptions.hasNetworkMagnitudeCalculatorOptions())
-        {
-            throw std::invalid_argument(
-                "Network magnitude calculator options not set");
-        }
         if (mLogger == nullptr)
         {
             // NOLINTBEGIN(misc-include-cleaner)
-            constexpr const char *loggerName{"ServiceConsole"};
+            constexpr const char *loggerName{"MagnitudeServiceConsole"};
             mLogger = spdlog::get(loggerName);
             if (mLogger == nullptr)
             {
@@ -77,7 +68,7 @@ public:
         }
         mCalculator
             = std::make_unique<Magnitude::NetworkMagnitudeCalculator> (
-                 mOptions.getNetworkMagnitudeCalculatorOptions(),
+                 calculatorOptions,
                  mLogger);
         if (mCalculator == nullptr)
         {
@@ -90,21 +81,29 @@ public:
                 "Failed to initialize network magnitude calculator");
         }
     }
+
+    /// @brief Constructor
 //private:
-    MagnitudeServiceOptions mOptions;
-    std::shared_ptr<spdlog::logger> mLogger{nullptr};
     std::unique_ptr<Magnitude::NetworkMagnitudeCalculator> mCalculator{nullptr};
-    GRPC::ServerOptions mGRPCOptions;
-    bool mSecured{false};
+    std::optional<std::string> mAccessToken{std::nullopt};
+    std::shared_ptr<spdlog::logger> mLogger{nullptr};
 };
 
 /// Constructor
 MagnitudeService::MagnitudeService(
-    const MagnitudeServiceOptions &options,
+    const Magnitude::NetworkMagnitudeCalculatorOptions &calculatorOptions,
+    std::optional<std::string> &accessToken,
     std::shared_ptr<spdlog::logger> logger) :
-    pImpl(std::make_unique<MagnitudeServiceImpl> (options, std::move(logger)))
+    pImpl(std::make_unique<MagnitudeServiceImpl>
+          (
+              calculatorOptions,
+              accessToken,
+              std::move(logger)
+          )
+         )
 {
 }
+
 
 /// Destructor
 MagnitudeService::~MagnitudeService() = default;
@@ -126,29 +125,24 @@ grpc::ServerUnaryReactor
         Reactor(grpc::CallbackServerContext *context,
                 const ULMSAPIV1::StationMagnitudesFromAmplitudesRequest &request,
                 ULMSAPIV1::StationMagnitudesFromAmplitudesResponse *response,
-                const GRPC::ServerOptions &grpcOptions,
-                const bool isSecured, 
+                const std::optional<std::string> &accessToken,
                 const Magnitude::NetworkMagnitudeCalculator &calculator,
                 std::shared_ptr<spdlog::logger> logger) :
             mLogger(std::move(logger))
         {
             auto &metrics = Metrics::Singleton::getInstance();
             // Validate the client?
-            if (isSecured)
+            if (accessToken != std::nullopt)
             {
-                auto accessToken = grpcOptions.getAccessToken();
-                if (accessToken)
+                if (!::validateClient(context, *accessToken))
                 {
-                    if (!::validateClient(context, *accessToken))
-                    {
-                        SPDLOG_LOGGER_WARN(mLogger,
-                                           "Unauthorized client - {} rejected",
-                                           context->peer());
-                        metrics.incrementUnauthenticatedCounter(mRouteName);
-                        Finish({grpc::StatusCode::UNAUTHENTICATED,
-                                "Invalid access token"});
-                        return;
-                    }
+                    SPDLOG_LOGGER_WARN(mLogger,
+                                       "Unauthorized client - {} rejected",
+                                       context->peer());
+                    metrics.incrementUnauthenticatedCounter(mRouteName);
+                    Finish({grpc::StatusCode::UNAUTHENTICATED,
+                            "Invalid access token"});
+                    return;
                 }
             }
             // Copy the request identifier
@@ -285,8 +279,7 @@ grpc::ServerUnaryReactor
     return new Reactor(context,
                        *request,
                        response,
-                       pImpl->mGRPCOptions,
-                       pImpl->mSecured,
+                       pImpl->mAccessToken,
                        *pImpl->mCalculator,
                        pImpl->mLogger);
 }
@@ -306,29 +299,24 @@ grpc::ServerUnaryReactor
         Reactor(grpc::CallbackServerContext *context,
                 const ULMSAPIV1::StationCorrectionsRequest &request,
                 ULMSAPIV1::StationCorrectionsResponse *response,
-                const GRPC::ServerOptions &grpcOptions,
-                const bool isSecured, 
+                const std::optional<std::string> &accessToken,
                 const Magnitude::NetworkMagnitudeCalculator &calculator,
                 std::shared_ptr<spdlog::logger> logger) :
             mLogger(std::move(logger))
         {
             auto &metrics = Metrics::Singleton::getInstance();
             // Validate the client?
-            if (isSecured)
+            if (accessToken != std::nullopt)
             {
-                auto accessToken = grpcOptions.getAccessToken();
-                if (accessToken)
+                if (!::validateClient(context, *accessToken))
                 {
-                    if (!::validateClient(context, *accessToken))
-                    {
-                        SPDLOG_LOGGER_WARN(mLogger,
-                                           "Unauthorized client - {} rejected",
-                                           context->peer());
-                        metrics.incrementUnauthenticatedCounter(mRouteName);
-                        Finish({grpc::StatusCode::UNAUTHENTICATED,
-                                "Invalid access token"});
-                        return;
-                    }
+                    SPDLOG_LOGGER_WARN(mLogger,
+                                       "Unauthorized client - {} rejected",
+                                       context->peer());
+                    metrics.incrementUnauthenticatedCounter(mRouteName);
+                    Finish({grpc::StatusCode::UNAUTHENTICATED,
+                            "Invalid access token"});
+                    return;
                 }
             }
             // Copy the request identifier
@@ -453,8 +441,7 @@ grpc::ServerUnaryReactor
     return new Reactor(context,
                        *request,
                        response,
-                       pImpl->mGRPCOptions,
-                       pImpl->mSecured,
+                       pImpl->mAccessToken,
                        *pImpl->mCalculator,
                        pImpl->mLogger);
 }

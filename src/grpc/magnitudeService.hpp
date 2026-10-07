@@ -1,11 +1,16 @@
 #ifndef ULOCAL_MAGNITUDE_SERVICE_GRPC_MAGNITUDE_SERVICE_HPP
 #define ULOCAL_MAGNITUDE_SERVICE_GRPC_MAGNITUDE_SERVICE_HPP
 #include <memory>
+#include <optional>
 #include <spdlog/logger.h>
 #include <grpcpp/server_context.h>
 #include <grpcpp/support/server_callback.h>
 #include <uLocalMagnitudeServiceAPI/v1/magnitude/service.grpc.pb.h>
 
+namespace ULocalMagnitudeService::Magnitude
+{
+ class NetworkMagnitudeCalculatorOptions;
+}
 namespace ULocalMagnitudeServiceAPI::V1::Magnitude
 {
  class StationCorrectionsRequest;
@@ -26,8 +31,13 @@ class MagnitudeService final : public
 {
 public:
     /// @brief Constructor. 
-    MagnitudeService(const MagnitudeServiceOptions &options,
-                     std::shared_ptr<spdlog::logger> logger);
+    //MagnitudeService(const MagnitudeServiceOptions &options,
+    //                 std::shared_ptr<spdlog::logger> logger);
+    MagnitudeService(
+        const ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculatorOptions &calculatorOptions,
+        std::optional<std::string> &accessToken,
+        std::shared_ptr<spdlog::logger> logger);
+ 
 
     /// @brief Computes the station magnitues from amplitudes. 
     grpc::ServerUnaryReactor

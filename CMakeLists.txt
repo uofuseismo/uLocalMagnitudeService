@@ -81,6 +81,7 @@ set(LIBRARY_SRC
     src/corrections/stationsSet.cpp
     src/grpc/magnitudeService.cpp
     src/grpc/magnitudeServiceOptions.cpp
+    src/grpc/server.cpp
     src/grpc/serverOptions.cpp
     src/magnitude/amplitude.cpp
     src/magnitude/networkMagnitude.cpp
@@ -101,6 +102,7 @@ set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/corrections/stations.hpp
     include/${PROJECT_NAME}/corrections/stationsSet.hpp
     include/${PROJECT_NAME}/grpc/magnitudeServiceOptions.hpp
+    include/${PROJECT_NAME}/grpc/server.hpp
     include/${PROJECT_NAME}/grpc/serverOptions.hpp
     include/${PROJECT_NAME}/magnitude/amplitude.hpp
     include/${PROJECT_NAME}/magnitude/networkMagnitude.hpp

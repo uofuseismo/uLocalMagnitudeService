@@ -17,6 +17,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/logger.h>
 #include <spdlog/sinks/stdout_color_sinks.h> //NOLINT
+#include "uLocalMagnitudeService/grpc/server.hpp"
 #include "uLocalMagnitudeService/metrics/singleton.hpp"
 #include "uLocalMagnitudeService/version.hpp"
 #include "logger.hpp"
