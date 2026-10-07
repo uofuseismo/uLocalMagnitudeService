@@ -19,7 +19,4 @@ message StationMagnitude {
    double station_correction = 4;
    /// The distance correction that was added to station magnitude.
    double distance_correction = 5;
-   /// Indicates a station correction existed in configuration and was
-   /// applied.  
-   bool used_station_correction = 6;
 } 
