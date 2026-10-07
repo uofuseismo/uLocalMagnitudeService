@@ -8,6 +8,7 @@
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
+//#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitude.pb.h"
 
 using namespace ULocalMagnitudeService::Magnitude;
 

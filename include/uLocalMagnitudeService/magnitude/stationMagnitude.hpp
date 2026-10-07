@@ -77,6 +77,14 @@ public:
     /// @throws std::runtime_error if \c hasAmplitudes() is false.
     [[nodiscard]] std::string getStationName() const;
 
+    /// @brief Creates the station magnitude message from this class.
+    /// @result The station magnitude in the desired protobuf message format. 
+    /// @throws std::runtime_error if \c hasValue(), \c hasStationCorrection(),
+    ///         \c hasDistanceCorrection(), or \c hasAmplitudes()  is false.
+    /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::StationMagnitude
+    ///       Any other type fails to link.
+    template<typename U> [[nodiscard]] U toMessage() const;
+
     /// @brief Destructor.
     ~StationMagnitude();
     /// @brief Copy assignment.

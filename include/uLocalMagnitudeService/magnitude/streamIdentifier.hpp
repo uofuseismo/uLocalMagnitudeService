@@ -73,7 +73,7 @@ public:
 
     /// @brief Creates the stream identifier message from this class.
     /// @result The stream identifier in the desired protobuf message format. 
-    /// @throws std::runtime_error if  \c hasStation(), \c hasNetwork(),
+    /// @throws std::runtime_error if \c hasStation(), \c hasNetwork(),
     ///         \c hasChannel(), or \c hasLocationCode()  is false.
     /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::StreamIdentifier.
     ///       Any other type fails to link.
