@@ -325,23 +325,23 @@ NetworkMagnitudeCalculator::operator()(
     struct WorkItem
     {
         Observation observation;
-        std::expected<StationMagnitude, StationMagnitudeCalculator::ErrorCode> stationMagnitude;
+        std::expected
+        <
+            StationMagnitude,
+            NetworkMagnitudeCalculator::StationCalculatorErrorCode
+            // StationMagnitudeCalculator::ErrorCode
+        > stationMagnitude;
     };
     std::vector<WorkItem> workItems;
     workItems.reserve(observations.size());
     for (const auto &observation : observations)
     {
-        if (pImpl->mStationMagnitudeCalculatorMap.contains(
-                observation.getStationName()))
+        WorkItem workItem
         {
-            workItems.push_back(WorkItem {observation, {}});
-        }
-        else
-        {
-            SPDLOG_LOGGER_WARN(pImpl->mLogger,
-                "No station correction for {} - skipping",
-                observation.getStationName());
-        }
+            observation, 
+            computeStationMagnitude(observation)
+        };
+        workItems.push_back(std::move(workItem));
     }
     // We can quit now (can still get worse)
     auto minObservationsRequired
@@ -350,19 +350,6 @@ NetworkMagnitudeCalculator::operator()(
     {
         return std::unexpected(ErrorCode::TooFewObservations);
     }
-    // Compute the station magnitudes
-    auto computeStationMagnitude = [&](WorkItem &workItem)
-    {
-        auto stationName = workItem.observation.getStationName();
-        auto it = pImpl->mStationMagnitudeCalculatorMap.find(stationName); 
-        if (it != pImpl->mStationMagnitudeCalculatorMap.end())
-        { 
-            workItem.stationMagnitude
-                = it->second.operator()(workItem.observation);
-        }
-    };
-    std::ranges::for_each(workItems.begin(), workItems.end(),
-                          computeStationMagnitude);
     // Now to combine the magnitudes
     if (pImpl->mOptions.getStrategy() !=
         NetworkMagnitudeCalculatorOptions::Strategy::Average)
