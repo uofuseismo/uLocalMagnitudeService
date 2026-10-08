@@ -13,7 +13,7 @@
 #include <GeographicLib/Constants.hpp>
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
-#include "uLocalMagnitudeService/corrections/origin.hpp"
+#include "uLocalMagnitudeService/corrections/hypocenter.hpp"
 #include "uLocalMagnitudeService/corrections/stationLocation.hpp"
 
 using namespace ULocalMagnitudeService::Corrections;
@@ -175,15 +175,15 @@ DistanceOptions::Type Distance::getDistanceType() const
 
 /// Operator to get it done
 double Distance::computeEpicentralDistance(
-    const Origin &origin, const StationLocation &station)
+    const Hypocenter &hypocenter, const StationLocation &station)
 {
-    if (!origin.hasLatitude())
+    if (!hypocenter.hasLatitude())
     {
-        throw std::invalid_argument("Origin latitude not set");
+        throw std::invalid_argument("Hypocenter latitude not set");
     }
-    if (!origin.hasLongitude())
+    if (!hypocenter.hasLongitude())
     {
-        throw std::invalid_argument("Origin longitude not set");
+        throw std::invalid_argument("Hypocenter longitude not set");
     }
     if (!station.hasLatitude())
     {   
@@ -193,8 +193,8 @@ double Distance::computeEpicentralDistance(
     {
         throw std::invalid_argument("Station longitude not set");
     }
-    auto sourceLatitude = origin.getLatitude();
-    auto sourceLongitude = origin.getLongitude();
+    auto sourceLatitude = hypocenter.getLatitude();
+    auto sourceLongitude = hypocenter.getLongitude();
     auto stationLatitude = station.getLatitude();
     auto stationLongitude = station.getLongitude();
     const GeographicLib::Geodesic geodesic

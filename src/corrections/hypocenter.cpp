@@ -1,57 +1,54 @@
-#include <chrono>
 #include <cmath>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include "uLocalMagnitudeService/corrections/origin.hpp"
+#include "uLocalMagnitudeService/corrections/hypocenter.hpp"
 
 using namespace ULocalMagnitudeService::Corrections;
 
-class Origin::OriginImpl
+class Hypocenter::HypocenterImpl
 {
 public:
-    std::chrono::nanoseconds mTime;
     double mLatitude{0};
     double mLongitude{0};
     double mDepth{0};  
-    bool mHasTime{false};
     bool mHasLatitude{false};
     bool mHasLongitude{false};
     bool mHasDepth{false};
 };
 
 /// Constructor
-Origin::Origin() :
-    pImpl(std::make_unique<OriginImpl> ())
+Hypocenter::Hypocenter() :
+    pImpl(std::make_unique<HypocenterImpl> ())
 {
 }
 
 /// Copy constructor
-Origin::Origin(const Origin &origin)
+Hypocenter::Hypocenter(const Hypocenter &origin)
 {
     *this = origin;
 }
 
 /// Move constructor
-Origin::Origin(Origin &&origin) noexcept
+Hypocenter::Hypocenter(Hypocenter &&origin) noexcept
 {
     *this = std::move(origin);
 }
 
 /// Destructor
-Origin::~Origin() = default;
+Hypocenter::~Hypocenter() = default;
 
 /// Copy assignment
-Origin& Origin::operator=(const Origin &location)
+Hypocenter& Hypocenter::operator=(const Hypocenter &location)
 {
     if (&location == this){return *this;}
-    pImpl = std::make_unique<OriginImpl> (*location.pImpl);
+    pImpl = std::make_unique<HypocenterImpl> (*location.pImpl);
     return *this;
 }
 
 /// Move assignment
-Origin& Origin::operator=(Origin &&location) noexcept
+Hypocenter& Hypocenter::operator=(Hypocenter &&location) noexcept
 {
     if (&location == this){return *this;}
     pImpl = std::move(location.pImpl);
@@ -59,7 +56,7 @@ Origin& Origin::operator=(Origin &&location) noexcept
 }
 
 /// Latitude
-void Origin::setLatitude(const double latitude)
+void Hypocenter::setLatitude(const double latitude)
 {
     if (!std::isfinite(latitude))
     {
@@ -73,19 +70,19 @@ void Origin::setLatitude(const double latitude)
     pImpl->mHasLatitude = true;
 }
 
-double Origin::getLatitude() const
+double Hypocenter::getLatitude() const
 {
     if (!hasLatitude()){throw std::runtime_error("Latitude not set");}
     return pImpl->mLatitude; 
 }   
 
-bool Origin::hasLatitude() const noexcept
+bool Hypocenter::hasLatitude() const noexcept
 {
     return pImpl->mHasLatitude;
 }   
 
 /// Longitude
-void Origin::setLongitude(const double longitude)
+void Hypocenter::setLongitude(const double longitude)
 {
     if (!std::isfinite(longitude))
     {
@@ -97,19 +94,19 @@ void Origin::setLongitude(const double longitude)
     pImpl->mHasLongitude = true;
 }
 
-double Origin::getLongitude() const
+double Hypocenter::getLongitude() const
 {
     if (!hasLongitude()){throw std::runtime_error("Longitude not set");}
     return pImpl->mLongitude;
 }
 
-bool Origin::hasLongitude() const noexcept
+bool Hypocenter::hasLongitude() const noexcept
 {
     return pImpl->mHasLongitude;
 }
 
 /// Depth
-void Origin::setDepth(const double depth)
+void Hypocenter::setDepth(const double depth)
 {
     if (!std::isfinite(depth))
     {
@@ -127,32 +124,13 @@ void Origin::setDepth(const double depth)
     pImpl->mHasDepth = true;
 }
 
-double Origin::getDepth() const
+double Hypocenter::getDepth() const
 {
     if (!hasDepth()){throw std::runtime_error("Depth not set");}
     return pImpl->mDepth;
 }
 
-bool Origin::hasDepth() const noexcept
+bool Hypocenter::hasDepth() const noexcept
 {
     return pImpl->mHasDepth;
 }
-
-/// Time
-void Origin::setTime(const std::chrono::nanoseconds &time) noexcept
-{
-    pImpl->mTime = time;
-    pImpl->mHasTime = true;
-}
-
-std::chrono::nanoseconds Origin::getTime() const
-{
-    if (!hasTime()){throw std::runtime_error("Origin time not set");}
-    return pImpl->mTime;
-}
-
-bool Origin::hasTime() const noexcept
-{
-    return pImpl->mHasTime;
-}
-

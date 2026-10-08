@@ -1,23 +1,21 @@
-#ifndef ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_ORIGIN_HPP
-#define ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_ORIGIN_HPP
-#include <chrono>
+#ifndef ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_HYPOCENTER_HPP
+#define ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_HYPOCENTER_HPP
 #include <memory>
 namespace ULocalMagnitudeService::Corrections
 {
-/// @class Origin origin.hpp
-/// @brief Defines the where in of an event in a WGS84 system as well as
-///        the UTC when in since the epoch (January 1970).
+/// @class Hypocenter hypocenter.hpp
+/// @brief Defines the where in of an event in a WGS84 system.
 /// @copyright Ben Baker (University of Utah) distributed under the
 ///            MIT NO AI license.
-class Origin
+class Hypocenter
 {
 public:
     /// @brief Constructor.
-    Origin();
+    Hypocenter();
     /// @brief Copy constructor.
-    Origin(const Origin &origin);
+    Hypocenter(const Hypocenter &hypocenter);
     /// @brief Move constructor.
-    Origin(Origin &&origin) noexcept;
+    Hypocenter(Hypocenter &&hypocenter) noexcept;
 
     /// @brief Sets the latitude.
     /// @param[in] latitude   The latitude in degrees.
@@ -52,23 +50,15 @@ public:
     /// @result True indicates the depth was set.
     [[nodiscard]] bool hasDepth() const noexcept;
 
-    /// @brief Sets the origin time.
-    /// @param[in] originTime   The origin time in UTC.
-    void setTime(const std::chrono::nanoseconds &originTime) noexcept;
-    /// @brief The event origin time.
-    [[nodiscard]] std::chrono::nanoseconds getTime() const;
-    /// @result True indicates that the origin time was set.
-    [[nodiscard]] bool hasTime() const noexcept;
-
     /// @brief Destructor.
-    ~Origin();
+    ~Hypocenter();
     /// @brief Copy assignment.
-    Origin& operator=(const Origin &origin);
+    Hypocenter& operator=(const Hypocenter &hypocenter);
     /// @brief Move assignment.
-    Origin& operator=(Origin &&origin) noexcept;
+    Hypocenter& operator=(Hypocenter &&hypocenter) noexcept;
 private:
-    class OriginImpl;
-    std::unique_ptr<OriginImpl> pImpl;
+    class HypocenterImpl;
+    std::unique_ptr<HypocenterImpl> pImpl;
 };
 }
 #endif

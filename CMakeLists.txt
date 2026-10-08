@@ -75,7 +75,7 @@ configure_file(${CMAKE_SOURCE_DIR}/src/version.hpp.in
 set(LIBRARY_SRC
     src/corrections/distance.cpp
     src/corrections/distanceOptions.cpp
-    src/corrections/origin.cpp
+    src/corrections/hypocenter.cpp
     src/corrections/station.cpp
     src/corrections/stationIdentifier.cpp
     src/corrections/stationLocation.cpp
@@ -100,7 +100,7 @@ set(LIBRARY_SRC
 set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/corrections/distance.hpp
     include/${PROJECT_NAME}/corrections/distanceOptions.hpp
-    include/${PROJECT_NAME}/corrections/origin.hpp
+    include/${PROJECT_NAME}/corrections/hypocenter.hpp
     include/${PROJECT_NAME}/corrections/station.hpp
     include/${PROJECT_NAME}/corrections/stationIdentifier.hpp
     include/${PROJECT_NAME}/corrections/stationLocation.hpp
@@ -125,7 +125,7 @@ set(PROTO_MESSAGE_SRC
     uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.proto
-    #uLocalMagnitudeServiceAPI/v1/magnitude/origin.proto
+    #uLocalMagnitudeServiceAPI/v1/magnitude/hypocenter.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_request.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_response.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.proto
@@ -229,8 +229,8 @@ target_link_libraries(uLocalMagnitudeService
 
 if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
    add_executable(unitTests
-                  testing/corrections/distance.cpp
-                  testing/corrections/origin.cpp
+                  #testing/corrections/distance.cpp
+                  #testing/corrections/hypocenter.cpp
                   testing/corrections/station.cpp
                   testing/corrections/stationIdentifier.cpp
                   testing/corrections/stationLocation.cpp

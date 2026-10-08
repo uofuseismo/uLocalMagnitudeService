@@ -8,7 +8,7 @@
 
 namespace ULocalMagnitudeService::Corrections
 {
- class Origin;
+ class Hypocenter;
  class StationLocation;
 }
 namespace ULocalMagnitudeService::Corrections
@@ -44,13 +44,13 @@ public:
     [[nodiscard]] bool isInitialized() const noexcept;
 
     /// @brief Computes the source-to-receiver epicentral distance.
-    /// @param[in] origin   The source location in the WGS84 system.
-    /// @param[in] station  The station location in the WGS84 system.
+    /// @param[in] hypocenter  The event location in the WGS84 system.
+    /// @param[in] station     The station location in the WGS84 system.
     /// @result The source-to-receiver epicentral distance in meters.
     /// @throws std::invalid_argument if origin.hasLatitude(),
     ///          origin.hasLongitude(), station.hasLatitude(),
     ///          or station.hasLongitude() is false. 
-    [[nodiscard]] static double computeEpicentralDistance(const Origin &origin, const StationLocation &station);
+    [[nodiscard]] static double computeEpicentralDistance(const Hypocenter &hypocenter, const StationLocation &station);
 
     /// @brief Computes the corresponding distance correction.
     /// @param[in] distanceInMeters   The source-receiver distance in meters.
