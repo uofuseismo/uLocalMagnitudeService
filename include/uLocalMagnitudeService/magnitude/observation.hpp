@@ -28,11 +28,15 @@ public:
     ///         are not set, the amplitudes are invalid (e.g., values
     ///         are not positive or finite, units are unknown, or
     ///         the streams do not map to complimentary channels),
-    ///         or the epicentral distance is negative.
-    /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::StationAmplitudeMeasurement
+    ///         or the epicentral distance is negative.  Additionally,
+    ///         throws std::invalid_argument if the hypocenter lacks
+    ///         a finite latitude, longitude, depth, or the latitude
+    ///         or depth exceed the usable ranges.
+    /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::StationAmplitudeMeasurement for U and
+    ///                        ULocalMagnitudeServiceAPI::V1::Magnitude::Hypocenter for V.
     ///       Any other type fails to link.
-    template<typename U>
-    explicit Observation(const U &stationAmplitudeMeasurement, double depth);
+    template<typename U, typename V>
+    Observation(const U &stationAmplitudeMeasurement, const V &hypocenter);
 
 
     /// @brief Sets an amplitude pair. 

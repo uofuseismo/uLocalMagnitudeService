@@ -4,6 +4,7 @@
 #include <utility>
 #include "uLocalMagnitudeService/corrections/stationLocation.hpp"
 //#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_location.pb.h"
 
 using namespace ULocalMagnitudeService::Corrections;
 
@@ -37,6 +38,31 @@ StationLocation::StationLocation(StationLocation &&location) noexcept
 {
     *this = std::move(location);
 }
+
+/// Constructor
+template<>
+StationLocation::StationLocation(
+    const ULocalMagnitudeServiceAPI::V1::Magnitude::StationLocation &location)
+{
+    if (!location.has_elevation())
+    {
+        throw std::invalid_argument("Elevation not set");
+    }
+    if (!location.has_latitude())
+    {   
+        throw std::invalid_argument("Latitude not set");
+    }   
+    if (!location.has_longitude())
+    {   
+        throw std::invalid_argument("Longitude not set");
+    }   
+    StationLocation thisLocation;
+    thisLocation.setLatitude(location.latitude());
+    thisLocation.setLongitude(location.longitude());
+    thisLocation.setElevation(location.elevation());
+    *this = std::move(thisLocation);
+}
+
 
 /// Destructor
 StationLocation::~StationLocation() = default;

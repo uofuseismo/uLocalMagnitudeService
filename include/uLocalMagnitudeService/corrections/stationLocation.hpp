@@ -17,6 +17,14 @@ public:
     StationLocation(const StationLocation &location);
     /// @brief Move constructor.
     StationLocation(StationLocation &&location) noexcept;
+    /// @brief Creates the station location from a protobuf definition.
+    /// @throws std::invalid_argument if the latitude, longitude, or elevation 
+    ///         is not set, not finite, or the latitude or elevation is out 
+    ///         of the usable range.
+    /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::StationLocation.
+    ///       Any other type fails to link.
+    template<typename U>
+    explicit StationLocation(const U &location);
 
     /// @brief Sets the latitude.
     /// @param[in] latitude   The latitude in degrees.

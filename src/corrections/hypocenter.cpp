@@ -71,7 +71,7 @@ Hypocenter::Hypocenter(
     }
     if (!hypocenter.has_longitude())
     {
-        throw std::invalid_argument("Longitue not set");
+        throw std::invalid_argument("Longitude not set");
     }
     Hypocenter thisHypocenter;
     thisHypocenter.setLatitude(hypocenter.latitude());

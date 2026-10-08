@@ -4,9 +4,13 @@
 #include <string>
 #include <utility>
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
+#include "uLocalMagnitudeService/corrections/distance.hpp"
+#include "uLocalMagnitudeService/corrections/hypocenter.hpp"
+#include "uLocalMagnitudeService/corrections/stationLocation.hpp"
 #include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/hypocenter.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.pb.h"
 //#include "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.pb.h"
 
@@ -53,20 +57,10 @@ template<>
 Observation::Observation(
     const ULocalMagnitudeServiceAPI::V1
           ::Magnitude::StationAmplitudeMeasurement &measurement,
-    const double depth)
+    const ULocalMagnitudeServiceAPI::V1
+          ::Magnitude::Hypocenter &hypocenterMessage)
 {
-    if (!std::isfinite(depth))
-    {   
-        throw std::invalid_argument("Depth must be finite");
-    }
-    if (depth < MIN_DEPTH || depth > MAX_DEPTH)
-    {   
-        throw std::invalid_argument("Depth must be in range [-8600, 900000]");
-    }   
-    if (!measurement.has_epicentral_distance())
-    {
-        throw std::invalid_argument("Epicentral distance not set");
-    }
+    const Corrections::Hypocenter hypocenter{hypocenterMessage};
     if (!measurement.has_amplitude_stream_1())
     {
         throw std::invalid_argument("First amplitude not set");
@@ -75,6 +69,17 @@ Observation::Observation(
     {
         throw std::invalid_argument("Second amplitude not set");
     }
+    if (!measurement.has_station_location())
+    {
+        throw std::invalid_argument("Station location not set");
+    }
+    const Corrections::StationLocation stationLocation
+    {
+         measurement.station_location()
+    };
+    auto epicentralDistance
+        = Corrections::Distance::computeEpicentralDistance(
+             hypocenter, stationLocation);
     Observation thisObservation;
     Amplitude amplitude1{measurement.amplitude_stream_1()};  
     Amplitude amplitude2{measurement.amplitude_stream_2()};
@@ -84,8 +89,8 @@ Observation::Observation(
         std::move(amplitude2)
     };
     thisObservation.setAmplitudes(std::move(amplitudePair));
-    thisObservation.setEpicentralDistance(measurement.epicentral_distance());
-    thisObservation.setDepth(depth);
+    thisObservation.setEpicentralDistance(epicentralDistance);
+    thisObservation.setDepth(hypocenter.getDepth());
     *this = std::move(thisObservation);
 }
 

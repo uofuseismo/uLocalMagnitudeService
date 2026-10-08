@@ -182,7 +182,7 @@ grpc::ServerUnaryReactor
                         const Magnitude::Observation observation
                         {
                             grpcMeasurement,
-                            hypocenter.getDepth()
+                            hypocenter
                         };
                         auto stationMagnitude
                             = calculator.computeStationMagnitude(
