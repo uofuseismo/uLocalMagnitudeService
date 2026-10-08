@@ -1,5 +1,4 @@
 #include <chrono>
-#include <cmath>
 #include <limits>
 #include <stdexcept>
 #include <utility>
@@ -109,16 +108,17 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Origin", "[origin]")
 
     SECTION("Non-finite longitudes are rejected")
     {
-        // setLongitude is noexcept so a bad value can't throw - it must not
-        // be accepted either
         Origin origin;
         origin.setLongitude(-111.4);
         for (const double longitude : {notANumber, infinity, -infinity})
         {
             INFO("Longitude: " << longitude);
-            origin.setLongitude(longitude);
-            REQUIRE(std::isfinite(origin.getLongitude()));
+            REQUIRE_THROWS_AS(origin.setLongitude(longitude),
+                              std::invalid_argument);
         }
+        // A rejected longitude preserves the previous one
+        REQUIRE_THAT(origin.getLongitude(),
+                     Catch::Matchers::WithinAbs(360 + -111.4, 1.e-12));
     }
 
     SECTION("Depth")

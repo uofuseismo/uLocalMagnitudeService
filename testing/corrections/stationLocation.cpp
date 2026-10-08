@@ -1,4 +1,3 @@
-#include <cmath>
 #include <limits>
 #include <stdexcept>
 #include <utility>
@@ -101,16 +100,17 @@ TEST_CASE("ULocalMagnitudeService::Corrections::StationLocation",
 
     SECTION("Non-finite longitudes are rejected")
     {
-        // setLongitude is noexcept so a bad value can't throw - it must not
-        // be accepted either
         StationLocation location;
         location.setLongitude(-111.85);
         for (const double longitude : {notANumber, infinity, -infinity})
         {
             INFO("Longitude: " << longitude);
-            location.setLongitude(longitude);
-            REQUIRE(std::isfinite(location.getLongitude()));
+            REQUIRE_THROWS_AS(location.setLongitude(longitude),
+                              std::invalid_argument);
         }
+        // A rejected longitude preserves the previous one
+        REQUIRE_THAT(location.getLongitude(),
+                     Catch::Matchers::WithinAbs(360 + -111.85, 1.e-12));
     }
 
     SECTION("Elevation")
