@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include "uLocalMagnitudeService/corrections/hypocenter.hpp"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/hypocenter.pb.h"
 
 using namespace ULocalMagnitudeService::Corrections;
 
@@ -53,6 +54,30 @@ Hypocenter& Hypocenter::operator=(Hypocenter &&location) noexcept
     if (&location == this){return *this;}
     pImpl = std::move(location.pImpl);
     return *this;
+}
+
+/// Constructor
+template<>
+Hypocenter::Hypocenter(
+    const ULocalMagnitudeServiceAPI::V1::Magnitude::Hypocenter &hypocenter)
+{
+    if (!hypocenter.has_depth())
+    {
+        throw std::invalid_argument("Depth not set");
+    }
+    if (!hypocenter.has_latitude())
+    {
+        throw std::invalid_argument("Latitude not set");
+    }
+    if (!hypocenter.has_longitude())
+    {
+        throw std::invalid_argument("Longitue not set");
+    }
+    Hypocenter thisHypocenter;
+    thisHypocenter.setLatitude(hypocenter.latitude());
+    thisHypocenter.setLongitude(hypocenter.longitude());
+    thisHypocenter.setDepth(hypocenter.depth());
+    *this = std::move(thisHypocenter);
 }
 
 /// Latitude

@@ -16,6 +16,8 @@
 //#include <grpc/impl/compression_types.h>
 #include "magnitudeService.hpp"
 #include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
+#include "uLocalMagnitudeService/corrections/distance.hpp"
+#include "uLocalMagnitudeService/corrections/hypocenter.hpp"
 #include "uLocalMagnitudeService/grpc/magnitudeServiceOptions.hpp"
 #include "uLocalMagnitudeService/grpc/serverOptions.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitude.hpp"
@@ -30,6 +32,7 @@
 //#include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.pb.h"
 //#include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.pb.h"
 //NOLINTNEXTLINE(misc-include-cleaner)
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/hypocenter.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.pb.h"
@@ -163,18 +166,14 @@ grpc::ServerUnaryReactor
             // Do it
             try
             {
-                double depth{0};
-                if (calculator.requiresEventDepth() && !request.has_depth())
+                if (!request.has_hypocenter())
                 {
                     metrics.incrementClientErrorCounter(mRouteName);
                     Finish({grpc::StatusCode::INVALID_ARGUMENT,
-                            "Malformed request - depth not set"});
+                            "Malformed request - hypocenter not set"});
                     return;
                 }
-                else
-                {
-                    depth = (request.has_depth()) ? request.depth() : 0;
-                }
+                const Corrections::Hypocenter hypocenter{request.hypocenter()};
                 for (const auto &grpcMeasurement :
                      request.station_amplitude_measurements())
                 {
@@ -183,7 +182,7 @@ grpc::ServerUnaryReactor
                         const Magnitude::Observation observation
                         {
                             grpcMeasurement,
-                            depth
+                            hypocenter.getDepth()
                         };
                         auto stationMagnitude
                             = calculator.computeStationMagnitude(
@@ -231,9 +230,9 @@ grpc::ServerUnaryReactor
             mSuccess = true;
             Finish(grpc::Status::OK);
             SPDLOG_LOGGER_DEBUG(
-               mLogger,
-               "Successfully computed station magnitdues for {}",
-               requestIdentifier);
+                mLogger,
+                "Successfully computed station magnitdues for {}",
+                requestIdentifier);
 
         }
     private:

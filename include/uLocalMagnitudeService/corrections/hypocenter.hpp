@@ -16,6 +16,14 @@ public:
     Hypocenter(const Hypocenter &hypocenter);
     /// @brief Move constructor.
     Hypocenter(Hypocenter &&hypocenter) noexcept;
+    /// @brief Creates the hypocenter from a protobuf definition.
+    /// @throws std::invalid_argument if the latitude, longitude, or depth
+    ///         is not set, not finite, or the latitude or depth is out 
+    ///         of the usable range.
+    /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::Hypocenter.
+    ///       Any other type fails to link.
+    template<typename U>
+    explicit Hypocenter(const U &hypocenter);
 
     /// @brief Sets the latitude.
     /// @param[in] latitude   The latitude in degrees.
