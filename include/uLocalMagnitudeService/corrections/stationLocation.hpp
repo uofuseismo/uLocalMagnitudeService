@@ -4,10 +4,6 @@
 #include <memory>
 namespace ULocalMagnitudeService::Corrections
 {
- class StationIdentifier;
-}
-namespace ULocalMagnitudeService::Corrections
-{
 /// @class StationLocation stationLocation.hpp
 /// @brief Defines a station location in the WGS84 system.
 /// @copyright Ben Baker (University of Utah) distributed under the
@@ -24,7 +20,8 @@ public:
 
     /// @brief Sets the latitude.
     /// @param[in] latitude   The latitude in degrees.
-    /// @throws std::invalid_argument if this is not in the range [-90, 90].
+    /// @throws std::invalid_argument if this is not in the range [-90, 90] or
+    ///         the latitude is not finite.
     void setLatitude(double latitude);
     /// @result The latitude of the station.
     /// @throws std::runtime_error if \c hasLatitude() is false.
@@ -34,7 +31,8 @@ public:
 
     /// @brief Sets the longitude.
     /// @param[in] longitude   The longitude in degrees.
-    void setLongitude(double latitude) noexcept;
+    /// @throws std::invalid_argument if the longitude is not finite.
+    void setLongitude(double longitude);
     /// @result The longitude of the station.
     /// @throws std::runtime_error if \c hasLongitude() is false.
     [[nodiscard]] double getLongitude() const;
@@ -45,24 +43,13 @@ public:
     /// @param[in] elevation   The station elevation in meters.
     ///                        This increases positive up from sea-level.
     /// @throws std::invalid_argument if the elevation is not in the
-    ///         range [-10000, 8600].
+    ///         range [-10000, 8600] or the elevation is not finite.
     void setElevation(double elevation);
     /// @result The station elevation.
     /// @throws std::runtime_error if \c hasElevation() is false.
     [[nodiscard]] double getElevation() const;
     /// @result True indicates the elevation was set.
     [[nodiscard]] bool hasElevation() const noexcept;
-
-    /// @brief Sets the station identifier.
-    /// @param[in] identifier   The station identifier.
-    /// @throws std::invalid_argument if \c hasNetwork() or \c hasStation()
-    ///         is false.
-    void setIdentifier(const StationIdentifier &identifier);
-    /// @result The station identifier.
-    /// @throws std::runtime_error if \c hasIdentifier() is false.
-    [[nodiscard]] StationIdentifier getIdentifier() const;
-    /// @result True indicates that the station identifier is set.
-    [[nodiscard]] bool hasIdentifier() const noexcept;
 
     /// @brief Destructor.
     ~StationLocation();

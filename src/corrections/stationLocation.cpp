@@ -3,18 +3,18 @@
 #include <stdexcept>
 #include <utility>
 #include "uLocalMagnitudeService/corrections/stationLocation.hpp"
-#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
+//#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 
 using namespace ULocalMagnitudeService::Corrections;
 
 class StationLocation::StationLocationImpl
 {
 public:
-    StationIdentifier mIdentifier;
+    //StationIdentifier mIdentifier;
     double mLatitude{0};
     double mLongitude{0};
     double mElevation{0};  
-    bool mHasIdentifier{false};
+    //bool mHasIdentifier{false};
     bool mHasLatitude{false};
     bool mHasLongitude{false};
     bool mHasElevation{false};
@@ -24,6 +24,18 @@ public:
 StationLocation::StationLocation() :
     pImpl(std::make_unique<StationLocationImpl> ())
 {
+}
+
+/// Copy constructor
+StationLocation::StationLocation(const StationLocation &location)
+{
+    *this = location;
+}
+
+/// Move constructor
+StationLocation::StationLocation(StationLocation &&location) noexcept
+{
+    *this = std::move(location);
 }
 
 /// Destructor
@@ -48,6 +60,10 @@ StationLocation& StationLocation::operator=(StationLocation &&location) noexcept
 /// Latitude
 void StationLocation::setLatitude(const double latitude)
 {
+    if (!std::isfinite(latitude))
+    {   
+        throw std::invalid_argument("Latitude is not finite");
+    }   
     if (latitude < -90 || latitude > 90)
     {
         throw std::invalid_argument("Latitude must be in range [-90, 90]");
@@ -68,8 +84,12 @@ bool StationLocation::hasLatitude() const noexcept
 }   
 
 /// Longitude
-void StationLocation::setLongitude(const double longitude) noexcept
+void StationLocation::setLongitude(const double longitude)
 {
+    if (!std::isfinite(longitude))
+    {   
+        throw std::invalid_argument("Longitude is not finite");
+    }   
     auto lon = std::fmod(longitude, 360.0);
     if (lon < 0){lon = lon + 360.0;}
     pImpl->mLongitude = lon;
@@ -90,7 +110,11 @@ bool StationLocation::hasLongitude() const noexcept
 /// Elevation
 void StationLocation::setElevation(const double elevation)
 {
-    if (elevation < 8600 || elevation > -10000)
+    if (!std::isfinite(elevation))
+    {   
+        throw std::invalid_argument("Elevation is not finite");
+    }   
+    if (elevation < -10000 || elevation > 8600)
     {
         throw std::invalid_argument("Elevation must be in range [-10000, 8600] meters");
     }
@@ -100,7 +124,7 @@ void StationLocation::setElevation(const double elevation)
 
 double StationLocation::getElevation() const
 {
-    if (!hasElevation()){throw std::runtime_error("Depth not set");}
+    if (!hasElevation()){throw std::runtime_error("Elevation not set");}
     return pImpl->mElevation;
 }
 
@@ -110,6 +134,7 @@ bool StationLocation::hasElevation() const noexcept
 }
 
 /// Station identifier
+/*
 void StationLocation::setIdentifier(const StationIdentifier &identifier)
 {
     if (!identifier.hasNetwork())
@@ -138,3 +163,4 @@ bool StationLocation::hasIdentifier() const noexcept
 {
    return pImpl->mHasIdentifier;
 }
+*/

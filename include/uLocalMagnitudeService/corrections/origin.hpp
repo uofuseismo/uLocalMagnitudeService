@@ -1,5 +1,5 @@
-#ifndef ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_HYPOCENTER_HPP
-#define ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_HYPOCENTER_HPP
+#ifndef ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_ORIGIN_HPP
+#define ULOCAL_MAGNITUDE_SERVICE_CORRECTIONS_ORIGIN_HPP
 #include <chrono>
 #include <memory>
 namespace ULocalMagnitudeService::Corrections
@@ -21,7 +21,8 @@ public:
 
     /// @brief Sets the latitude.
     /// @param[in] latitude   The latitude in degrees.
-    /// @throws std::invalid_argument if this is not in the range [-90, 90].
+    /// @throws std::invalid_argument if this is not in the range [-90, 90] or
+    ///         the latitude is not finite.
     void setLatitude(double latitude);
     /// @result The latitude of the event.
     /// @throws std::runtime_error if \c hasLatitude() is false.
@@ -31,7 +32,8 @@ public:
 
     /// @brief Sets the longitude.
     /// @param[in] longitude   The longitude in degrees.
-    void setLongitude(double latitude) noexcept;
+    /// @throws std::invalid_argument if the longitude is not finite.
+    void setLongitude(double longitude);
     /// @result The longitude of the event.
     /// @throws std::runtime_error if \c hasLongitude() is false.
     [[nodiscard]] double getLongitude() const;
@@ -42,7 +44,7 @@ public:
     /// @param[in] depth   The event depth in meters.
     ///                    This increases positive down.
     /// @throws std::invalid_argument if the event depth is not in the range
-    ///         [-8600, 900000].
+    ///         [-8600, 900000] or the depth is not finite.
     void setDepth(double depth);
     /// @result The event depth.
     /// @throws std::runtime_error if \c hasDepth() is false.

@@ -13,6 +13,8 @@
 #include <GeographicLib/Constants.hpp>
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
+#include "uLocalMagnitudeService/corrections/origin.hpp"
+#include "uLocalMagnitudeService/corrections/stationLocation.hpp"
 
 using namespace ULocalMagnitudeService::Corrections;
 
@@ -195,20 +197,18 @@ double Distance::computeEpicentralDistance(
     auto sourceLongitude = origin.getLongitude();
     auto stationLatitude = station.getLatitude();
     auto stationLongitude = station.getLongitude();
-    constexpr GeographicLib::Geodesic geodesic
+    const GeographicLib::Geodesic geodesic
     {
         GeographicLib::Constants::WGS84_a(),
         GeographicLib::Constants::WGS84_f()
     };
     double distance;
-    auto greatCircleDistance
-        = geodesic.Inverse(sourceLatitude,  sourceLongitude,
-                           stationLatitude, stationLongitude,
-                           distance);
+    geodesic.Inverse(sourceLatitude,  sourceLongitude,
+                     stationLatitude, stationLongitude,
+                     distance);
     return distance;
 }
 
-std::expected<double, Distance::ErrorCode>
 /// Operator to get it done
 std::expected<double, Distance::ErrorCode> 
 Distance::operator()(const double distance) const noexcept

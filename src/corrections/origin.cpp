@@ -27,6 +27,18 @@ Origin::Origin() :
 {
 }
 
+/// Copy constructor
+Origin::Origin(const Origin &origin)
+{
+    *this = origin;
+}
+
+/// Move constructor
+Origin::Origin(Origin &&origin) noexcept
+{
+    *this = std::move(origin);
+}
+
 /// Destructor
 Origin::~Origin() = default;
 
@@ -49,6 +61,10 @@ Origin& Origin::operator=(Origin &&location) noexcept
 /// Latitude
 void Origin::setLatitude(const double latitude)
 {
+    if (!std::isfinite(latitude))
+    {
+        throw std::invalid_argument("Latitude is not finite");
+    }
     if (latitude < -90 || latitude > 90)
     {
         throw std::invalid_argument("Latitude must be in range [-90, 90]");
@@ -69,8 +85,12 @@ bool Origin::hasLatitude() const noexcept
 }   
 
 /// Longitude
-void Origin::setLongitude(const double longitude) noexcept
+void Origin::setLongitude(const double longitude)
 {
+    if (!std::isfinite(longitude))
+    {
+        throw std::invalid_argument("Longitude is not finite");
+    }
     auto lon = std::fmod(longitude, 360.0);
     if (lon < 0){lon = lon + 360.0;}
     pImpl->mLongitude = lon;
@@ -91,6 +111,10 @@ bool Origin::hasLongitude() const noexcept
 /// Depth
 void Origin::setDepth(const double depth)
 {
+    if (!std::isfinite(depth))
+    {
+        throw std::invalid_argument("Depth is not finite");
+    }   
     constexpr double minimumDepth{-8600};
     constexpr double maximumDepth{900000};
     if (depth < minimumDepth || depth > maximumDepth)
