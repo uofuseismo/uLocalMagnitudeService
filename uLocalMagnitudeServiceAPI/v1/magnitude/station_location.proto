@@ -11,7 +11,7 @@ message StationLocation {
    double latitude = 1;
    /// The station longitude in degrees.  This increases positive east.
    double longitude = 2;
-   /// The station elevation in meters.  This icnreases positive up from
+   /// The station elevation in meters.  This increases positive up from
    /// sea-level and must be in the range [-10000, 8600].
    double elevation = 3;
 }
