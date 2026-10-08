@@ -229,8 +229,8 @@ target_link_libraries(uLocalMagnitudeService
 
 if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
    add_executable(unitTests
-                  #testing/corrections/distance.cpp
-                  #testing/corrections/hypocenter.cpp
+                  testing/corrections/distance.cpp
+                  testing/corrections/hypocenter.cpp
                   testing/corrections/station.cpp
                   testing/corrections/stationIdentifier.cpp
                   testing/corrections/stationLocation.cpp

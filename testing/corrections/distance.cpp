@@ -10,7 +10,7 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
-#include "uLocalMagnitudeService/corrections/origin.hpp"
+#include "uLocalMagnitudeService/corrections/hypocenter.hpp"
 #include "uLocalMagnitudeService/corrections/stationLocation.hpp"
 #include "../distanceTables.hpp"
 
@@ -676,9 +676,9 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance - Utah and Yellowstone"
 TEST_CASE("ULocalMagnitudeService::Corrections::Distance::computeEpicentralDistance",
           "[distance]")
 {
-    const auto origin = [](const double latitude, const double longitude)
+    const auto hypocenter = [](const double latitude, const double longitude)
     {
-        Origin result;
+        Hypocenter result;
         result.setLatitude(latitude);
         result.setLongitude(longitude);
         return result;
@@ -693,7 +693,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance::computeEpicentralDista
 
     SECTION("Same place")
     {
-        REQUIRE(Distance::computeEpicentralDistance(origin(39.6, -111.4),
+        REQUIRE(Distance::computeEpicentralDistance(hypocenter(39.6, -111.4),
                                                     station(39.6, -111.4))
              == 0);
     }
@@ -701,7 +701,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance::computeEpicentralDista
     SECTION("Along the equator")
     {
         // The equator is a geodesic so one degree is exactly a*pi/180
-        REQUIRE_THAT(Distance::computeEpicentralDistance(origin(0, 0),
+        REQUIRE_THAT(Distance::computeEpicentralDistance(hypocenter(0, 0),
                                                          station(0, 1)),
                      Catch::Matchers::WithinAbs(111319.49079327358, 1.e-6));
     }
@@ -709,23 +709,23 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance::computeEpicentralDista
     SECTION("Along a meridian")
     {
         // WGS84 quarter meridian
-        REQUIRE_THAT(Distance::computeEpicentralDistance(origin(0, 0),
+        REQUIRE_THAT(Distance::computeEpicentralDistance(hypocenter(0, 0),
                                                          station(90, 0)),
                      Catch::Matchers::WithinAbs(10001965.729, 1.e-3));
         // A short hop near Utah is the meridian radius of curvature times
         // the angle
         REQUIRE_THAT(Distance::computeEpicentralDistance(
-                         origin(40.00, -111.85), station(40.01, -111.85)),
+                         hypocenter(40.00, -111.85), station(40.01, -111.85)),
                      Catch::Matchers::WithinAbs(1110.3473, 1.e-3));
     }
 
     SECTION("Symmetric")
     {
         const auto forward
-            = Distance::computeEpicentralDistance(origin(39.6, -111.4),
+            = Distance::computeEpicentralDistance(hypocenter(39.6, -111.4),
                                                   station(40.76, -111.85));
         const auto backward
-            = Distance::computeEpicentralDistance(origin(40.76, -111.85),
+            = Distance::computeEpicentralDistance(hypocenter(40.76, -111.85),
                                                   station(39.6, -111.4));
         REQUIRE(forward > 100000);
         REQUIRE(forward < 150000);
@@ -735,14 +735,14 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance::computeEpicentralDista
     SECTION("Longitude conventions don't matter")
     {
         const auto west
-            = Distance::computeEpicentralDistance(origin(39.6, -111.4),
+            = Distance::computeEpicentralDistance(hypocenter(39.6, -111.4),
                                                   station(40.76, -111.85));
         const auto east
-            = Distance::computeEpicentralDistance(origin(39.6, 248.6),
+            = Distance::computeEpicentralDistance(hypocenter(39.6, 248.6),
                                                   station(40.76, 248.15));
         REQUIRE_THAT(east, Catch::Matchers::WithinAbs(west, 1.e-6));
         // The short way across the antimeridian
-        REQUIRE_THAT(Distance::computeEpicentralDistance(origin(0, 179.9),
+        REQUIRE_THAT(Distance::computeEpicentralDistance(hypocenter(0, 179.9),
                                                          station(0, -179.9)),
                      Catch::Matchers::WithinAbs(0.2*111319.49079327358,
                                                 1.e-6));
@@ -750,22 +750,22 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance::computeEpicentralDista
 
     SECTION("Depth and elevation don't change an epicentral distance")
     {
-        auto deep = origin(39.6, -111.4);
+        auto deep = hypocenter(39.6, -111.4);
         deep.setDepth(20000);
         auto high = station(40.76, -111.85);
         high.setElevation(3000);
         REQUIRE(Distance::computeEpicentralDistance(deep, high)
-             == Distance::computeEpicentralDistance(origin(39.6, -111.4),
+             == Distance::computeEpicentralDistance(hypocenter(39.6, -111.4),
                                                     station(40.76, -111.85)));
     }
 
     SECTION("Latitude and longitude are required")
     {
-        const auto good = origin(39.6, -111.4);
+        const auto good = hypocenter(39.6, -111.4);
         const auto goodStation = station(40.76, -111.85);
-        Origin noLatitude;
+        Hypocenter noLatitude;
         noLatitude.setLongitude(-111.4);
-        Origin noLongitude;
+        Hypocenter noLongitude;
         noLongitude.setLatitude(39.6);
         StationLocation noStationLatitude;
         noStationLatitude.setLongitude(-111.85);
@@ -784,7 +784,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance::computeEpicentralDista
             Distance::computeEpicentralDistance(good, noStationLongitude),
             std::invalid_argument);
         REQUIRE_THROWS_AS(
-            Distance::computeEpicentralDistance(Origin {}, StationLocation {}),
+            Distance::computeEpicentralDistance(Hypocenter {}, StationLocation {}),
             std::invalid_argument);
     }
 
@@ -793,7 +793,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance::computeEpicentralDista
         // Roughly 130 km - well inside the 600 km Utah table
         const auto utah = fromUUSSTable("Utah");
         const auto distance
-            = Distance::computeEpicentralDistance(origin(39.6, -111.4),
+            = Distance::computeEpicentralDistance(hypocenter(39.6, -111.4),
                                                   station(40.76, -111.85));
         REQUIRE(utah(distance).has_value());
     }
