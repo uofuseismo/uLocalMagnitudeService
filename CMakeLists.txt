@@ -35,6 +35,7 @@ endif()
 find_package(spdlog REQUIRED)
 find_package(Boost COMPONENTS headers program_options REQUIRED)
 find_package(Threads REQUIRED)
+find_package(geographiclib REQUIRED)
 if (${BUILD_TESTS})
    find_package(Catch2 3 REQUIRED)
 endif()
@@ -157,7 +158,8 @@ target_link_libraries(libuLocalMagnitudeService
                       PRIVATE Boost::headers
                               protobuf::libprotobuf
                               spdlog::spdlog_header_only
-                              gRPC::grpc gRPC::grpc++)
+                              gRPC::grpc gRPC::grpc++
+                              GeographicLib::GeographicLib)
 target_sources(libuLocalMagnitudeService
                PUBLIC FILE_SET HEADERS
                       BASE_DIRS

@@ -28,6 +28,7 @@ class uLocalMagnitudeServiceConan(ConanFile):
        self.requires("opentelemetry-cpp/1.26.0")
        self.requires("protobuf/6.33.5")
        self.requires("boost/1.91.0")
+       self.requires("geographiclib/2.6")
        self.requires("spdlog/1.17.0")
 
    def build_requirements(self):
