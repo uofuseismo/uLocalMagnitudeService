@@ -4,28 +4,30 @@ package ULocalMagnitudeServiceAPI.V1.Magnitude;
 
 import "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.proto";
 import "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.proto";
+import "uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_request.proto";
+import "uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_response.proto";
 import "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.proto";
 import "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.proto";
 import "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_request.proto";
 import "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_response.proto";
 
 /**
- * Handles the magnitude calculation.  A local magnitude is computed from 
- * individual station magnitudes.  Stations magnitudes are computed by 
- * averaging the amplitudes observed on a Wood Anderson seismometer
+ * Handles the local magnitude calculation.  A network magnitude is computed from 
+ * aggregating (e.g., averaging) individual station magnitudes.  Stations magnitudes 
+ * are computed by averaging the amplitudes observed on a Wood Anderson seismometer
  * (because this is Utah this is likely 2800 amplification).
  * then applying a formula of the form:
  *      StationMagnitude = log10(AverageAmplitude/2) + C_d + C_s
  * C_d is the distance correction and C_s is the station correction.
  */
 service MagnitudeService {
-   /// This computes the local magnitudes from the provided observed amplitudes.
+   /// This computes the network local magnitude from the provided observed amplitudes.
    /// This most likely will be leveraged by a post-processing utility where the
-   /// user has extracted amplitudes from an observed and processed waveform
-   /// pair.  Note, that this algorithm does not apply Chauvenet's criterion for
+   /// user has extracted amplitudes from a pair of processed non-vertical channel waveforms
+   /// Note, that this algorithm does not apply Chauvenet's criterion for
    /// outlier detection since the user is responsible for adding and removing
    /// observations.
-   //rpc ComputeLocalMagnitudeFromAmplitudes(LocalMagnitudeFromAmplitudesRequest) returns(LocalMagnitudeFromAmplitudesResponse) {};
+   rpc ComputeNetworkMagnitudeFromAmplitudes(NetworkMagnitudeFromAmplitudesRequest) returns(NetworkMagnitudeFromAmplitudesResponse) {};
    /// This is a marginally higher order debugging utility that will return
    /// the station magnitudes.
    rpc ComputeStationMagnitudesFromAmplitudes(StationMagnitudesFromAmplitudesRequest) returns(StationMagnitudesFromAmplitudesResponse) {};
