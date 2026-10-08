@@ -1,0 +1,46 @@
+edition = "2023";
+
+package ULocalMagnitudeServiceAPI.V1.Magnitude;
+
+import "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitude.proto";
+
+/**
+ * The network magnitude corresponding to the given amplitudes.
+ */
+message NetworkMagnitudeFromAmplitudesResponse {
+   enum Reason {
+       UNKNOWN = 0;                // Observation rejected for unknown reasons.  (Very unlikely result)
+       TOO_FAR = 1;                // The source-receiver distance extends past the end of the distance correction table.
+       INVALID_AMPLITUDES = 2;     // The amplitudes had erroneous values - e.g., non-positive amplitudes, units, inconsistent streams.
+       NO_STATION_CORRECTION = 3;  // There existed no station correction so the station magnitude could not be computed.
+       ALGORITHM = 3;              // Server-side error.
+   };
+   /// Defines a reason an observation was not used in computing the network magnitude.
+   message RejectedObservation {
+       /// Maps this value to the input observations.  To convert to a memory offset subtract by 1.
+       uint32 input_observation_number = 1;
+       ///  The reason the observation was rejected.
+       Reason reason = 2;
+   };
+   /// Defines the station magnitude observation and the deviation of this station magnitude from
+   /// the network magnitude.
+   message StationMagnitudeAndResidual {
+       /// Maps this value to the input observations.  To convert to a memory offset subtract by 1.
+       uint32 input_observation_number = 1;
+       /// The station magnitude identifier.
+       StationIdentifier identifier = 2;
+       /// The station magnitude (observation).
+       StationMagnitude station_magnitude = 3;
+       /// The residual value (Network Magnitude - Station Magnitude).
+       double residual = 4;
+   };
+   /// The identifier corresponding to the response.
+   string identifier = 1 [default = ""];
+   /// Algorithm version.
+   string version = 2;
+   /// Additional comments from processing and a place for things like API
+   /// deprecation notices.
+   string notices = 3 [default = ""];
+   /// The correspondingstation magnitudes.
+   repeated Observation observations = 4;
+}
