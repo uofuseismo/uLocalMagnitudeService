@@ -14,8 +14,8 @@ message NetworkMagnitudeFromAmplitudesResponse {
        TOO_FAR = 1;                // The source-receiver distance extends past the end of the distance correction table.
        INVALID_AMPLITUDES = 2;     // The amplitudes had erroneous values - e.g., non-positive amplitudes, units, inconsistent streams.
        NO_STATION_CORRECTION = 3;  // There existed no station correction so the station magnitude could not be computed.
-       ALGORITHM = 3;              // Server-side error.
-   };
+       ALGORITHM = 4;              // Server-side error.
+   }
    /// Defines a reason an observation was not used in computing the network magnitude.
    message RejectedObservation {
        /// Maps this value to the input observations.  To convert to a memory offset subtract by 1.
