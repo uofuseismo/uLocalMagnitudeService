@@ -1,0 +1,17 @@
+edition = "2023";
+
+package ULocalMagnitudeServiceAPI.V1.Magnitude;
+
+/*
+ * The event hypocenter as defined in the WGS84 coordinate system.
+ */
+message StationLocation {
+   /// The station latitude in degrees.  This must be in the range [-90, 90].
+   /// This increases positive north.
+   double latitude = 1;
+   /// The station longitude in degrees.  This increases positive east.
+   double longitude = 2;
+   /// The station elevation in meters.  This icnreases positive up from
+   /// sea-level and must be in the range [-10000, 8600].
+   double elevation = 3;
+}

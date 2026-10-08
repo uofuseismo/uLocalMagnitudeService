@@ -3,6 +3,7 @@ edition = "2023";
 package ULocalMagnitudeServiceAPI.V1.Magnitude;
 
 import "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.proto";
+import "uLocalMagnitudeServiceAPI/v1/magnitude/station_location.proto";
 
 /**
  * Defines a (peak-to-peak) amplitude measurement made at a station.
@@ -14,7 +15,6 @@ message StationAmplitudeMeasurement {
    Amplitude amplitude_stream_1 = 1;
    /// The amplitude measured on the second channel (e.g., HHN).
    Amplitude amplitude_stream_2 = 2;
-   /// The source-to-receiver epicentral distance in meters.  This must be
-   /// non-negative.
-   double epicentral_distance = 3;
+   /// The station location in the WGS84 system.
+   StationLocation station_location = 3;
 }   
