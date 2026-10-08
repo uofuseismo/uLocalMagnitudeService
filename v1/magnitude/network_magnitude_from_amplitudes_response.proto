@@ -42,6 +42,8 @@ message NetworkMagnitudeFromAmplitudesResponse {
    /// Additional comments from processing and a place for things like API
    /// deprecation notices.
    string notices = 3 [default = ""];
-   /// The correspondingstation magnitudes.
-   repeated Observation observations = 4;
+   /// The corresponding station magnitudes and residuals.
+   repeated StationMagnitudeAndResidual observations = 4;
+   /// The rejected observations.
+   repeated RejectedObservation rejected_observations = 5;   
 }
