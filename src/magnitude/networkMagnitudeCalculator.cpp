@@ -18,6 +18,7 @@
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
 #include "uLocalMagnitudeService/magnitude/stationMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
+#include "uLocalMagnitudeService/magnitude/residual.hpp"
 #include "uLocalMagnitudeService/magnitude/stationMagnitudeCalculator.hpp"
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
@@ -393,6 +394,17 @@ NetworkMagnitudeCalculator::operator()(
                             averageMagnitude, 
                             e.what());
         return std::unexpected(ErrorCode::Algorithm);
+    }
+    // Now tabulate the residuals
+    for (const auto &item : workItems)
+    {
+        if (item.stationMagnitude.has_value())
+        {
+            Residual residual;
+            auto residualValue = networkMagnitude.getValue()
+                               - item.stationMagnitude->getValue();
+            residual.setValue(residualValue);
+        }
     }
     return networkMagnitude;
 }

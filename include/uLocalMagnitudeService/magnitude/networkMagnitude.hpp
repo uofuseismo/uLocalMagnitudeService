@@ -1,6 +1,8 @@
 #ifndef ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_MAGNITUDE_HPP
 #define ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_MAGNITUDE_HPP
 #include <memory>
+#include <utility>
+#include <vector>
 namespace ULocalMagnitudeService::Magnitude
 {
  class Observation;
@@ -32,6 +34,13 @@ public:
     [[nodiscard]] double getValue() const;
     /// @result True indicates that the netork magnitude was set.
     [[nodiscard]] bool hasValue() const noexcept;
+
+    /// @brief Sets the observations and residuals.
+    /// @param[in] observationsAndResiduals  Each element is an observation and
+    ///                                      corresponding (magnitude) residual.
+    void setObservationsAndResiduals(const std::vector<std::pair<Observation, Residual>> &observationsAndResiduals);
+    /// @result True indicates that the observations and residuals were set.
+    [[nodiscard]] bool hasObservationsAndResiduals() const noexcept;
 
     /// @brief Destructor.
     ~NetworkMagnitude();

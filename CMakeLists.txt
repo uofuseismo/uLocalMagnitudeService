@@ -88,6 +88,7 @@ set(LIBRARY_SRC
     src/magnitude/networkMagnitudeCalculator.cpp
     src/magnitude/networkMagnitudeCalculatorOptions.cpp
     src/magnitude/observation.cpp
+    src/magnitude/residual.cpp
     src/magnitude/stationMagnitude.cpp
     src/magnitude/stationMagnitudeCalculator.cpp
     src/magnitude/streamIdentifier.cpp
@@ -109,6 +110,7 @@ set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/magnitude/networkMagnitudeCalculator.hpp
     include/${PROJECT_NAME}/magnitude/networkMagnitudeCalculatorOptions.hpp
     include/${PROJECT_NAME}/magnitude/observation.hpp
+    include/${PROJECT_NAME}/magnitude/residual.hpp
     include/${PROJECT_NAME}/magnitude/stationMagnitude.hpp
     include/${PROJECT_NAME}/magnitude/stationMagnitudeCalculator.hpp
     include/${PROJECT_NAME}/magnitude/streamIdentifier.hpp
