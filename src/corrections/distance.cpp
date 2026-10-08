@@ -9,6 +9,8 @@
 #ifndef NDEBUG
 #include <cassert>
 #endif
+#include <GeographicLib/Geodesic.hpp>
+#include <GeographicLib/Constants.hpp>
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
 
@@ -169,6 +171,44 @@ DistanceOptions::Type Distance::getDistanceType() const
     return pImpl->mDistanceOptions.getType();
 }
 
+/// Operator to get it done
+double Distance::computeEpicentralDistance(
+    const Origin &origin, const StationLocation &station)
+{
+    if (!origin.hasLatitude())
+    {
+        throw std::invalid_argument("Origin latitude not set");
+    }
+    if (!origin.hasLongitude())
+    {
+        throw std::invalid_argument("Origin longitude not set");
+    }
+    if (!station.hasLatitude())
+    {   
+        throw std::invalid_argument("Station latitude not set");
+    }
+    if (!station.hasLongitude())
+    {
+        throw std::invalid_argument("Station longitude not set");
+    }
+    auto sourceLatitude = origin.getLatitude();
+    auto sourceLongitude = origin.getLongitude();
+    auto stationLatitude = station.getLatitude();
+    auto stationLongitude = station.getLongitude();
+    constexpr GeographicLib::Geodesic geodesic
+    {
+        GeographicLib::Constants::WGS84_a(),
+        GeographicLib::Constants::WGS84_f()
+    };
+    double distance;
+    auto greatCircleDistance
+        = geodesic.Inverse(sourceLatitude,  sourceLongitude,
+                           stationLatitude, stationLongitude,
+                           distance);
+    return distance;
+}
+
+std::expected<double, Distance::ErrorCode>
 /// Operator to get it done
 std::expected<double, Distance::ErrorCode> 
 Distance::operator()(const double distance) const noexcept

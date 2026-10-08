@@ -75,8 +75,10 @@ configure_file(${CMAKE_SOURCE_DIR}/src/version.hpp.in
 set(LIBRARY_SRC
     src/corrections/distance.cpp
     src/corrections/distanceOptions.cpp
+    src/corrections/origin.cpp
     src/corrections/station.cpp
     src/corrections/stationIdentifier.cpp
+    src/corrections/stationLocation.cpp
     src/corrections/stationOptions.cpp
     src/corrections/stations.cpp
     src/corrections/stationsSet.cpp
@@ -98,8 +100,10 @@ set(LIBRARY_SRC
 set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/corrections/distance.hpp
     include/${PROJECT_NAME}/corrections/distanceOptions.hpp
+    include/${PROJECT_NAME}/corrections/origin.hpp
     include/${PROJECT_NAME}/corrections/station.hpp
     include/${PROJECT_NAME}/corrections/stationIdentifier.hpp
+    include/${PROJECT_NAME}/corrections/stationLocation.hpp
     include/${PROJECT_NAME}/corrections/stationOptions.hpp
     include/${PROJECT_NAME}/corrections/stations.hpp
     include/${PROJECT_NAME}/corrections/stationsSet.hpp
@@ -121,6 +125,7 @@ set(PROTO_MESSAGE_SRC
     uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.proto
+    #uLocalMagnitudeServiceAPI/v1/magnitude/origin.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_request.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_response.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.proto
