@@ -2,6 +2,7 @@ edition = "2023";
 
 package ULocalMagnitudeServiceAPI.V1.Magnitude;
 
+import "uLocalMagnitudeServiceAPI/v1/magnitude/hypocenter.proto";
 import "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.proto";
 
 /**
@@ -13,7 +14,6 @@ message NetworkMagnitudeFromAmplitudesRequest {
    string identifier = 1 [default = ""];
    /// A list of amplitudes measured on different stations.
    repeated StationAmplitudeMeasurement station_amplitude_measurements = 2;
-   /// The source depth in meters relative to sea-level.  This must be between 
-   /// -8600 and 800,000.  This increases positive down.
-   double depth = 3;
+   /// The event location.
+   Hypocenter hypocenter = 3;
 }
