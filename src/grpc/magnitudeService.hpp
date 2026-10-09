@@ -33,8 +33,6 @@ class MagnitudeService final : public
 {
 public:
     /// @brief Constructor. 
-    //MagnitudeService(const MagnitudeServiceOptions &options,
-    //                 std::shared_ptr<spdlog::logger> logger);
     MagnitudeService(
         const ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculatorOptions &calculatorOptions,
         std::optional<std::string> &accessToken,

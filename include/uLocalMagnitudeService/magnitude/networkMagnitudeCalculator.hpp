@@ -39,7 +39,7 @@ public:
         DuplicateObservations,        /*!< There is a duplicate observation. */
         TooFewObservations,  /*!< Too few observations available to compute a network magnitude. */
         // User errors at a station level
-        ObservationHasNoCorrection,   /*!< This observation has not corresponding station correciton. */
+        ObservationHasNoCorrection,   /*!< This observation has not corresponding station correction. */
         NegativeDistance,             /*!< A negative epicentral distance was encountered. */
         StationTooFar,                /*!< The source-receiver distance is too large. */ 
         // Server error

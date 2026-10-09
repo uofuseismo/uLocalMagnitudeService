@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <exception>
@@ -19,7 +20,9 @@ class ServerOptions::ServerOptionsImpl
 public:
     std::string mHost{"localhost"};
     uint16_t mPort{50000};
-    int mMaximumRequestMessageSizeInBytes{4096};
+    int mMaximumRequestMessageSizeInBytes{65536};
+    std::chrono::milliseconds mMaximumConnectionAge{std::chrono::seconds {120}};
+    std::chrono::milliseconds mMaximumGracePeriod{std::chrono::seconds{2}};
     std::optional<std::string> mAccessToken;
     std::optional<std::string> mServerCertificate;
     std::optional<std::string> mServerKey;
@@ -183,6 +186,39 @@ int ServerOptions::getMaximumRequestMessageSizeInBytes() const noexcept
     return pImpl->mMaximumRequestMessageSizeInBytes;
 }
 
+/// Maximum connection age
+void ServerOptions::setMaximumConnectionAge(
+    const std::chrono::milliseconds &duration)
+{
+    if (duration.count() < 1)
+    {
+        throw std::invalid_argument("Max connection duration must be positive");
+    }
+    pImpl->mMaximumConnectionAge = duration;
+}
+
+std::chrono::milliseconds
+ServerOptions::getMaximumConnectionAge() const noexcept
+{
+    return pImpl->mMaximumConnectionAge;
+}
+
+/// Maximum grace period
+void ServerOptions::setMaximumConnectionAgeGracePeriod(
+    const std::chrono::milliseconds &period)
+{
+    if (period.count() < 0)
+    {   
+        throw std::invalid_argument("Grace period must be non-negative");
+    }   
+    pImpl->mMaximumGracePeriod = period;
+}
+
+std::chrono::milliseconds
+ServerOptions::getMaximumConnectionAgeGracePeriod() const noexcept
+{
+    return pImpl->mMaximumGracePeriod;
+}
 
 /// Check the options make sense in aggregate
 void ServerOptions::validate() const
@@ -281,6 +317,24 @@ ServerOptions ULocalMagnitudeService::GRPC::fromInitializationFile(
         = propertyTree.get<int> (section + "maximumRequestMessageSizeInBytes",
                                  options.getMaximumRequestMessageSizeInBytes());
     options.setMaximumRequestMessageSizeInBytes(maximumRequestMessageSize);
+
+    int maxConnectionAgeMilliS{
+       static_cast<int> (options.getMaximumConnectionAge().count())};
+    maxConnectionAgeMilliS = propertyTree.get<int> (
+                      section + "maximumConnectionAgeInMilliSeconds",
+                      maxConnectionAgeMilliS);
+    options.setMaximumConnectionAge(
+        std::chrono::milliseconds(maxConnectionAgeMilliS));
+
+
+    int maxGracePeriodMilliS{
+        static_cast<int> (options.getMaximumConnectionAgeGracePeriod().count())};
+    maxGracePeriodMilliS = propertyTree.get<int> (
+                      section + "maximumConnectionAgeGracePeriodInMilliSeconds",
+                      maxGracePeriodMilliS);
+    options.setMaximumConnectionAgeGracePeriod(
+        std::chrono::milliseconds(maxGracePeriodMilliS));
+
     
     // Read access token and client cert.  Will fail validation and user will
     // then know why

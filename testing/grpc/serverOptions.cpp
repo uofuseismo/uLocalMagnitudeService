@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cstdint>
 #include <optional>
 #include <stdexcept>
@@ -30,6 +31,9 @@ ServerOptions makeOptions()
     options.setServerKey(serverKey);
     options.setClientCertificate(clientCertificate);
     options.enableReflection();
+    options.setMaximumRequestMessageSizeInBytes(1048576);
+    options.setMaximumConnectionAge(std::chrono::minutes {10});
+    options.setMaximumConnectionAgeGracePeriod(std::chrono::seconds {30});
     return options;
 }
 
@@ -42,6 +46,11 @@ void checkOptions(const ServerOptions &options)
     REQUIRE(options.getServerKey() == serverKey);
     REQUIRE(options.getClientCertificate() == clientCertificate);
     REQUIRE(options.isReflectionEnabled());
+    REQUIRE(options.getMaximumRequestMessageSizeInBytes() == 1048576);
+    REQUIRE(options.getMaximumConnectionAge() == std::chrono::minutes {10});
+    REQUIRE(options.getMaximumConnectionAgeGracePeriod()
+         == std::chrono::seconds {30});
+    REQUIRE(options.getAddress() == "0.0.0.0:8443");
     REQUIRE_NOTHROW(options.validate());
 }
 }
@@ -58,6 +67,11 @@ TEST_CASE("ULocalMagnitudeService::GRPC::ServerOptions", "[serverOptions]")
         REQUIRE_FALSE(options.getServerKey().has_value());
         REQUIRE_FALSE(options.getClientCertificate().has_value());
         REQUIRE_FALSE(options.isReflectionEnabled());
+        REQUIRE(options.getMaximumRequestMessageSizeInBytes() == 65536);
+        REQUIRE(options.getMaximumConnectionAge() == std::chrono::minutes {2});
+        REQUIRE(options.getMaximumConnectionAgeGracePeriod()
+             == std::chrono::seconds {2});
+        REQUIRE(options.getAddress() == "localhost:50000");
         // No TLS and no token is a valid (insecure) server
         REQUIRE_NOTHROW(options.validate());
     }
@@ -86,6 +100,78 @@ TEST_CASE("ULocalMagnitudeService::GRPC::ServerOptions", "[serverOptions]")
         // Port 0 (let the OS pick) is rejected and the previous one is kept
         REQUIRE_THROWS_AS(options.setPort(0), std::invalid_argument);
         REQUIRE(options.getPort() == 65535);
+    }
+
+    SECTION("Address")
+    {
+        ServerOptions options;
+        options.setHost("0.0.0.0");
+        options.setPort(8443);
+        REQUIRE(options.getAddress() == "0.0.0.0:8443");
+        options.setHost("magnitude.seis.utah.edu");
+        REQUIRE(options.getAddress() == "magnitude.seis.utah.edu:8443");
+        // IPv6 hosts carry their own brackets
+        options.setHost("[::1]");
+        options.setPort(1);
+        REQUIRE(options.getAddress() == "[::1]:1");
+        // Asking for the address doesn't change the host
+        REQUIRE(options.getHost() == "[::1]");
+    }
+
+    SECTION("Maximum request message size")
+    {
+        ServerOptions options;
+        options.setMaximumRequestMessageSizeInBytes(1);
+        REQUIRE(options.getMaximumRequestMessageSizeInBytes() == 1);
+        // gRPC's own default is 4 MB
+        options.setMaximumRequestMessageSizeInBytes(4*1024*1024);
+        REQUIRE(options.getMaximumRequestMessageSizeInBytes() == 4194304);
+        options.setMaximumRequestMessageSizeInBytes(INT32_MAX);
+        REQUIRE(options.getMaximumRequestMessageSizeInBytes() == INT32_MAX);
+        // Non-positive sizes are rejected and the previous one is kept
+        REQUIRE_THROWS_AS(options.setMaximumRequestMessageSizeInBytes(0),
+                          std::invalid_argument);
+        REQUIRE_THROWS_AS(options.setMaximumRequestMessageSizeInBytes(-1),
+                          std::invalid_argument);
+        REQUIRE(options.getMaximumRequestMessageSizeInBytes() == INT32_MAX);
+    }
+
+    SECTION("Maximum connection age")
+    {
+        ServerOptions options;
+        options.setMaximumConnectionAge(std::chrono::milliseconds {1});
+        REQUIRE(options.getMaximumConnectionAge()
+             == std::chrono::milliseconds {1});
+        options.setMaximumConnectionAge(std::chrono::hours {24});
+        REQUIRE(options.getMaximumConnectionAge() == std::chrono::hours {24});
+        // Zero and negative ages are rejected and the previous one is kept
+        REQUIRE_THROWS_AS(
+            options.setMaximumConnectionAge(std::chrono::milliseconds {0}),
+            std::invalid_argument);
+        REQUIRE_THROWS_AS(
+            options.setMaximumConnectionAge(std::chrono::milliseconds {-1}),
+            std::invalid_argument);
+        REQUIRE(options.getMaximumConnectionAge() == std::chrono::hours {24});
+    }
+
+    SECTION("Maximum connection age grace period")
+    {
+        ServerOptions options;
+        // No grace period is allowed
+        options.setMaximumConnectionAgeGracePeriod(
+            std::chrono::milliseconds {0});
+        REQUIRE(options.getMaximumConnectionAgeGracePeriod()
+             == std::chrono::milliseconds {0});
+        options.setMaximumConnectionAgeGracePeriod(std::chrono::seconds {30});
+        REQUIRE(options.getMaximumConnectionAgeGracePeriod()
+             == std::chrono::seconds {30});
+        // A negative period is rejected and the previous one is kept
+        REQUIRE_THROWS_AS(
+            options.setMaximumConnectionAgeGracePeriod(
+                std::chrono::milliseconds {-1}),
+            std::invalid_argument);
+        REQUIRE(options.getMaximumConnectionAgeGracePeriod()
+             == std::chrono::seconds {30});
     }
 
     SECTION("Access token")
@@ -238,6 +324,9 @@ TEST_CASE("ULocalMagnitudeService::GRPC::ServerOptions", "[serverOptions]")
         options.setPort(50000);
         options.setAccessToken("def456");
         options.disableReflection();
+        options.setMaximumRequestMessageSizeInBytes(65536);
+        options.setMaximumConnectionAge(std::chrono::minutes {2});
+        options.setMaximumConnectionAgeGracePeriod(std::chrono::seconds {2});
         checkOptions(copy);
 
         // Copy assignment

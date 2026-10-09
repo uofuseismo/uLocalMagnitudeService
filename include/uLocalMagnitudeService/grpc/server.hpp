@@ -2,6 +2,10 @@
 #define ULOCAL_MAGNITUDE_SERVICE_GRPC_SERVER_HPP
 #include <memory>
 #include <spdlog/logger.h>
+namespace ULocalMagnitudeService::Magnitude
+{
+ class NetworkMagnitudeCalculatorOptions;
+}
 namespace ULocalMagnitudeService::GRPC
 {
  class ServerOptions;
@@ -16,7 +20,9 @@ namespace ULocalMagnitudeService::GRPC
 class Server
 {
 public:
-    Server(std::shared_ptr<spdlog::logger> logger);
+    Server(const ServerOptions &serverOptions,
+           const Magnitude::NetworkMagnitudeCalculatorOptions &calculatorOptions,
+           std::shared_ptr<spdlog::logger> logger);
 
     /// @brief Destructor.
     ~Server();

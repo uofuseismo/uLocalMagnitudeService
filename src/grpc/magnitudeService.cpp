@@ -247,7 +247,15 @@ grpc::ServerUnaryReactor
             ///--------------------------------------------------------------///
             /// Step 2: Compute Magnitude                                    ///
             ///--------------------------------------------------------------///
+            auto magnitudeResult = calculator->operator()(observations);
+            if (magnitudeResult.has_value())
+            {
 
+            }
+            else
+            {
+
+            }
             mSuccess = true;
             Finish(grpc::Status::OK);
             SPDLOG_LOGGER_INFO(

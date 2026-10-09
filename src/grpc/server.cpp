@@ -2,8 +2,12 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <utility>
+#ifndef NDEBUG
+#include <cassert>
+#endif
 #include <spdlog/spdlog.h>
 #include <spdlog/logger.h>
 //NOLINTNEXTLINE(misc-include-cleaner)
@@ -13,6 +17,7 @@
 #include <grpcpp/security/server_credentials.h>
 //NOLINTNEXTLINE(misc-include-cleaner)
 #include <grpcpp/support/time.h>
+#include <grpcpp/impl/channel_argument_option.h>
 #include "uLocalMagnitudeService/grpc/server.hpp"
 #include "uLocalMagnitudeService/grpc/serverOptions.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
@@ -23,7 +28,13 @@ using namespace ULocalMagnitudeService::GRPC;
 class Server::ServerImpl
 {
 public:
-    ServerImpl(std::shared_ptr<spdlog::logger> logger) :
+    ServerImpl
+    (
+        const GRPC::ServerOptions &grpcOptions,
+        const Magnitude::NetworkMagnitudeCalculatorOptions &calculatorOptions,
+        std::shared_ptr<spdlog::logger> logger
+    ) :
+        mGRPCOptions(grpcOptions),
         mLogger(std::move(logger))
     {
         if (mLogger == nullptr)
@@ -38,13 +49,34 @@ public:
             // NOLINTEND(misc-include-cleaner)
         }
         // Create services
-        createServices();
+        createServices(calculatorOptions);
+    }
+
+    /// Use TLS?
+    [[nodiscard]] bool useTLS() const noexcept
+    {
+        if (mGRPCOptions.getServerKey() == std::nullopt ||
+            mGRPCOptions.getServerCertificate() == std::nullopt)
+        {
+            return false;
+        }
+        return true;
     }
 
     /// Run during construction
-    void createServices()
-    {   
-std::unique_ptr<MagnitudeService> magnitudeService;
+    void createServices(
+        const Magnitude::NetworkMagnitudeCalculatorOptions &calculatorOptions
+    )
+    {
+        SPDLOG_LOGGER_DEBUG(mLogger, "Creating magnitude service");
+        // Are we going to secure the server?
+        std::optional<std::string> accessToken{std::nullopt};
+        if (useTLS()){accessToken = mGRPCOptions.getAccessToken();}
+        std::unique_ptr<grpc::Service> magnitudeService
+            = std::make_unique<GRPC::MagnitudeService> (
+                 calculatorOptions,
+                 accessToken,
+                 mLogger);
         mServicesMap.insert(
            std::move(
               std::pair {"MagnitudeService", std::move(magnitudeService)}
@@ -55,50 +87,36 @@ std::unique_ptr<MagnitudeService> magnitudeService;
     void start()
     {
         grpc::ServerBuilder builder;
-//        const auto address = mGRPCOptions.getHost() + ":" 
-                           //+ std::to_string(mGRPCOptions.getPort());
+        const auto address = mGRPCOptions.getAddress();
         // Add global rules like messages size limits etc.
-/*
         builder.SetMaxSendMessageSize(
-            mOptions.getMaximumRequestMessageSizeInBytes());
+            mGRPCOptions.getMaximumRequestMessageSizeInBytes());
         builder.SetOption(grpc::MakeChannelArgumentOption(
                "GRPC_ARG_MAX_CONNECTION_AGE_MS",
                static_cast<int>
-                  (mOptions.getMaximumConnectionAge().count())));
+                  (mGRPCOptions.getMaximumConnectionAge().count())));
         builder.SetOption(grpc::MakeChannelArgumentOption(
                "GRPC_ARG_MAX_CONNECTION_AGE_GRACE_MS",
                static_cast<int>
-                   (mOptions.getMaximumConnectionAgeGracePeriod().count())));
-        builder.SetOption(grpc::MakeChannelArgumentOption(
-               "GRPC_ARG_MAX_CONCURRENT_STREAMS",
-                mOptions.getMaximumNumberOfConcurrentStreams()));
-*/
+                  (mGRPCOptions.getMaximumConnectionAgeGracePeriod().count())));
         // Secure the server?
-if (true) 
-//        if (mGRPCOptions.getServerKey() == std::nullopt ||
-//            mGRPCOptions.getServerCertificate() == std::nullopt)
+        if (!useTLS())
         {    
             SPDLOG_LOGGER_INFO(mLogger,
                 "Initiating non-secured local magnitude service");
-/*
             builder.AddListeningPort(address,
                                      grpc::InsecureServerCredentials());
-            mSecured = false;
-*/
         }
         else
         {
-/*
             auto serverKey = mGRPCOptions.getServerKey();
             auto serverCertificate = mGRPCOptions.getServerCertificate();
 #ifndef NDEBUG
             assert(serverKey != std::nullopt);
             assert(serverCertificate != std::nullopt);
 #endif
-*/
             SPDLOG_LOGGER_INFO(mLogger,
                 "Initiating secured local magnitude service");
-/*
             const grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair
             {
                 *serverKey,
@@ -108,8 +126,6 @@ if (true)
             sslOptions.pem_key_cert_pairs.emplace_back(keyCertPair);
             builder.AddListeningPort(address,
                                      grpc::SslServerCredentials(sslOptions));
-            mSecured = true;
-*/
         }
         // Register before start
         for (auto &service : mServicesMap)
@@ -153,6 +169,7 @@ if (true)
     }   
 
 //private:
+    GRPC::ServerOptions mGRPCOptions;
     std::shared_ptr<spdlog::logger> mLogger{nullptr};
     // N.B. Services must outlive mServer (RegisterService keeps only a raw
     //      pointer).  This is guaranteed by declaration order: mServicesMap is
@@ -164,8 +181,12 @@ if (true)
 };
 
 /// Constructor
-Server::Server(std::shared_ptr<spdlog::logger> logger) :
-    pImpl(std::make_unique<ServerImpl> (std::move(logger)))
+Server::Server(
+    const ServerOptions &grpcOptions,
+    const Magnitude::NetworkMagnitudeCalculatorOptions &calculatorOptions,
+    std::shared_ptr<spdlog::logger> logger
+    ) :
+    pImpl(std::make_unique<ServerImpl> (grpcOptions, calculatorOptions, std::move(logger)))
 {
 }
 

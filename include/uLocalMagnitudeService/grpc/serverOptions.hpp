@@ -1,5 +1,6 @@
 #ifndef ULOCAL_MAGNITUDE_SERVICE_GRPC_SERVER_OPTIONS_HPP
 #define ULOCAL_MAGNITUDE_SERVICE_GRPC_SERVER_OPTIONS_HPP
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <string>
@@ -39,7 +40,7 @@ public:
     /// @note By default this is 50000.
     [[nodiscard]] uint16_t getPort() const noexcept;
 
-    /// @result Combines the hot and port into an address like host:port
+    /// @result Combines the host and port into an address like host:port
     [[nodiscard]] std::string getAddress() const noexcept;
 
     /// @brief Sets the access token.
@@ -85,10 +86,28 @@ public:
     [[nodiscard]] bool isReflectionEnabled() const noexcept;
 
     /// @brief Sets the maximum request message size in bytes.
-    /// @throws std::invalid_argumetn if maxMessageSize is not positive.
+    /// @throws std::invalid_argument if maxMessageSize is not positive.
     void setMaximumRequestMessageSizeInBytes(int maxMessageSize);
-    /// @result The maximum message size in bytes.  By default this is 4096.
+    /// @result The maximum message size in bytes.
+    /// @note By default this is 65536.  Assuming about 100 bytes per station
+    ///       observation this is about 650 stations.
     [[nodiscard]] int getMaximumRequestMessageSizeInBytes() const noexcept;
+
+    /// @brief Sets the maximum connection age.  After this amount of time
+    ///        the connection is terminated.
+    void setMaximumConnectionAge(const std::chrono::milliseconds &maxConnectionAge);
+    /// @result The maximum connection age.
+    /// @note By default this is 2 minutes.
+    [[nodiscard]] std::chrono::milliseconds getMaximumConnectionAge() const noexcept;
+
+    /// @brief After the maximum connection age is hit, this is the amount of
+    ///        of time to wait for the RPC to finish.
+    void setMaximumConnectionAgeGracePeriod(const std::chrono::milliseconds &maxGracePeriod);
+    /// @result The maximum grace period for RPCs belonging to connections
+    ///         that look stale.
+    /// @note By default this is 2 seconds.
+    [[nodiscard]] std::chrono::milliseconds getMaximumConnectionAgeGracePeriod() const noexcept;
+
 
     /// @brief Checks that the options make sense in aggregate.  The
     ///        individual setters only check each option on its own.

@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <format>
@@ -92,6 +93,11 @@ TEST_CASE("ULocalMagnitudeService::GRPC::fromInitializationFile",
         REQUIRE_FALSE(options.getServerKey().has_value());
         REQUIRE_FALSE(options.getAccessToken().has_value());
         REQUIRE_FALSE(options.getClientCertificate().has_value());
+        REQUIRE(options.getMaximumRequestMessageSizeInBytes() == 65536);
+        REQUIRE(options.getMaximumConnectionAge() == std::chrono::minutes {2});
+        REQUIRE(options.getMaximumConnectionAgeGracePeriod()
+             == std::chrono::seconds {2});
+        REQUIRE(options.getAddress() == "localhost:50000");
     }
 
     SECTION("Host and port")
@@ -103,6 +109,7 @@ TEST_CASE("ULocalMagnitudeService::GRPC::fromInitializationFile",
         const auto options = fromInitializationFile(iniFile.path());
         REQUIRE(options.getHost() == "0.0.0.0");
         REQUIRE(options.getPort() == 8443);
+        REQUIRE(options.getAddress() == "0.0.0.0:8443");
     }
 
     SECTION("Custom section")
@@ -117,6 +124,71 @@ TEST_CASE("ULocalMagnitudeService::GRPC::fromInitializationFile",
             = fromInitializationFile(iniFile.path(), "MyServer");
         REQUIRE(options.getHost() == "magnitude.seis.utah.edu");
         REQUIRE(options.getPort() == 9000);
+        // A trailing dot on the section name isn't doubled up
+        const auto dotted
+            = fromInitializationFile(iniFile.path(), "MyServer.");
+        REQUIRE(dotted.getAddress() == "magnitude.seis.utah.edu:9000");
+    }
+
+    SECTION("Maximum request message size")
+    {
+        const TemporaryFile iniFile("maxMessage.ini",
+                                    "[GRPCServer]\n"
+                                    "maximumRequestMessageSizeInBytes = 1048576\n");
+        REQUIRE(fromInitializationFile(iniFile.path())
+                .getMaximumRequestMessageSizeInBytes() == 1048576);
+
+        const TemporaryFile zero("maxMessageZero.ini",
+                                 "[GRPCServer]\n"
+                                 "maximumRequestMessageSizeInBytes = 0\n");
+        REQUIRE_THROWS_AS(fromInitializationFile(zero.path()),
+                          std::invalid_argument);
+
+        const TemporaryFile negative("maxMessageNegative.ini",
+                                     "[GRPCServer]\n"
+                                     "maximumRequestMessageSizeInBytes = -10\n");
+        REQUIRE_THROWS_AS(fromInitializationFile(negative.path()),
+                          std::invalid_argument);
+
+        const TemporaryFile notANumber("maxMessageText.ini",
+                                       "[GRPCServer]\n"
+                                       "maximumRequestMessageSizeInBytes = 4MB\n");
+        REQUIRE_THROWS(fromInitializationFile(notANumber.path()));
+    }
+
+    SECTION("Maximum connection age and grace period")
+    {
+        const TemporaryFile iniFile(
+            "connectionAge.ini",
+            "[GRPCServer]\n"
+            "maximumConnectionAgeInMilliSeconds = 600000\n"
+            "maximumConnectionAgeGracePeriodInMilliSeconds = 30000\n");
+        const auto options = fromInitializationFile(iniFile.path());
+        REQUIRE(options.getMaximumConnectionAge() == std::chrono::minutes {10});
+        REQUIRE(options.getMaximumConnectionAgeGracePeriod()
+             == std::chrono::seconds {30});
+
+        const TemporaryFile noGrace(
+            "noGracePeriod.ini",
+            "[GRPCServer]\n"
+            "maximumConnectionAgeGracePeriodInMilliSeconds = 0\n");
+        REQUIRE(fromInitializationFile(noGrace.path())
+                .getMaximumConnectionAgeGracePeriod()
+             == std::chrono::milliseconds {0});
+
+        const TemporaryFile zeroAge(
+            "zeroConnectionAge.ini",
+            "[GRPCServer]\n"
+            "maximumConnectionAgeInMilliSeconds = 0\n");
+        REQUIRE_THROWS_AS(fromInitializationFile(zeroAge.path()),
+                          std::invalid_argument);
+
+        const TemporaryFile negativeGrace(
+            "negativeGracePeriod.ini",
+            "[GRPCServer]\n"
+            "maximumConnectionAgeGracePeriodInMilliSeconds = -1\n");
+        REQUIRE_THROWS_AS(fromInitializationFile(negativeGrace.path()),
+                          std::invalid_argument);
     }
 
     SECTION("Reflection")
@@ -190,12 +262,47 @@ TEST_CASE("ULocalMagnitudeService::GRPC::fromInitializationFile",
         REQUIRE_FALSE(options.getAccessToken().has_value());
     }
 
+    SECTION("Inline secrets use the documented keys")
+    {
+        // Single-line stand-ins - the reader doesn't parse PEMs
+        const TemporaryFile iniFile("inlineSecrets.ini",
+                                    "[GRPCServer]\n"
+                                    "serverCertificate = server-certificate\n"
+                                    "serverKey = server-key\n"
+                                    "accessToken = " + accessToken + "\n"
+                                    "clientCertificate = client-certificate\n");
+        const auto options = fromInitializationFile(iniFile.path());
+        REQUIRE(options.getServerCertificate() == "server-certificate");
+        REQUIRE(options.getServerKey() == "server-key");
+        REQUIRE(options.getAccessToken() == accessToken);
+        REQUIRE(options.getClientCertificate() == "client-certificate");
+    }
+
+    SECTION("The client certificate isn't read from the token keys")
+    {
+        // The reader used to look for the client certificate under
+        // clientToken/clientTokenFile
+        const TemporaryFile iniFile("clientToken.ini",
+                                    "[GRPCServer]\n" + tlsSettings
+                                  + "clientTokenFile = "
+                                  + clientCertificateFile.path().string()
+                                  + "\n");
+        const auto options = fromInitializationFile(iniFile.path());
+        REQUIRE_FALSE(options.getClientCertificate().has_value());
+        REQUIRE_FALSE(options.getAccessToken().has_value());
+    }
+
     SECTION("Everything")
     {
         const TemporaryFile iniFile("everything.ini",
                                     "[GRPCServer]\n"
                                     "host = 0.0.0.0\n"
-                                    "port = 8443\n" + tlsSettings
+                                    "port = 8443\n"
+                                    "enableReflection = true\n"
+                                    "maximumRequestMessageSizeInBytes = 1048576\n"
+                                    "maximumConnectionAgeInMilliSeconds = 600000\n"
+                                    "maximumConnectionAgeGracePeriodInMilliSeconds = 30000\n"
+                                  + tlsSettings
                                   + "accessTokenFile = "
                                   + accessTokenFile.path().string() + "\n"
                                   + "clientCertificateFile = "
@@ -208,6 +315,12 @@ TEST_CASE("ULocalMagnitudeService::GRPC::fromInitializationFile",
         REQUIRE(options.getServerKey() == serverKey);
         REQUIRE(options.getAccessToken() == accessToken);
         REQUIRE(options.getClientCertificate() == clientCertificate);
+        REQUIRE(options.isReflectionEnabled());
+        REQUIRE(options.getMaximumRequestMessageSizeInBytes() == 1048576);
+        REQUIRE(options.getMaximumConnectionAge() == std::chrono::minutes {10});
+        REQUIRE(options.getMaximumConnectionAgeGracePeriod()
+             == std::chrono::seconds {30});
+        REQUIRE(options.getAddress() == "0.0.0.0:8443");
     }
 
     SECTION("Half of the TLS pair is rejected")
@@ -216,12 +329,14 @@ TEST_CASE("ULocalMagnitudeService::GRPC::fromInitializationFile",
             "certificateOnly.ini",
             "[GRPCServer]\nserverCertificateFile = "
           + serverCertificateFile.path().string() + "\n");
-        REQUIRE_THROWS(fromInitializationFile(certificateOnly.path()));
+        REQUIRE_THROWS_AS(fromInitializationFile(certificateOnly.path()),
+                          std::invalid_argument);
         const TemporaryFile keyOnly(
             "keyOnly.ini",
             "[GRPCServer]\nserverKeyFile = "
           + serverKeyFile.path().string() + "\n");
-        REQUIRE_THROWS(fromInitializationFile(keyOnly.path()));
+        REQUIRE_THROWS_AS(fromInitializationFile(keyOnly.path()),
+                          std::invalid_argument);
     }
 
     SECTION("Access token or client certificate without TLS is rejected")
