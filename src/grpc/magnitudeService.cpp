@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 #include <spdlog/spdlog.h>
 #include <spdlog/logger.h>
 //NOLINTNEXTLINE(misc-include-cleaner)
@@ -19,7 +20,6 @@
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/hypocenter.hpp"
 #include "uLocalMagnitudeService/grpc/magnitudeServiceOptions.hpp"
-#include "uLocalMagnitudeService/grpc/serverOptions.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculator.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
@@ -35,6 +35,7 @@
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/hypocenter.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_request.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_response.pb.h"
+//NOLINTNEXTLINE(misc-include-cleaner)
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.pb.h"
@@ -160,11 +161,99 @@ grpc::ServerUnaryReactor
                                   + ")";
                 *response->mutable_identifier() = request.identifier();
             }
-            SPDLOG_LOGGER_DEBUG(mLogger,
-                                "Computing network magnitude for {}",
-                                requestIdentifier);
+            SPDLOG_LOGGER_INFO(mLogger,
+                               "Computing network magnitude for {}",
+                               requestIdentifier);
+            //----------------------------------------------------------------//
+            // Step 1: Pack the observations                                  //
+            //----------------------------------------------------------------//
+            std::vector<Magnitude::Observation> observations;
+            try
+            {
+                if (!request.has_hypocenter())
+                {
+                    metrics.incrementClientErrorCounter(mRouteName);
+                    Finish({grpc::StatusCode::INVALID_ARGUMENT,
+                            "Malformed request - hypocenter not set"});
+                    return;
+                }
+                const Corrections::Hypocenter hypocenter{request.hypocenter()};
+                for (const auto &grpcMeasurement :
+                     request.station_amplitude_measurements())
+                {
+                    try
+                    {
+                        Magnitude::Observation observation
+                        {   
+                            grpcMeasurement,
+                            hypocenter
+                        };
+                        observations.push_back(std::move(observation));
+                    }
+                    catch (const std::invalid_argument &e)
+                    {
+                        SPDLOG_LOGGER_WARN(
+                            mLogger,
+                            "Failed to create observation because {}",
+                            e.what());
+                        metrics.incrementClientErrorCounter(mRouteName);
+                        Finish({grpc::StatusCode::INVALID_ARGUMENT,
+                                "Check hypocenter and "
+                              + std::to_string(observations.size())
+                              + " measurement"});
+                        return;
+                    } 
+                    catch (const std::exception &e)
+                    {
+                        SPDLOG_LOGGER_ERROR(
+                            mLogger,
+                            "Failed to create observation because {}", 
+                            e.what());
+                        metrics.incrementServerErrorCounter(mRouteName);
+                        Finish({grpc::StatusCode::INTERNAL,
+                                "Server error - contact maintainer"});
+                        return;
+                    }    
+                }
+            }
+            catch (const std::invalid_argument &e)
+            {
+                SPDLOG_LOGGER_WARN(
+                    mLogger,
+                    "Failed to create hypocenter because {}",
+                    std::string{e.what()});
+                metrics.incrementClientErrorCounter(mRouteName);
+                Finish({grpc::StatusCode::INVALID_ARGUMENT,
+                        "Check hypocenter"});
+                return;
+            }
+            catch (const std::exception &e) 
+            {
+                metrics.incrementServerErrorCounter(mRouteName);
+                SPDLOG_LOGGER_ERROR(
+                    mLogger,
+                    "Failed to unpack observations because {}",
+                    std::string{e.what()});
+                Finish({grpc::StatusCode::INTERNAL,
+                        "Server error - try using a different endpoint"});
+                return;
+            }
+            if (observations.empty())
+            {
+                metrics.incrementClientErrorCounter(mRouteName);
+                Finish({grpc::StatusCode::INVALID_ARGUMENT, "No observations"});
+                return;
+            }
+            ///--------------------------------------------------------------///
+            /// Step 2: Compute Magnitude                                    ///
+            ///--------------------------------------------------------------///
 
-
+            mSuccess = true;
+            Finish(grpc::Status::OK);
+            SPDLOG_LOGGER_INFO(
+                mLogger,
+                "Successfully computed network magnitude for {}",
+                requestIdentifier);
         }
     private:
         void OnDone() override
@@ -202,7 +291,7 @@ grpc::ServerUnaryReactor
         };
         const std::string mRouteName
         {
-            "ComputeStationMagnitudesFromAmplitudes"
+            "ComputeNetworkMagnitudeFromAmplitudes"
         };
         bool mSuccess{false};
     };
@@ -299,15 +388,22 @@ grpc::ServerUnaryReactor
                     }
                     catch (const std::invalid_argument &e)
                     {
+                        SPDLOG_LOGGER_WARN(
+                             mLogger,
+                             "Failed to compute station mag because {}",
+                             e.what());
+                        auto index = response->station_magnitudes().size();
                         metrics.incrementClientErrorCounter(mRouteName);
                         Finish({grpc::StatusCode::INVALID_ARGUMENT,
-                                "Malformed measurement"});
+                                + "Measurement " 
+                                + std::to_string(index + 1)
+                                + " is malformed"});
                         return;
                     }
                     catch (const std::exception &e)
                     {
                         metrics.incrementServerErrorCounter(mRouteName);
-                        SPDLOG_LOGGER_WARN(
+                        SPDLOG_LOGGER_ERROR(
                                mLogger,
                                "Failed to get station magnitude because {}",
                                std::string{e.what()});
@@ -317,10 +413,21 @@ grpc::ServerUnaryReactor
                     }
                 }
             }
+            catch (const std::invalid_argument &e)
+            {
+                SPDLOG_LOGGER_WARN( 
+                    mLogger,
+                    "Failed to create hypocenter because {}",
+                    std::string{e.what()});
+                metrics.incrementClientErrorCounter(mRouteName);
+                Finish({grpc::StatusCode::INVALID_ARGUMENT,
+                        "Check hypocenter"});
+                return;
+            }
             catch (const std::exception &e) 
             {
                 metrics.incrementServerErrorCounter(mRouteName);
-                SPDLOG_LOGGER_WARN(
+                SPDLOG_LOGGER_ERROR(
                     mLogger,
                     "Failed to get station magnitudes because {}",
                     std::string{e.what()});
@@ -332,9 +439,8 @@ grpc::ServerUnaryReactor
             Finish(grpc::Status::OK);
             SPDLOG_LOGGER_DEBUG(
                 mLogger,
-                "Successfully computed station magnitdues for {}",
+                "Successfully computed station magnitudes for {}",
                 requestIdentifier);
-
         }
     private:
         void OnDone() override
