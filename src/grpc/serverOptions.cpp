@@ -19,6 +19,7 @@ class ServerOptions::ServerOptionsImpl
 public:
     std::string mHost{"localhost"};
     uint16_t mPort{50000};
+    int mMaximumRequestMessageSizeInBytes{4096};
     std::optional<std::string> mAccessToken;
     std::optional<std::string> mServerCertificate;
     std::optional<std::string> mServerKey;
@@ -80,6 +81,14 @@ void ServerOptions::setPort(uint16_t port)
 uint16_t ServerOptions::getPort() const noexcept
 {
     return pImpl->mPort;
+}
+
+std::string ServerOptions::getAddress() const noexcept
+{
+    auto result = getHost()
+                 .append(":")
+                 .append(std::to_string(getPort()));
+    return result;
 }
 
 void ServerOptions::setAccessToken(const std::string &accessToken)
@@ -156,6 +165,24 @@ bool ServerOptions::isReflectionEnabled() const noexcept
 {
     return pImpl->mReflectionEnabled;
 }
+
+/// Maximum request message
+void ServerOptions::setMaximumRequestMessageSizeInBytes(
+    const int maxMessageSize)
+{
+    if (maxMessageSize < 1)
+    {
+        throw std::invalid_argument(
+            "Max request message size must be positive");
+    }
+    pImpl->mMaximumRequestMessageSizeInBytes = maxMessageSize;
+}
+
+int ServerOptions::getMaximumRequestMessageSizeInBytes() const noexcept
+{
+    return pImpl->mMaximumRequestMessageSizeInBytes;
+}
+
 
 /// Check the options make sense in aggregate
 void ServerOptions::validate() const
@@ -245,9 +272,15 @@ ServerOptions ULocalMagnitudeService::GRPC::fromInitializationFile(
     }
 
     auto enableReflection
-         = propertyTree.get<bool> (section + "enableReflection", false);
+        = propertyTree.get<bool> (section + "enableReflection", false);
     options.disableReflection();
     if (enableReflection){options.enableReflection();}
+
+    // Maximum request message size
+    auto maximumRequestMessageSize
+        = propertyTree.get<int> (section + "maximumRequestMessageSizeInBytes",
+                                 options.getMaximumRequestMessageSizeInBytes());
+    options.setMaximumRequestMessageSizeInBytes(maximumRequestMessageSize);
     
     // Read access token and client cert.  Will fail validation and user will
     // then know why

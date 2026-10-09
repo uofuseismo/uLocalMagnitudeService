@@ -39,6 +39,9 @@ public:
     /// @note By default this is 50000.
     [[nodiscard]] uint16_t getPort() const noexcept;
 
+    /// @result Combines the hot and port into an address like host:port
+    [[nodiscard]] std::string getAddress() const noexcept;
+
     /// @brief Sets the access token.
     /// @param accessToken The access token to set.
     /// @note Access tokens can only be used by gRPC if the server certificate
@@ -80,6 +83,12 @@ public:
     /// @brief Gets whether reflection is enabled.
     /// @return True if reflection is enabled, false otherwise.  By default this is false.
     [[nodiscard]] bool isReflectionEnabled() const noexcept;
+
+    /// @brief Sets the maximum request message size in bytes.
+    /// @throws std::invalid_argumetn if maxMessageSize is not positive.
+    void setMaximumRequestMessageSizeInBytes(int maxMessageSize);
+    /// @result The maximum message size in bytes.  By default this is 4096.
+    [[nodiscard]] int getMaximumRequestMessageSizeInBytes() const noexcept;
 
     /// @brief Checks that the options make sense in aggregate.  The
     ///        individual setters only check each option on its own.
