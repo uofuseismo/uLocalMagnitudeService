@@ -47,18 +47,6 @@ public:
     /// @result True indicates the longitude was set.
     [[nodiscard]] bool hasLongitude() const noexcept;
 
-    /// @brief Sets the station elevation.
-    /// @param[in] elevation   The station elevation in meters.
-    ///                        This increases positive up from sea-level.
-    /// @throws std::invalid_argument if the elevation is not in the
-    ///         range [-10000, 8600] or the elevation is not finite.
-    void setElevation(double elevation);
-    /// @result The station elevation.
-    /// @throws std::runtime_error if \c hasElevation() is false.
-    [[nodiscard]] double getElevation() const;
-    /// @result True indicates the elevation was set.
-    [[nodiscard]] bool hasElevation() const noexcept;
-
     /// @brief Destructor.
     ~StationLocation();
     /// @brief Copy assignment.

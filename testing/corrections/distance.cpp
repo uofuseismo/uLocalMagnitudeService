@@ -1,6 +1,8 @@
+#include <cmath>
 #include <cstddef>
 #include <expected>
 #include <filesystem>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -748,13 +750,12 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance::computeEpicentralDista
                                                 1.e-6));
     }
 
-    SECTION("Depth and elevation don't change an epicentral distance")
+    SECTION("Depth doesn't change an epicentral distance")
     {
         auto deep = hypocenter(39.6, -111.4);
         deep.setDepth(20000);
-        auto high = station(40.76, -111.85);
-        high.setElevation(3000);
-        REQUIRE(Distance::computeEpicentralDistance(deep, high)
+        REQUIRE(Distance::computeEpicentralDistance(deep,
+                                                    station(40.76, -111.85))
              == Distance::computeEpicentralDistance(hypocenter(39.6, -111.4),
                                                     station(40.76, -111.85)));
     }
@@ -796,5 +797,196 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance::computeEpicentralDista
             = Distance::computeEpicentralDistance(hypocenter(39.6, -111.4),
                                                   station(40.76, -111.85));
         REQUIRE(utah(distance).has_value());
+    }
+}
+
+TEST_CASE("ULocalMagnitudeService::Corrections::DistanceOptions - datum",
+          "[distanceOptions]")
+{
+    SECTION("Defaults to sea level")
+    {
+        REQUIRE(DistanceOptions {}.getDatum() == 0);
+        REQUIRE(uussOptions("Utah").getDatum() == 0);
+        // The test copy of the Yellowstone table matches what AQMS computes,
+        // and AQMS doesn't apply the datum
+        REQUIRE(uussOptions("Yellowstone").getDatum() == 0);
+    }
+
+    SECTION("Range")
+    {
+        DistanceOptions options;
+        for (const double datum : {-10000.0, -150.0, 0.0, 2000.0, 8600.0})
+        {
+            options.setDatum(datum);
+            REQUIRE(options.getDatum() == datum);
+        }
+        for (const double datum :
+                 {-10000.1, 8600.1,
+                  std::numeric_limits<double>::quiet_NaN(),
+                  std::numeric_limits<double>::infinity(),
+                  -std::numeric_limits<double>::infinity()})
+        {
+            INFO("Datum: " << datum);
+            REQUIRE_THROWS_AS(options.setDatum(datum), std::invalid_argument);
+        }
+        // A rejected datum preserves the previous one
+        REQUIRE(options.getDatum() == 8600);
+    }
+
+    SECTION("Copy and move")
+    {
+        DistanceOptions options;
+        options.setDatum(2000);
+        const DistanceOptions copy{options};
+        REQUIRE(copy.getDatum() == 2000);
+        options.setDatum(0);
+        REQUIRE(copy.getDatum() == 2000);
+        const DistanceOptions moved{std::move(options)};
+        REQUIRE(moved.getDatum() == 0);
+    }
+
+    SECTION("From an initialization file")
+    {
+        const TemporaryIniFile withDatum("datum",
+                                         "[DistanceCorrections]\n"
+                                         "interpolation = linear\n"
+                                         "distanceType = hypocentral\n"
+                                         "datum = 2000\n"
+                                         "distance_correction_1 = 0, 1.0\n");
+        REQUIRE(DistanceOptions::fromInitializationFile(withDatum.path())
+                .getDatum() == 2000);
+
+        const TemporaryIniFile withoutDatum("noDatum",
+                                            "[DistanceCorrections]\n"
+                                            "interpolation = linear\n"
+                                            "distanceType = hypocentral\n"
+                                            "distance_correction_1 = 0, 1.0\n");
+        REQUIRE(DistanceOptions::fromInitializationFile(withoutDatum.path())
+                .getDatum() == 0);
+
+        // An epicentral distance has no depth to shift so the datum is
+        // ignored
+        const TemporaryIniFile epicentral("epicentralDatum",
+                                          "[DistanceCorrections]\n"
+                                          "interpolation = linear\n"
+                                          "distanceType = epicentral\n"
+                                          "datum = 2000\n"
+                                          "distance_correction_1 = 0, 1.0\n");
+        REQUIRE(DistanceOptions::fromInitializationFile(epicentral.path())
+                .getDatum() == 0);
+
+        const TemporaryIniFile badDatum("badDatum",
+                                        "[DistanceCorrections]\n"
+                                        "interpolation = linear\n"
+                                        "distanceType = hypocentral\n"
+                                        "datum = 9000\n"
+                                        "distance_correction_1 = 0, 1.0\n");
+        REQUIRE_THROWS_AS(
+            DistanceOptions::fromInitializationFile(badDatum.path()),
+            std::invalid_argument);
+    }
+}
+
+TEST_CASE("ULocalMagnitudeService::Corrections::Distance - datum",
+          "[distance]")
+{
+    // Linear on {0, 1}, {10, 2}, {30, 4} so a 5 m hypocentral distance gives
+    // 1.5.  The hypocentral distance uses depth + datum - i.e., the depth
+    // below a datum that is positive up.
+    const auto makeDistance = [](const DistanceOptions::Type type,
+                                 const double datum)
+    {
+        DistanceOptions options;
+        options.setCorrections({{0, 1.0}, {10, 2.0}, {30, 4.0}});
+        options.setInterpolation(DistanceOptions::Interpolation::Linear);
+        options.setType(type);
+        options.setDatum(datum);
+        return Distance {options};
+    };
+
+    SECTION("The datum shifts the depth")
+    {
+        const auto distance
+            = makeDistance(DistanceOptions::Type::Hypocentral, 2);
+        // 2 m deep is 4 m below a datum 2 m above sea level: 3-4-5
+        REQUIRE_THAT(distance(3, 2).value(),
+                     Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        // Without the datum the same event is closer
+        REQUIRE_THAT(makeDistance(DistanceOptions::Type::Hypocentral, 0)
+                         (3, 2).value(),
+                     Catch::Matchers::WithinAbs(
+                         1 + 0.1*std::hypot(3.0, 2.0), 1.e-12));
+    }
+
+    SECTION("Above the datum is the same as below it")
+    {
+        const auto distance
+            = makeDistance(DistanceOptions::Type::Hypocentral, 2);
+        // 6 m above sea level is 4 m above the datum
+        REQUIRE_THAT(distance(3, -6).value(),
+                     Catch::Matchers::WithinAbs(1.5, 1.e-12));
+        // At the datum the hypocentral distance is the epicentral distance
+        REQUIRE_THAT(distance(5, -2).value(),
+                     Catch::Matchers::WithinAbs(1.5, 1.e-12));
+    }
+
+    SECTION("A negative datum")
+    {
+        // 6 m deep is 4 m below a datum 2 m below sea level
+        const auto distance
+            = makeDistance(DistanceOptions::Type::Hypocentral, -2);
+        REQUIRE_THAT(distance(3, 6).value(),
+                     Catch::Matchers::WithinAbs(1.5, 1.e-12));
+    }
+
+    SECTION("The datum can push a station past the table")
+    {
+        // 24 m deep is 29.4 m away - just inside the 30 m table - but
+        // 30 m below a datum 6 m above sea level is 34.5 m away
+        const auto distance
+            = makeDistance(DistanceOptions::Type::Hypocentral, 6);
+        REQUIRE(makeDistance(DistanceOptions::Type::Hypocentral, 0)
+                    (17, 24).has_value());
+        const auto tooFar = distance(17, 24);
+        REQUIRE_FALSE(tooFar.has_value());
+        REQUIRE(tooFar.error() == Distance::ErrorCode::StationTooFar);
+    }
+
+    SECTION("The depth range applies to the catalog depth")
+    {
+        const auto distance
+            = makeDistance(DistanceOptions::Type::Hypocentral, 8600);
+        // -8600 relative to sea level is valid and sits right at a datum
+        // 8600 m above sea level
+        REQUIRE_THAT(distance(0, -8600).value(),
+                     Catch::Matchers::WithinAbs(1.0, 1.e-12));
+        REQUIRE(distance(0, -8601).error()
+             == Distance::ErrorCode::InvalidSourceDepth);
+    }
+
+    SECTION("An epicentral distance ignores the datum")
+    {
+        const auto distance
+            = makeDistance(DistanceOptions::Type::Epicentral, 2000);
+        REQUIRE_THAT(distance(5, 7000).value(),
+                     Catch::Matchers::WithinAbs(1.5, 1.e-12));
+    }
+
+    SECTION("Yellowstone with the Holt et al. 2 km datum")
+    {
+        auto options = uussOptions("Yellowstone");
+        const Distance aqms{options};
+        options.setDatum(2000);
+        const Distance withDatum{options};
+        // Orid 91358 was 5.14 km below sea level so it is 7.14 km below the
+        // model's datum
+        constexpr double epicentralDistance{38806.67814609038};
+        REQUIRE_THAT(withDatum(epicentralDistance, 5140).value(),
+                     Catch::Matchers::WithinAbs(
+                         aqms(std::hypot(epicentralDistance, 7140.0)).value(),
+                         1.e-12));
+        // Deeper is further and for Yellowstone that's a bigger correction
+        REQUIRE(withDatum(epicentralDistance, 5140).value()
+              > aqms(epicentralDistance, 5140).value());
     }
 }

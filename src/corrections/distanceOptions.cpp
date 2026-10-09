@@ -34,6 +34,7 @@ public:
     {
         DistanceOptions::Type::Epicentral
     };
+    double mDatum{0};
     bool mHaveCorrections{false};
     bool mHasInterpolation{false};
     bool mHasType{false};
@@ -120,6 +121,24 @@ bool DistanceOptions::hasType() const noexcept
     return pImpl->mHasType;
 }
 
+/// Datum
+void DistanceOptions::setDatum(const double datum)
+{
+    if (!std::isfinite(datum))
+    {
+        throw std::invalid_argument("Datum is not finite");
+    }
+    if (datum < -10000 || datum > 8600)
+    {
+        throw std::invalid_argument("Datum must be in range [-10000, 8600]");
+    }
+    pImpl->mDatum = datum;
+}
+
+double DistanceOptions::getDatum() const noexcept
+{
+    return pImpl->mDatum;
+}
 
 /// Corrections table
 void DistanceOptions::setCorrections(
@@ -247,6 +266,13 @@ DistanceOptions DistanceOptions::fromInitializationFile(
         throw std::invalid_argument("distance type "
                                   + type
                                   + " must be epicentral or hypocentral");
+    }
+
+    if (options.getType() == DistanceOptions::Type::Hypocentral)
+    {
+        auto datum
+            = propertyTree.get<double> (section + "datum", options.getDatum());
+        options.setDatum(datum);
     }
 
     // Parse the table one entry at a time

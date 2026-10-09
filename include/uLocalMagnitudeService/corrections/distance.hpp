@@ -62,7 +62,7 @@ public:
     /// @brief Computes the corresponding distance correction. 
     /// @param[in] epicentralDistance   The source-receiver epicentral
     ///                                 distance in meters
-    /// @param[in] eventDepth  The event depth in meters.
+    /// @param[in] eventDepth  The event depth in meters relative to sea-level.
     /// @note If the distance type is epicentral then the event depth is ignored. 
     [[nodiscard]] auto operator()(double epicentralDistance, double eventDepth) const noexcept -> std::expected<double, ErrorCode>;
 

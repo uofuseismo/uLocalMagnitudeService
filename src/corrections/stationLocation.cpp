@@ -14,11 +14,10 @@ public:
     //StationIdentifier mIdentifier;
     double mLatitude{0};
     double mLongitude{0};
-    double mElevation{0};  
+    //double mElevation{0};  
     //bool mHasIdentifier{false};
     bool mHasLatitude{false};
     bool mHasLongitude{false};
-    bool mHasElevation{false};
 };
 
 /// Constructor
@@ -44,10 +43,6 @@ template<>
 StationLocation::StationLocation(
     const ULocalMagnitudeServiceAPI::V1::Magnitude::StationLocation &location)
 {
-    if (!location.has_elevation())
-    {
-        throw std::invalid_argument("Elevation not set");
-    }
     if (!location.has_latitude())
     {   
         throw std::invalid_argument("Latitude not set");
@@ -59,7 +54,7 @@ StationLocation::StationLocation(
     StationLocation thisLocation;
     thisLocation.setLatitude(location.latitude());
     thisLocation.setLongitude(location.longitude());
-    thisLocation.setElevation(location.elevation());
+    //thisLocation.setElevation(location.elevation());
     *this = std::move(thisLocation);
 }
 
@@ -134,6 +129,7 @@ bool StationLocation::hasLongitude() const noexcept
 }
 
 /// Elevation
+/*
 void StationLocation::setElevation(const double elevation)
 {
     if (!std::isfinite(elevation))
@@ -158,6 +154,7 @@ bool StationLocation::hasElevation() const noexcept
 {
     return pImpl->mHasElevation;
 }
+*/
 
 /// Station identifier
 /*

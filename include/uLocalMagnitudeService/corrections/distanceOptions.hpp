@@ -78,6 +78,20 @@ public:
     /// @result True indicates the distance type was set.
     [[nodiscard]] bool hasType() const noexcept;
 
+    /// @brief Sets the datum when using depth corrections.  For example, when
+    ///        building the model Holt et al., 2022 measured depths from a
+    ///        datum 2 km above sea level.  Hence the depth used in computing
+    ///        the hypocentral distance is catalog_depth + datum where the
+    ///        catalog depth is relative to sea-level and positive down - e.g.,
+    ///        a 1 km deep event is 3 km below a 2 km datum.
+    /// @param[in] datum  The datum in meters to add to the catalog depth.
+    ///                   This increases positive up from sea-level.
+    ///                   This must be in the range [-10000, 8600]
+    /// @note This is only relevant if the distance type is hypocentral.
+    void setDatum(double datum);
+    /// @result The datum in meters.  By default this is 0.
+    [[nodiscard]] double getDatum() const noexcept;
+
     /// @brief Creates the distance corrections options from an initialization
     ///        file.  The section must look like:
     ///        @code

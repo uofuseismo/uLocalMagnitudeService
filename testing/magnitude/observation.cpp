@@ -332,7 +332,6 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Observation - protobuf",
                            API::Amplitude_Units_MILLIMETERS);
     message.mutable_station_location()->set_latitude(40.16);
     message.mutable_station_location()->set_longitude(-111.87);
-    message.mutable_station_location()->set_elevation(1500);
     // The distance the observation should end up with
     const auto expectedDistance = [](const API::Hypocenter &source,
                                      const API::StationLocation &receiver)
@@ -370,10 +369,9 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Observation - protobuf",
         REQUIRE_THAT((Observation {oneDegreeEast, onEquator})
                          .getEpicentralDistance(),
                      Catch::Matchers::WithinAbs(111319.49079327358, 1.e-6));
-        // Depth and elevation don't change an epicentral distance
+        // Depth doesn't change an epicentral distance
         auto deeper = onEquator;
         deeper.set_depth(30000);
-        oneDegreeEast.mutable_station_location()->set_elevation(3000);
         REQUIRE_THAT((Observation {oneDegreeEast, deeper})
                          .getEpicentralDistance(),
                      Catch::Matchers::WithinAbs(111319.49079327358, 1.e-6));
@@ -501,11 +499,6 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Observation - protobuf",
         REQUIRE_THROWS_AS((Observation {noLongitude, hypocenter}),
                           std::invalid_argument);
 
-        auto noElevation = message;
-        noElevation.mutable_station_location()->clear_elevation();
-        REQUIRE_THROWS_AS((Observation {noElevation, hypocenter}),
-                          std::invalid_argument);
-
         auto badLatitude = message;
         badLatitude.mutable_station_location()->set_latitude(90.5);
         REQUIRE_THROWS_AS((Observation {badLatitude, hypocenter}),
@@ -515,11 +508,6 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Observation - protobuf",
         badLongitude.mutable_station_location()->set_longitude(
             std::numeric_limits<double>::quiet_NaN());
         REQUIRE_THROWS_AS((Observation {badLongitude, hypocenter}),
-                          std::invalid_argument);
-
-        auto badElevation = message;
-        badElevation.mutable_station_location()->set_elevation(9000);
-        REQUIRE_THROWS_AS((Observation {badElevation, hypocenter}),
                           std::invalid_argument);
     }
 

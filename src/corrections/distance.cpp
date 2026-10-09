@@ -258,7 +258,13 @@ Distance::operator()(const double epicentralDistance,
         {
             return std::unexpected(ErrorCode::InvalidSourceDepth);
         }
-        auto hypocentralDistance = std::hypot(epicentralDistance, sourceDepth);
+        // The datum is measured positive up so reverse it.
+        auto datum =-pImpl->mDistanceOptions.getDatum(); 
+        // Point here is if the catalog depth is, say, 3km, and the
+        // datum is 2km, then we end up with 3 -(-2) = 5
+        auto correctedSourceDepth = sourceDepth - datum;
+        auto hypocentralDistance
+            = std::hypot(epicentralDistance, correctedSourceDepth);
         return this->operator()(hypocentralDistance);
     }
     else

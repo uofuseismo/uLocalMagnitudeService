@@ -19,7 +19,6 @@ StationLocation makeLocation()
     StationLocation location;
     location.setLatitude(40.76);
     location.setLongitude(-111.85);
-    location.setElevation(1460);
     return location;
 }
 
@@ -28,7 +27,6 @@ void checkLocation(const StationLocation &location)
     REQUIRE(location.getLatitude() == 40.76);
     REQUIRE_THAT(location.getLongitude(),
                  Catch::Matchers::WithinAbs(360 - 111.85, 1.e-12));
-    REQUIRE(location.getElevation() == 1460);
 }
 }
 
@@ -40,10 +38,8 @@ TEST_CASE("ULocalMagnitudeService::Corrections::StationLocation",
         const StationLocation location;
         REQUIRE_FALSE(location.hasLatitude());
         REQUIRE_FALSE(location.hasLongitude());
-        REQUIRE_FALSE(location.hasElevation());
         REQUIRE_THROWS_AS(location.getLatitude(), std::runtime_error);
         REQUIRE_THROWS_AS(location.getLongitude(), std::runtime_error);
-        REQUIRE_THROWS_AS(location.getElevation(), std::runtime_error);
     }
 
     SECTION("Setters and getters")
@@ -51,7 +47,6 @@ TEST_CASE("ULocalMagnitudeService::Corrections::StationLocation",
         const auto location = makeLocation();
         REQUIRE(location.hasLatitude());
         REQUIRE(location.hasLongitude());
-        REQUIRE(location.hasElevation());
         checkLocation(location);
     }
 
@@ -113,26 +108,6 @@ TEST_CASE("ULocalMagnitudeService::Corrections::StationLocation",
                      Catch::Matchers::WithinAbs(360 + -111.85, 1.e-12));
     }
 
-    SECTION("Elevation")
-    {
-        StationLocation location;
-        // Boreholes and ocean-bottom stations are below sea level
-        for (const double elevation : {-10000.0, -150.0, 0.0, 1460.0,
-                                       4421.0, 8600.0})
-        {
-            INFO("Elevation: " << elevation);
-            location.setElevation(elevation);
-            REQUIRE(location.getElevation() == elevation);
-        }
-        for (const double elevation : {-10000.1, 8600.1,
-                                       notANumber, infinity, -infinity})
-        {
-            INFO("Elevation: " << elevation);
-            REQUIRE_THROWS_AS(location.setElevation(elevation),
-                              std::invalid_argument);
-        }
-    }
-
     SECTION("Copy and move")
     {
         auto location = makeLocation();
@@ -144,7 +119,6 @@ TEST_CASE("ULocalMagnitudeService::Corrections::StationLocation",
         // Copy is deep
         location.setLatitude(10);
         location.setLongitude(10);
-        location.setElevation(10);
         checkLocation(copy);
 
         // Copy assignment
