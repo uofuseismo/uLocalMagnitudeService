@@ -73,7 +73,7 @@ public:
             // NOLINTEND(misc-include-cleaner)
         }
         mCalculator
-            = std::make_unique<Magnitude::NetworkMagnitudeCalculator> (
+            = std::make_shared<Magnitude::NetworkMagnitudeCalculator> (
                  calculatorOptions,
                  mLogger);
         if (mCalculator == nullptr)
@@ -90,7 +90,7 @@ public:
 
     /// @brief Constructor
 //private:
-    std::unique_ptr<Magnitude::NetworkMagnitudeCalculator> mCalculator{nullptr};
+    std::shared_ptr<Magnitude::NetworkMagnitudeCalculator> mCalculator{nullptr};
     std::optional<std::string> mAccessToken{std::nullopt};
     std::shared_ptr<spdlog::logger> mLogger{nullptr};
 };
@@ -130,7 +130,7 @@ grpc::ServerUnaryReactor
                 const ULMSAPIV1::NetworkMagnitudeFromAmplitudesRequest &request,
                 ULMSAPIV1::NetworkMagnitudeFromAmplitudesResponse *response,
                 const std::optional<std::string> &accessToken,
-                const Magnitude::NetworkMagnitudeCalculator &calculator,
+                std::shared_ptr<Magnitude::NetworkMagnitudeCalculator> &calculator,
                 std::shared_ptr<spdlog::logger> logger) :
             mLogger(std::move(logger))
         {
@@ -299,7 +299,7 @@ grpc::ServerUnaryReactor
                        *request,
                        response,
                        pImpl->mAccessToken,
-                       *pImpl->mCalculator,
+                       pImpl->mCalculator,
                        pImpl->mLogger);
 }
 
@@ -319,7 +319,7 @@ grpc::ServerUnaryReactor
                 const ULMSAPIV1::StationMagnitudesFromAmplitudesRequest &request,
                 ULMSAPIV1::StationMagnitudesFromAmplitudesResponse *response,
                 const std::optional<std::string> &accessToken,
-                const Magnitude::NetworkMagnitudeCalculator &calculator,
+                std::shared_ptr<Magnitude::NetworkMagnitudeCalculator> &calculator,
                 std::shared_ptr<spdlog::logger> logger) :
             mLogger(std::move(logger))
         {
@@ -375,7 +375,7 @@ grpc::ServerUnaryReactor
                             hypocenter
                         };
                         auto stationMagnitude
-                            = calculator.computeStationMagnitude(
+                            = calculator->computeStationMagnitude(
                                 observation);
                         if (stationMagnitude.has_value())
                         {
@@ -486,7 +486,7 @@ grpc::ServerUnaryReactor
                        *request,
                        response,
                        pImpl->mAccessToken,
-                       *pImpl->mCalculator,
+                       pImpl->mCalculator,
                        pImpl->mLogger);
 }
 
@@ -506,7 +506,7 @@ grpc::ServerUnaryReactor
                 const ULMSAPIV1::StationCorrectionsRequest &request,
                 ULMSAPIV1::StationCorrectionsResponse *response,
                 const std::optional<std::string> &accessToken,
-                const Magnitude::NetworkMagnitudeCalculator &calculator,
+                std::shared_ptr<Magnitude::NetworkMagnitudeCalculator> &calculator,
                 std::shared_ptr<spdlog::logger> logger) :
             mLogger(std::move(logger))
         {
@@ -551,7 +551,7 @@ grpc::ServerUnaryReactor
                         const UCorrections::StationIdentifier
                             identifier{grpcStationIdentifier};
                         auto correction
-                            = calculator.getStationCorrection(identifier);
+                            = calculator->getStationCorrection(identifier);
                         ULMSAPIV1::StationCorrectionsResponse
                                  ::StationCorrection stationCorrection;
                         *stationCorrection.mutable_station_identifier()
@@ -648,7 +648,7 @@ grpc::ServerUnaryReactor
                        *request,
                        response,
                        pImpl->mAccessToken,
-                       *pImpl->mCalculator,
+                       pImpl->mCalculator,
                        pImpl->mLogger);
 }
 
