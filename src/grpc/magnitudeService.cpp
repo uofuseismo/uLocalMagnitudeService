@@ -33,6 +33,8 @@
 //#include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.pb.h"
 //NOLINTNEXTLINE(misc-include-cleaner)
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/hypocenter.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_request.pb.h"
+#include "uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_response.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.pb.h"
 #include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.pb.h"
@@ -111,16 +113,115 @@ MagnitudeService::MagnitudeService(
 /// Destructor
 MagnitudeService::~MagnitudeService() = default;
 
+///--------------------------------------------------------------------------///
+///                           Network magnitude                              ///
+///--------------------------------------------------------------------------///
+grpc::ServerUnaryReactor
+*MagnitudeService::ComputeNetworkMagnitudeFromAmplitudes(
+    grpc::CallbackServerContext *context,
+    const ULMSAPIV1::NetworkMagnitudeFromAmplitudesRequest *request,
+    ULMSAPIV1::NetworkMagnitudeFromAmplitudesResponse *response)    
+{
+    class Reactor : public grpc::ServerUnaryReactor
+    {
+    public:
+        Reactor(grpc::CallbackServerContext *context,
+                const ULMSAPIV1::NetworkMagnitudeFromAmplitudesRequest &request,
+                ULMSAPIV1::NetworkMagnitudeFromAmplitudesResponse *response,
+                const std::optional<std::string> &accessToken,
+                const Magnitude::NetworkMagnitudeCalculator &calculator,
+                std::shared_ptr<spdlog::logger> logger) :
+            mLogger(std::move(logger))
+        {
+            auto &metrics = Metrics::Singleton::getInstance();
+            // Validate the client?
+            if (accessToken != std::nullopt)
+            {
+                if (!::validateClient(context, *accessToken))
+                {
+                    SPDLOG_LOGGER_WARN(mLogger,
+                                       "Unauthorized client - {} rejected",
+                                       context->peer());
+                    metrics.incrementUnauthenticatedCounter(mRouteName);
+                    Finish({grpc::StatusCode::UNAUTHENTICATED,
+                            "Invalid access token"});
+                    return;
+                }
+            }
+            // Copy the request identifier
+            std::string requestIdentifier{context->peer()};
+            *response->mutable_version()
+                = ULocalMagnitudeService::Version::getVersionWithTag();
+            if (request.has_identifier())
+            {
+                requestIdentifier = requestIdentifier
+                                  + " ("
+                                  + request.identifier()
+                                  + ")";
+                *response->mutable_identifier() = request.identifier();
+            }
+            SPDLOG_LOGGER_DEBUG(mLogger,
+                                "Computing network magnitude for {}",
+                                requestIdentifier);
 
+
+        }
+    private:
+        void OnDone() override
+        {
+            if (mLogger)
+            {
+                SPDLOG_LOGGER_DEBUG(mLogger,
+                                    "{} RPC completed", mRouteName);
+            }
+            auto &metrics = Metrics::Singleton::getInstance();
+            if (mSuccess)
+            {
+                metrics.incrementSuccessCounter(mRouteName);
+                const auto endTime = std::chrono::steady_clock::now();
+                auto elapsedTime
+                    = std::chrono::duration<double>
+                          (mRPCStartTime - endTime);
+                    metrics.recordRouteDuration(elapsedTime, mRouteName);
+            }
+            delete this;
+        }
+        void OnCancel() override
+        {
+            if (mLogger)
+            {
+               SPDLOG_LOGGER_DEBUG(mLogger,
+                                   "{} RPC canceled", mRouteName);
+            }
+        }
+//private:
+        std::shared_ptr<spdlog::logger> mLogger{nullptr};
+        const std::chrono::time_point<std::chrono::steady_clock> mRPCStartTime
+        {
+            std::chrono::steady_clock::now()
+        };
+        const std::string mRouteName
+        {
+            "ComputeStationMagnitudesFromAmplitudes"
+        };
+        bool mSuccess{false};
+    };
+    return new Reactor(context,
+                       *request,
+                       response,
+                       pImpl->mAccessToken,
+                       *pImpl->mCalculator,
+                       pImpl->mLogger);
+}
 
 ///--------------------------------------------------------------------------///
 ///                           Station magnitudes                             ///
 ///--------------------------------------------------------------------------///
 grpc::ServerUnaryReactor
 *MagnitudeService::ComputeStationMagnitudesFromAmplitudes(
-        grpc::CallbackServerContext *context,
-        const ULMSAPIV1::StationMagnitudesFromAmplitudesRequest *request,
-        ULMSAPIV1::StationMagnitudesFromAmplitudesResponse *response)
+    grpc::CallbackServerContext *context,
+    const ULMSAPIV1::StationMagnitudesFromAmplitudesRequest *request,
+    ULMSAPIV1::StationMagnitudesFromAmplitudesResponse *response)
 {
     class Reactor : public grpc::ServerUnaryReactor
     {
@@ -161,7 +262,7 @@ grpc::ServerUnaryReactor
                 *response->mutable_identifier() = request.identifier();
             }
             SPDLOG_LOGGER_DEBUG(mLogger,
-                                "Computing station mganitudes for {}",
+                                "Computing station magnitudes for {}",
                                 requestIdentifier);
             // Do it
             try

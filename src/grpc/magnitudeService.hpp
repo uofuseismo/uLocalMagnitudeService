@@ -13,6 +13,8 @@ namespace ULocalMagnitudeService::Magnitude
 }
 namespace ULocalMagnitudeServiceAPI::V1::Magnitude
 {
+ class NetworkMagnitudeFromAmplitudesRequest;
+ class NetworkMagnitudeFromAmplitudesResponse;
  class StationCorrectionsRequest;
  class StationCorrectionsResponse;
  class StationMagnitudesFromAmplitudesRequest;
@@ -38,8 +40,14 @@ public:
         std::optional<std::string> &accessToken,
         std::shared_ptr<spdlog::logger> logger);
  
+    /// @brief Computes the network magnitude from amplitudes.
+    grpc::ServerUnaryReactor
+        *ComputeNetworkMagnitudeFromAmplitudes(
+            grpc::CallbackServerContext *context,
+            const ULocalMagnitudeServiceAPI::V1::Magnitude::NetworkMagnitudeFromAmplitudesRequest *request,
+            ULocalMagnitudeServiceAPI::V1::Magnitude::NetworkMagnitudeFromAmplitudesResponse *response) override;
 
-    /// @brief Computes the station magnitues from amplitudes. 
+    /// @brief Computes the station magnitudes from amplitudes. 
     grpc::ServerUnaryReactor
         *ComputeStationMagnitudesFromAmplitudes(
             grpc::CallbackServerContext *context,
