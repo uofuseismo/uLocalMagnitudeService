@@ -219,7 +219,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Amplitude - protobuf",
     API::Amplitude message;
     *message.mutable_stream_identifier() = identifierMessage;
     message.set_value(10*valueInCentimeters);
-    message.set_units(API::Amplitude_Units_MILLIMETERS);
+    message.set_units(API::Amplitude_Units_UNITS_MILLIMETERS);
 
     SECTION("From message")
     {
@@ -233,13 +233,13 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Amplitude - protobuf",
     SECTION("Units are converted to millimeters")
     {
         message.set_value(valueInCentimeters);
-        message.set_units(API::Amplitude_Units_CENTIMETERS);
+        message.set_units(API::Amplitude_Units_UNITS_CENTIMETERS);
         REQUIRE_THAT(Amplitude {message}.getValue(),
                      Catch::Matchers::WithinRel(10*valueInCentimeters,
                                                 1.e-14));
 
         message.set_value(valueInCentimeters/100);
-        message.set_units(API::Amplitude_Units_METERS);
+        message.set_units(API::Amplitude_Units_UNITS_METERS);
         REQUIRE_THAT(Amplitude {message}.getValue(),
                      Catch::Matchers::WithinRel(10*valueInCentimeters,
                                                 1.e-14));
@@ -252,7 +252,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Amplitude - protobuf",
         REQUIRE_THROWS_AS(Amplitude {noUnits}, std::invalid_argument);
 
         auto unknownUnits = message;
-        unknownUnits.set_units(API::Amplitude_Units_UNKNOWN);
+        unknownUnits.set_units(API::Amplitude_Units_UNITS_UNSPECIFIED);
         REQUIRE_THROWS_AS(Amplitude {unknownUnits}, std::invalid_argument);
     }
 
@@ -287,7 +287,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Amplitude - protobuf",
         // Finite in meters but not in millimeters
         auto huge = message;
         huge.set_value(std::numeric_limits<double>::max());
-        huge.set_units(API::Amplitude_Units_METERS);
+        huge.set_units(API::Amplitude_Units_UNITS_METERS);
         REQUIRE_THROWS_AS(Amplitude {huge}, std::invalid_argument);
     }
 
@@ -314,7 +314,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Amplitude - protobuf",
         amplitude.setValue(0.15187045093625784);
         const auto result = amplitude.toMessage<API::Amplitude> ();
         // Always written in millimeters
-        REQUIRE(result.units() == API::Amplitude_Units_MILLIMETERS);
+        REQUIRE(result.units() == API::Amplitude_Units_UNITS_MILLIMETERS);
         REQUIRE(result.value() == 0.15187045093625784);
         REQUIRE(result.stream_identifier().network() == "UU");
         REQUIRE(result.stream_identifier().station() == "CCUT");
@@ -347,7 +347,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Amplitude - protobuf",
     {
         // Sent in cm, comes back out in mm
         message.set_value(valueInCentimeters);
-        message.set_units(API::Amplitude_Units_CENTIMETERS);
+        message.set_units(API::Amplitude_Units_UNITS_CENTIMETERS);
         API::Amplitude received;
         REQUIRE(received.ParseFromString(message.SerializeAsString()));
         const Amplitude amplitude{received};
@@ -355,7 +355,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Amplitude - protobuf",
         API::Amplitude echoed;
         REQUIRE(echoed.ParseFromString(
             amplitude.toMessage<API::Amplitude> ().SerializeAsString()));
-        REQUIRE(echoed.units() == API::Amplitude_Units_MILLIMETERS);
+        REQUIRE(echoed.units() == API::Amplitude_Units_UNITS_MILLIMETERS);
         REQUIRE_THAT(echoed.value(),
                      Catch::Matchers::WithinRel(10*valueInCentimeters,
                                                 1.e-14));

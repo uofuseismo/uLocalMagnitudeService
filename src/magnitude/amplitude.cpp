@@ -56,19 +56,19 @@ Amplitude::Amplitude(
     namespace API = ULocalMagnitudeServiceAPI::V1::Magnitude;
     Amplitude thisAmplitude;
     auto units = amplitude.units();
-    if (units == API::Amplitude_Units_UNKNOWN)
+    if (units == API::Amplitude_Units_UNITS_UNSPECIFIED)
     {
         throw std::invalid_argument("Units not specified");
     }
-    else if (units == API::Amplitude_Units_MILLIMETERS)
+    else if (units == API::Amplitude_Units_UNITS_MILLIMETERS)
     {
         thisAmplitude.setValue(amplitude.value());
     }
-    else if (units == API::Amplitude_Units_CENTIMETERS)
+    else if (units == API::Amplitude_Units_UNITS_CENTIMETERS)
     {
         thisAmplitude.setValue(amplitude.value()*10);
     }
-    else if (units == API::Amplitude_Units_METERS)
+    else if (units == API::Amplitude_Units_UNITS_METERS)
     {
         thisAmplitude.setValue(amplitude.value()*1000);
     }
@@ -195,7 +195,8 @@ Amplitude::toMessage() const
     *result.mutable_stream_identifier() = std::move(streamIdentifier);
     result.set_value(getValue());
     result.set_units(
-       ULocalMagnitudeServiceAPI::V1::Magnitude::Amplitude_Units_MILLIMETERS);
+       ULocalMagnitudeServiceAPI::V1::Magnitude::
+          Amplitude_Units_UNITS_MILLIMETERS);
     return result;
 }
 

@@ -326,10 +326,10 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Observation - protobuf",
     API::StationAmplitudeMeasurement message;
     *message.mutable_amplitude_stream_1()
         = amplitudeMessage("UU", "CCUT", "HHE", "01", 0.3459206596016884,
-                           API::Amplitude_Units_MILLIMETERS);
+                           API::Amplitude_Units_UNITS_MILLIMETERS);
     *message.mutable_amplitude_stream_2()
         = amplitudeMessage("UU", "CCUT", "HHN", "01", 0.15187045093625784,
-                           API::Amplitude_Units_MILLIMETERS);
+                           API::Amplitude_Units_UNITS_MILLIMETERS);
     message.mutable_station_location()->set_latitude(40.16);
     message.mutable_station_location()->set_longitude(-111.87);
     // The distance the observation should end up with
@@ -389,11 +389,11 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Observation - protobuf",
         *message.mutable_amplitude_stream_1()
             = amplitudeMessage("UU", "CCUT", "HHE", "01",
                                0.03459206596016884,
-                               API::Amplitude_Units_CENTIMETERS);
+                               API::Amplitude_Units_UNITS_CENTIMETERS);
         *message.mutable_amplitude_stream_2()
             = amplitudeMessage("UU", "CCUT", "HHN", "01",
                                0.015187045093625784,
-                               API::Amplitude_Units_CENTIMETERS);
+                               API::Amplitude_Units_UNITS_CENTIMETERS);
         checkAmplitudes(Observation {message, hypocenter});
     }
 
@@ -426,7 +426,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Observation - protobuf",
     {
         auto unknownUnits = message;
         unknownUnits.mutable_amplitude_stream_1()->set_units(
-            API::Amplitude_Units_UNKNOWN);
+            API::Amplitude_Units_UNITS_UNSPECIFIED);
         REQUIRE_THROWS_AS((Observation {unknownUnits, hypocenter}),
                           std::invalid_argument);
 
@@ -450,7 +450,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Observation - protobuf",
             *result.mutable_amplitude_stream_2() = second;
             return result;
         };
-        const auto units = API::Amplitude_Units_MILLIMETERS;
+        const auto units = API::Amplitude_Units_UNITS_MILLIMETERS;
         // Same channel twice
         REQUIRE_THROWS_AS(
             (Observation {mismatched(message.amplitude_stream_1()),

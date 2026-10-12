@@ -283,7 +283,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::StationMagnitude - protobuf",
         REQUIRE(message.has_amplitude_1());
         REQUIRE(message.has_amplitude_2());
         REQUIRE(message.amplitude_1().units()
-             == API::Amplitude_Units_MILLIMETERS);
+             == API::Amplitude_Units_UNITS_MILLIMETERS);
         REQUIRE(message.amplitude_1().value() == 0.3459206596016884);
         REQUIRE(message.amplitude_2().value() == 0.15187045093625784);
         REQUIRE(message.amplitude_1().stream_identifier().network() == "UU");

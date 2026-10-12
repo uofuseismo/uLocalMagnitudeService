@@ -157,9 +157,9 @@ Packet::Packet(
     namespace UAPI = ULocalMagnitudeServiceAPI::V1::WaveformProcessing;
     auto dataType = packet.data_type();
     auto nSamples = packet.number_of_samples();
-    if (dataType == UAPI::DataType::DATA_TYPE_UNKNOWN)
+    if (dataType == UAPI::DataType::DATA_TYPE_UNSPECIFIED)
     {
-        throw std::invalid_argument("Cannot handle unknown data type");
+        throw std::invalid_argument("Data type not specified");
     }
     else if (dataType == UAPI::DataType::DATA_TYPE_INTEGER_32)
     {
