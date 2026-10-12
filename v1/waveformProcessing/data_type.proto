@@ -12,8 +12,8 @@ enum DataType {
     DATA_TYPE_INTEGER_32 = 1;
     /// The data type is interpreted as 32-bit float values.
     DATA_TYPE_FLOAT = 2;
-    /// The data type is inteprreted as 64-bit float values.
+    /// The data type is interpreted as 64-bit float values.
     DATA_TYPE_DOUBLE = 3;
-    /// The data type is inteprreted as 64-bit integer values.
+    /// The data type is interpreted as 64-bit integer values.
     DATA_TYPE_INTEGER_64 = 4;
 }
