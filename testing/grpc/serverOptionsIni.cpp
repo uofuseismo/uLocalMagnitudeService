@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <system_error>
+#include <utility>
 #include <catch2/catch_test_macros.hpp>
 #include "uLocalMagnitudeService/grpc/serverOptions.hpp"
 
@@ -189,6 +190,30 @@ TEST_CASE("ULocalMagnitudeService::GRPC::fromInitializationFile",
             "maximumConnectionAgeGracePeriodInMilliSeconds = -1\n");
         REQUIRE_THROWS_AS(fromInitializationFile(negativeGrace.path()),
                           std::invalid_argument);
+    }
+
+    SECTION("Values that can't be read are rejected, not defaulted")
+    {
+        const std::pair<std::string, std::string> badValues[]
+        {
+            {"port", "8443x"},
+            {"port", "eighty"},
+            {"port", "70000"},
+            {"enableReflection", "yes"},
+            {"maximumRequestMessageSizeInBytes", "64KB"},
+            {"maximumRequestMessageSizeInBytes", "1.5"},
+            {"maximumConnectionAgeInMilliSeconds", "2min"},
+            {"maximumConnectionAgeGracePeriodInMilliSeconds", "2s"}
+        };
+        for (const auto &[key, value] : badValues)
+        {
+            INFO(key << " = " << value);
+            const TemporaryFile iniFile("badValue.ini",
+                                        "[GRPCServer]\n" + key + " = "
+                                      + value + "\n");
+            REQUIRE_THROWS_AS(fromInitializationFile(iniFile.path()),
+                              std::invalid_argument);
+        }
     }
 
     SECTION("Reflection")

@@ -851,7 +851,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::DistanceOptions - datum",
                                          "[DistanceCorrections]\n"
                                          "interpolation = linear\n"
                                          "distanceType = hypocentral\n"
-                                         "datum = 2000\n"
+                                         "datumInMeters = 2000\n"
                                          "distance_correction_1 = 0, 1.0\n");
         REQUIRE(DistanceOptions::fromInitializationFile(withDatum.path())
                 .getDatum() == 2000);
@@ -870,7 +870,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::DistanceOptions - datum",
                                           "[DistanceCorrections]\n"
                                           "interpolation = linear\n"
                                           "distanceType = epicentral\n"
-                                          "datum = 2000\n"
+                                          "datumInMeters = 2000\n"
                                           "distance_correction_1 = 0, 1.0\n");
         REQUIRE(DistanceOptions::fromInitializationFile(epicentral.path())
                 .getDatum() == 0);
@@ -879,7 +879,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::DistanceOptions - datum",
                                         "[DistanceCorrections]\n"
                                         "interpolation = linear\n"
                                         "distanceType = hypocentral\n"
-                                        "datum = 9000\n"
+                                        "datumInMeters = 9000\n"
                                         "distance_correction_1 = 0, 1.0\n");
         REQUIRE_THROWS_AS(
             DistanceOptions::fromInitializationFile(badDatum.path()),

@@ -271,7 +271,8 @@ DistanceOptions DistanceOptions::fromInitializationFile(
     if (options.getType() == DistanceOptions::Type::Hypocentral)
     {
         auto datum
-            = propertyTree.get<double> (section + "datum", options.getDatum());
+            = propertyTree.get<double> (section + "datumInMeters",
+                                        options.getDatum());
         options.setDatum(datum);
     }
 

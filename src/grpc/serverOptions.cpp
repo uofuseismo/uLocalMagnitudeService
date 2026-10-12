@@ -252,6 +252,25 @@ void ServerOptions::validate() const
 
 ServerOptions::~ServerOptions() = default;
 
+namespace
+{
+template<typename T>
+T getOrDefault(const boost::property_tree::ptree &tree,
+               const std::string &key,
+               const T &defaultValue)
+{
+    const auto text = tree.get_optional<std::string> (key);
+    if (!text){return defaultValue;}          // Not in the file
+    const auto value = tree.get_optional<T> (key);
+    if (!value)                               // In the file but garbage
+    {
+        throw std::invalid_argument(key + " = " + *text
+                                  + " is not a valid value");
+    }
+    return *value;
+}
+}
+
 /// Read server options from a config file
 ServerOptions ULocalMagnitudeService::GRPC::fromInitializationFile(
     const std::filesystem::path &iniFile,
@@ -281,9 +300,10 @@ ServerOptions ULocalMagnitudeService::GRPC::fromInitializationFile(
     options.setHost(host);
 
     uint16_t port{50000};
-    options.setPort(port);
-
-    port = propertyTree.get<uint16_t> (section + "port", options.getPort());
+    //port = propertyTree.get<uint16_t> (section + "port", options.getPort());
+    port = ::getOrDefault<uint16_t> (propertyTree,
+                                     section + "port",
+                                     port);
     options.setPort(port);
 
     auto serverKey
@@ -307,31 +327,49 @@ ServerOptions ULocalMagnitudeService::GRPC::fromInitializationFile(
            "Server key and certificate must both be set");
     }
 
+    //auto enableReflection
+    //    = propertyTree.get<bool> (section + "enableReflection", false);
     auto enableReflection
-        = propertyTree.get<bool> (section + "enableReflection", false);
+         = ::getOrDefault<bool> (propertyTree,
+                                 section + "enableReflection",
+                                 false);
+     
     options.disableReflection();
     if (enableReflection){options.enableReflection();}
 
     // Maximum request message size
+    //auto maximumRequestMessageSize
+    //    = propertyTree.get<int> (section + "maximumRequestMessageSizeInBytes",
+    //                             options.getMaximumRequestMessageSizeInBytes());
     auto maximumRequestMessageSize
-        = propertyTree.get<int> (section + "maximumRequestMessageSizeInBytes",
-                                 options.getMaximumRequestMessageSizeInBytes());
+        = ::getOrDefault<int> (propertyTree,
+                               section + "maximumRequestMessageSizeInBytes",
+                               options.getMaximumRequestMessageSizeInBytes());
     options.setMaximumRequestMessageSizeInBytes(maximumRequestMessageSize);
 
     int maxConnectionAgeMilliS{
        static_cast<int> (options.getMaximumConnectionAge().count())};
-    maxConnectionAgeMilliS = propertyTree.get<int> (
-                      section + "maximumConnectionAgeInMilliSeconds",
-                      maxConnectionAgeMilliS);
+    //maxConnectionAgeMilliS = propertyTree.get<int> (
+    //                  section + "maximumConnectionAgeInMilliSeconds",
+    //                  maxConnectionAgeMilliS);
+    maxConnectionAgeMilliS 
+         = ::getOrDefault<int> (propertyTree,
+                                section + "maximumConnectionAgeInMilliSeconds",
+                                maxConnectionAgeMilliS);
     options.setMaximumConnectionAge(
         std::chrono::milliseconds(maxConnectionAgeMilliS));
 
 
     int maxGracePeriodMilliS{
         static_cast<int> (options.getMaximumConnectionAgeGracePeriod().count())};
-    maxGracePeriodMilliS = propertyTree.get<int> (
-                      section + "maximumConnectionAgeGracePeriodInMilliSeconds",
-                      maxGracePeriodMilliS);
+    //maxGracePeriodMilliS = propertyTree.get<int> (
+    //                  section + "maximumConnectionAgeGracePeriodInMilliSeconds",
+    //                  maxGracePeriodMilliS);
+    maxGracePeriodMilliS
+          = ::getOrDefault<int> (
+                propertyTree,
+                section + "maximumConnectionAgeGracePeriodInMilliSeconds",  
+                maxGracePeriodMilliS);
     options.setMaximumConnectionAgeGracePeriod(
         std::chrono::milliseconds(maxGracePeriodMilliS));
 
