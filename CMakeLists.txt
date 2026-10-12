@@ -96,6 +96,8 @@ set(LIBRARY_SRC
     src/magnitude/stationMagnitudeCalculator.cpp
     src/magnitude/streamIdentifier.cpp
     src/metrics/singleton.cpp
+    src/waveformProcessing/packet.cpp
+    src/waveformProcessing/streamIdentifier.cpp
     src/version.cpp)
 set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/corrections/distance.hpp
@@ -120,6 +122,7 @@ set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/magnitude/stationMagnitudeCalculator.hpp
     include/${PROJECT_NAME}/magnitude/streamIdentifier.hpp
     include/${PROJECT_NAME}/metrics/singleton.hpp
+    include/${PROJECT_NAME}/waveformProcessing/streamIdentifier.hpp
     include/${PROJECT_NAME}/version.hpp)
 set(PROTO_MESSAGE_SRC
     uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.proto
@@ -137,6 +140,10 @@ set(PROTO_MESSAGE_SRC
     uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_response.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/station_identifier.proto
     uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.proto
+    uLocalMagnitudeServiceAPI/v1/waveformProcessing/data_type.proto
+    uLocalMagnitudeServiceAPI/v1/waveformProcessing/packet.proto
+    uLocalMagnitudeServiceAPI/v1/waveformProcessing/stream_identifier.proto
+    uLocalMagnitudeServiceAPI/v1/waveformProcessing/waveform.proto
     )
 set(PROTO_SRC
     ${PROTO_MESSAGE_SRC}
