@@ -1,0 +1,16 @@
+edition = "2023";
+
+package ULocalMagnitudeServiceAPI.V1.WaveformProcessing;
+
+import "uLocalMagnitudeServiceAPI/v1/waveformProcessing/packet.proto";
+import "uLocalMagnitudeServiceAPI/v1/waveformProcessing/stream_identifier.proto";
+
+/**
+ * A waveform is a collection of data packets.
+ */
+message Waveform {
+   /// The stream identifier
+   StreamIdentifier stream_identifier = 1;
+   /// The packets defining the waveform.  These are sorted by increasing start time.
+   repeated Packet packets = 2;
+}
