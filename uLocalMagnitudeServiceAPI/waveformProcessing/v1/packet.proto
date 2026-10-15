@@ -1,9 +1,9 @@
 edition = "2023";
 import "google/protobuf/timestamp.proto";
 
-package ULocalMagnitudeServiceAPI.V1.WaveformProcessing;
+package ULocalMagnitudeServiceAPI.WaveformProcessing.V1;
 
-import "uLocalMagnitudeServiceAPI/v1/waveformProcessing/data_type.proto";
+import "uLocalMagnitudeServiceAPI/waveformProcessing/v1/data_type.proto";
 
 /**
  * A packet is a set of samples that help to define a waveform.

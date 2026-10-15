@@ -1,6 +1,6 @@
 edition = "2023";
 
-package ULocalMagnitudeServiceAPI.V1.Magnitude;
+package ULocalMagnitudeServiceAPI.Magnitude.V1;
 
 /*
  * The event hypocenter as defined in the WGS84 coordinate system.

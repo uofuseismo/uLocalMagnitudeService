@@ -1,6 +1,6 @@
 edition = "2023";
 
-package ULocalMagnitudeServiceAPI.V1.WaveformProcessing;
+package ULocalMagnitudeServiceAPI.WaveformProcessing.V1;
 
 /**
  * A data stream identifier which is comprised of a network code,

@@ -1,15 +1,15 @@
 edition = "2023";
 
-package ULocalMagnitudeServiceAPI.V1.Magnitude;
+package ULocalMagnitudeServiceAPI.Magnitude.V1;
 
-import "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.proto";
-import "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.proto";
-import "uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_request.proto";
-import "uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_response.proto";
-import "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.proto";
-import "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.proto";
-import "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_request.proto";
-import "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_response.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/distance_corrections_request.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/distance_corrections_response.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/network_magnitude_from_amplitudes_request.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/network_magnitude_from_amplitudes_response.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/station_corrections_request.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/station_corrections_response.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/station_magnitudes_from_amplitudes_request.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/station_magnitudes_from_amplitudes_response.proto";
 
 /**
  * Handles the local magnitude calculation.  A network magnitude is computed from 
