@@ -1,9 +1,9 @@
 edition = "2023";
 
-package ULocalMagnitudeServiceAPI.V1.WaveformProcessing;
+package ULocalMagnitudeServiceAPI.WaveformProcessing.V1;
 
-import "uLocalMagnitudeServiceAPI/v1/waveformProcessing/packet.proto";
-import "uLocalMagnitudeServiceAPI/v1/waveformProcessing/stream_identifier.proto";
+import "uLocalMagnitudeServiceAPI/waveformProcessing/v1/packet.proto";
+import "uLocalMagnitudeServiceAPI/waveformProcessing/v1/stream_identifier.proto";
 
 /**
  * A waveform is a collection of data packets.

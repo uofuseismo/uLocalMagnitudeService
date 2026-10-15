@@ -1,8 +1,8 @@
 edition = "2023";
 
-package ULocalMagnitudeServiceAPI.V1.Magnitude;
+package ULocalMagnitudeServiceAPI.Magnitude.V1;
 
-import "uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/stream_identifier.proto";
 
 /**
  * Defines an observed (peak to peak) amplitude.

@@ -1,9 +1,9 @@
 edition = "2023";
 
-package ULocalMagnitudeServiceAPI.V1.Magnitude;
+package ULocalMagnitudeServiceAPI.Magnitude.V1;
 
-import "uLocalMagnitudeServiceAPI/v1/magnitude/hypocenter.proto";
-import "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/hypocenter.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/station_amplitude_measurement.proto";
 
 /**
  * Requests that a network magnitude be computed from the given station amplitude

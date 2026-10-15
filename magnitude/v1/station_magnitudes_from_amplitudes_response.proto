@@ -1,8 +1,8 @@
 edition = "2023";
 
-package ULocalMagnitudeServiceAPI.V1.Magnitude;
+package ULocalMagnitudeServiceAPI.Magnitude.V1;
 
-import "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitude.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/station_magnitude.proto";
 
 /**
  * Station magnitudes corresponding to the given amplitudes.

@@ -1,9 +1,9 @@
 edition = "2023";
 
-package ULocalMagnitudeServiceAPI.V1.Magnitude;
+package ULocalMagnitudeServiceAPI.Magnitude.V1;
 
-import "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.proto";
-import "uLocalMagnitudeServiceAPI/v1/magnitude/station_location.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/amplitude.proto";
+import "uLocalMagnitudeServiceAPI/magnitude/v1/station_location.proto";
 
 /**
  * Defines a (peak-to-peak) amplitude measurement made at a station.

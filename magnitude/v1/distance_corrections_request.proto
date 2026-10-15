@@ -1,6 +1,6 @@
 edition = "2023";
 
-package ULocalMagnitudeServiceAPI.V1.Magnitude;
+package ULocalMagnitudeServiceAPI.Magnitude.V1;
 
 /**
  * This extracts the distance corrections from the service.
