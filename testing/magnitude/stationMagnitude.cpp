@@ -9,8 +9,8 @@
 #include "uLocalMagnitudeService/magnitude/stationMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitude.pb.h"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/amplitude.pb.h"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/station_magnitude.pb.h"
 
 using namespace ULocalMagnitudeService::Magnitude;
 
@@ -275,7 +275,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::StationMagnitude",
 TEST_CASE("ULocalMagnitudeService::Magnitude::StationMagnitude - protobuf",
           "[stationMagnitude]")
 {
-    namespace API = ULocalMagnitudeServiceAPI::V1::Magnitude;
+    namespace API = ULocalMagnitudeServiceAPI::Magnitude::V1;
 
     SECTION("To message")
     {

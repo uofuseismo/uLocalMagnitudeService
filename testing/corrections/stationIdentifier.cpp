@@ -3,8 +3,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_identifier.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.pb.h"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/station_identifier.pb.h"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/stream_identifier.pb.h"
 
 using namespace ULocalMagnitudeService::Corrections;
 using ULocalMagnitudeService::Magnitude::StreamIdentifier;
@@ -159,7 +159,7 @@ TEST_CASE("ULocalMagnitudeService::Corrections::StationIdentifier",
 TEST_CASE("ULocalMagnitudeService::Corrections::StationIdentifier - protobuf",
           "[stationIdentifier]")
 {
-    namespace API = ULocalMagnitudeServiceAPI::V1::Magnitude;
+    namespace API = ULocalMagnitudeServiceAPI::Magnitude::V1;
     API::StationIdentifier message;
     message.set_network("UU");
     message.set_station("CWU");

@@ -2,7 +2,7 @@
 #include <utility>
 #include <catch2/catch_test_macros.hpp>
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.pb.h"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/stream_identifier.pb.h"
 
 using namespace ULocalMagnitudeService::Magnitude;
 
@@ -184,7 +184,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::StreamIdentifier",
 TEST_CASE("ULocalMagnitudeService::Magnitude::StreamIdentifier - protobuf",
           "[streamIdentifier]")
 {
-    namespace API = ULocalMagnitudeServiceAPI::V1::Magnitude;
+    namespace API = ULocalMagnitudeServiceAPI::Magnitude::V1;
     API::StreamIdentifier message;
     message.set_network("UU");
     message.set_station("CWU");

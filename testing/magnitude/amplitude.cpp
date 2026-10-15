@@ -7,8 +7,8 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.pb.h"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/amplitude.pb.h"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/stream_identifier.pb.h"
 
 using namespace ULocalMagnitudeService::Magnitude;
 
@@ -207,7 +207,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Amplitude", "[amplitude]")
 TEST_CASE("ULocalMagnitudeService::Magnitude::Amplitude - protobuf",
           "[amplitude]")
 {
-    namespace API = ULocalMagnitudeServiceAPI::V1::Magnitude;
+    namespace API = ULocalMagnitudeServiceAPI::Magnitude::V1;
     API::StreamIdentifier identifierMessage;
     identifierMessage.set_network("UU");
     identifierMessage.set_station("CCUT");

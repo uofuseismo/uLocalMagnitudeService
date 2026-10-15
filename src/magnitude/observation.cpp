@@ -10,9 +10,9 @@
 #include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/hypocenter.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.pb.h"
-//#include "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.pb.h"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/hypocenter.pb.h"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/station_amplitude_measurement.pb.h"
+//#include "uLocalMagnitudeServiceAPI/magnitude/v1/amplitude.pb.h"
 
 namespace
 {
@@ -55,10 +55,10 @@ Observation::Observation(Observation &&observation) noexcept
 /// Create from a station amplitude measurement
 template<>
 Observation::Observation(
-    const ULocalMagnitudeServiceAPI::V1
-          ::Magnitude::StationAmplitudeMeasurement &measurement,
-    const ULocalMagnitudeServiceAPI::V1
-          ::Magnitude::Hypocenter &hypocenterMessage)
+    const ULocalMagnitudeServiceAPI::Magnitude::V1
+          ::StationAmplitudeMeasurement &measurement,
+    const ULocalMagnitudeServiceAPI::Magnitude::V1
+          ::Hypocenter &hypocenterMessage)
 {
     const Corrections::Hypocenter hypocenter{hypocenterMessage};
     if (!measurement.has_amplitude_stream_1())

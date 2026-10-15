@@ -20,7 +20,7 @@ public:
     /// @throws std::invalid_argument if the latitude, longitude, or depth
     ///         is not set, not finite, or the latitude or depth is out 
     ///         of the usable range.
-    /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::Hypocenter.
+    /// @note Supported types: ULocalMagnitudeServiceAPI::Magnitude::V1::Hypocenter.
     ///       Any other type fails to link.
     template<typename U>
     explicit Hypocenter(const U &hypocenter);

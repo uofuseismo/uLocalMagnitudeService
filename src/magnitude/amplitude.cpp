@@ -5,8 +5,8 @@
 #include <utility>
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.pb.h"
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/amplitude.pb.h>
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/stream_identifier.pb.h>
 
 using namespace ULocalMagnitudeService::Magnitude;
 
@@ -39,7 +39,7 @@ Amplitude::Amplitude(Amplitude &&amplitude) noexcept
 /// Build from a protobuf
 template<>
 Amplitude::Amplitude(
-    const ULocalMagnitudeServiceAPI::V1::Magnitude::Amplitude &amplitude)
+    const ULocalMagnitudeServiceAPI::Magnitude::V1::Amplitude &amplitude)
 {
     if (!amplitude.has_stream_identifier())
     {   
@@ -53,7 +53,7 @@ Amplitude::Amplitude(
     {   
         throw std::invalid_argument("Amplitude units not set.");
     }   
-    namespace API = ULocalMagnitudeServiceAPI::V1::Magnitude;
+    namespace API = ULocalMagnitudeServiceAPI::Magnitude::V1;
     Amplitude thisAmplitude;
     auto units = amplitude.units();
     if (units == API::Amplitude_Units_UNITS_UNSPECIFIED)
@@ -183,19 +183,19 @@ std::string Amplitude::getName() const
 
 /// Protobuf
 template<>
-ULocalMagnitudeServiceAPI::V1::Magnitude::Amplitude
+ULocalMagnitudeServiceAPI::Magnitude::V1::Amplitude
 Amplitude::toMessage() const
 {
-    ULocalMagnitudeServiceAPI::V1::Magnitude::Amplitude result; 
+    ULocalMagnitudeServiceAPI::Magnitude::V1::Amplitude result; 
     auto streamIdentifier
         = getIdentifier().toMessage
           <
-              ULocalMagnitudeServiceAPI::V1::Magnitude::StreamIdentifier
+              ULocalMagnitudeServiceAPI::Magnitude::V1::StreamIdentifier
           > ();
     *result.mutable_stream_identifier() = std::move(streamIdentifier);
     result.set_value(getValue());
     result.set_units(
-       ULocalMagnitudeServiceAPI::V1::Magnitude::
+       ULocalMagnitudeServiceAPI::Magnitude::V1::
           Amplitude_Units_UNITS_MILLIMETERS);
     return result;
 }

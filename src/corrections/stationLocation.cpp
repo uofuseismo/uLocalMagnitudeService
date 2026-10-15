@@ -4,7 +4,7 @@
 #include <utility>
 #include "uLocalMagnitudeService/corrections/stationLocation.hpp"
 //#include "uLocalMagnitudeService/corrections/stationIdentifier.hpp"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_location.pb.h"
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/station_location.pb.h>
 
 using namespace ULocalMagnitudeService::Corrections;
 
@@ -41,7 +41,7 @@ StationLocation::StationLocation(StationLocation &&location) noexcept
 /// Constructor
 template<>
 StationLocation::StationLocation(
-    const ULocalMagnitudeServiceAPI::V1::Magnitude::StationLocation &location)
+    const ULocalMagnitudeServiceAPI::Magnitude::V1::StationLocation &location)
 {
     if (!location.has_latitude())
     {   

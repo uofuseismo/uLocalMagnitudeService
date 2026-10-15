@@ -6,7 +6,7 @@
 #include <string>
 #include <utility>
 #include "uLocalMagnitudeService/waveformProcessing/streamIdentifier.hpp"
-#include "uLocalMagnitudeServiceAPI/v1/waveformProcessing/stream_identifier.pb.h"
+#include "uLocalMagnitudeServiceAPI/waveformProcessing/v1/stream_identifier.pb.h"
 
 using namespace ULocalMagnitudeService::WaveformProcessing;
 
@@ -63,7 +63,7 @@ StreamIdentifier::StreamIdentifier(StreamIdentifier &&identifier) noexcept
 /// Build from a protobuf
 template<>
 StreamIdentifier::StreamIdentifier(
-    const ULocalMagnitudeServiceAPI::V1::WaveformProcessing::StreamIdentifier
+    const ULocalMagnitudeServiceAPI::WaveformProcessing::V1::StreamIdentifier
         &identifier)
 {
     if (!identifier.has_network())
@@ -219,10 +219,10 @@ std::string StreamIdentifier::toString() const
  
 /// Protobuf
 template<>
-ULocalMagnitudeServiceAPI::V1::WaveformProcessing::StreamIdentifier
+ULocalMagnitudeServiceAPI::WaveformProcessing::V1::StreamIdentifier
 StreamIdentifier::toMessage() const
 {
-    ULocalMagnitudeServiceAPI::V1::WaveformProcessing::StreamIdentifier result;
+    ULocalMagnitudeServiceAPI::WaveformProcessing::V1::StreamIdentifier result;
     result.set_network(getNetwork());
     result.set_station(getStation());
     result.set_channel(getChannel());

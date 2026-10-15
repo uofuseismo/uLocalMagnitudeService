@@ -5,13 +5,13 @@
 #include <spdlog/logger.h>
 #include <grpcpp/server_context.h>
 #include <grpcpp/support/server_callback.h>
-#include <uLocalMagnitudeServiceAPI/v1/magnitude/service.grpc.pb.h>
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/service.grpc.pb.h>
 
 namespace ULocalMagnitudeService::Magnitude
 {
  class NetworkMagnitudeCalculatorOptions;
 }
-namespace ULocalMagnitudeServiceAPI::V1::Magnitude
+namespace ULocalMagnitudeServiceAPI::Magnitude::V1
 {
  class NetworkMagnitudeFromAmplitudesRequest;
  class NetworkMagnitudeFromAmplitudesResponse;
@@ -29,7 +29,7 @@ namespace ULocalMagnitudeService::GRPC
 {
 /// @brief Implements the gRPC magnitudes from amplitudes service.
 class MagnitudeService final : public
-    ULocalMagnitudeServiceAPI::V1::Magnitude::MagnitudeService::CallbackService
+    ULocalMagnitudeServiceAPI::Magnitude::V1::MagnitudeService::CallbackService
 {
 public:
     /// @brief Constructor. 
@@ -42,22 +42,22 @@ public:
     grpc::ServerUnaryReactor
         *ComputeNetworkMagnitudeFromAmplitudes(
             grpc::CallbackServerContext *context,
-            const ULocalMagnitudeServiceAPI::V1::Magnitude::NetworkMagnitudeFromAmplitudesRequest *request,
-            ULocalMagnitudeServiceAPI::V1::Magnitude::NetworkMagnitudeFromAmplitudesResponse *response) override;
+            const ULocalMagnitudeServiceAPI::Magnitude::V1::NetworkMagnitudeFromAmplitudesRequest *request,
+            ULocalMagnitudeServiceAPI::Magnitude::V1::NetworkMagnitudeFromAmplitudesResponse *response) override;
 
     /// @brief Computes the station magnitudes from amplitudes. 
     grpc::ServerUnaryReactor
         *ComputeStationMagnitudesFromAmplitudes(
             grpc::CallbackServerContext *context,
-            const ULocalMagnitudeServiceAPI::V1::Magnitude::StationMagnitudesFromAmplitudesRequest *request,
-            ULocalMagnitudeServiceAPI::V1::Magnitude::StationMagnitudesFromAmplitudesResponse *response) override;
+            const ULocalMagnitudeServiceAPI::Magnitude::V1::StationMagnitudesFromAmplitudesRequest *request,
+            ULocalMagnitudeServiceAPI::Magnitude::V1::StationMagnitudesFromAmplitudesResponse *response) override;
 
     /// @brief Gets station corrections for debugging.
     grpc::ServerUnaryReactor
         *GetStationCorrections(
             grpc::CallbackServerContext *context,
-            const ULocalMagnitudeServiceAPI::V1::Magnitude::StationCorrectionsRequest *request,
-            ULocalMagnitudeServiceAPI::V1::Magnitude::StationCorrectionsResponse *response) override;
+            const ULocalMagnitudeServiceAPI::Magnitude::V1::StationCorrectionsRequest *request,
+            ULocalMagnitudeServiceAPI::Magnitude::V1::StationCorrectionsResponse *response) override;
 
     /// @brief Destructor.
     ~MagnitudeService();

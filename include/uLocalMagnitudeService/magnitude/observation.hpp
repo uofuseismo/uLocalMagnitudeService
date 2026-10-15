@@ -32,8 +32,8 @@ public:
     ///         throws std::invalid_argument if the hypocenter lacks
     ///         a finite latitude, longitude, depth, or the latitude
     ///         or depth exceed the usable ranges.
-    /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::StationAmplitudeMeasurement for U and
-    ///                        ULocalMagnitudeServiceAPI::V1::Magnitude::Hypocenter for V.
+    /// @note Supported types: ULocalMagnitudeServiceAPI::Magnitude::V1::StationAmplitudeMeasurement for U and
+    ///                        ULocalMagnitudeServiceAPI::Magnitude::V1::Hypocenter for V.
     ///       Any other type fails to link.
     template<typename U, typename V>
     Observation(const U &stationAmplitudeMeasurement, const V &hypocenter);

@@ -22,7 +22,7 @@ public:
     /// @brief Creates the stream identifier class from a proto file.
     /// @throws std::invalid_argument if the network, station, or channel
     ///         are not set.
-    /// @note Supported types: ULocalMagnitudeServiceAPI::V1::WaveformProcessing::StreamIdentifier.
+    /// @note Supported types: ULocalMagnitudeServiceAPI::WaveformProcessing::V1::StreamIdentifier.
     ///       Any other type fails to link.
     template<typename U>
     explicit StreamIdentifier(const U &identifier);
@@ -75,7 +75,7 @@ public:
     /// @result The stream identifier in the desired protobuf message format. 
     /// @throws std::runtime_error if \c hasStation(), \c hasNetwork(),
     ///         \c hasChannel(), or \c hasLocationCode()  is false.
-    /// @note Supported types: ULocalMagnitudeServiceAPI::V1::WaveformProcessing::StreamIdentifier.
+    /// @note Supported types: ULocalMagnitudeServiceAPI::WaveformProcessing::V1::StreamIdentifier.
     ///       Any other type fails to link.
     template<typename U> [[nodiscard]] U toMessage() const;
 

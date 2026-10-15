@@ -28,25 +28,25 @@
 #include "uLocalMagnitudeService/metrics/singleton.hpp"
 #include "uLocalMagnitudeService/version.hpp"
 //NOLINTNEXTLINE(misc-include-cleaner)
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/service.grpc.pb.h"
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/service.grpc.pb.h>
 //#include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.pb.h"
 //#include "uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.pb.h"
 //NOLINTNEXTLINE(misc-include-cleaner)
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/hypocenter.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_request.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_response.pb.h"
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/hypocenter.pb.h>
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/network_magnitude_from_amplitudes_request.pb.h>
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/network_magnitude_from_amplitudes_response.pb.h>
 //NOLINTNEXTLINE(misc-include-cleaner)
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitude.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_request.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_response.pb.h"
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/station_amplitude_measurement.pb.h>
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/station_corrections_request.pb.h>
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/station_corrections_response.pb.h>
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/station_magnitude.pb.h>
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/station_magnitudes_from_amplitudes_request.pb.h>
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/station_magnitudes_from_amplitudes_response.pb.h>
 #include "validateClient.hpp"
 
 using namespace ULocalMagnitudeService::GRPC;
 
-namespace ULMSAPIV1 = ULocalMagnitudeServiceAPI::V1::Magnitude;
+namespace ULMSAPIV1 = ULocalMagnitudeServiceAPI::Magnitude::V1;
 
 class MagnitudeService::MagnitudeServiceImpl
 {

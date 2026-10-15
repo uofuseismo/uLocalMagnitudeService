@@ -10,8 +10,8 @@
 #include <vector>
 #include <google/protobuf/util/time_util.h>
 #include "uLocalMagnitudeService/waveformProcessing/packet.hpp"
-#include <uLocalMagnitudeServiceAPI/v1/waveformProcessing/data_type.pb.h>
-#include <uLocalMagnitudeServiceAPI/v1/waveformProcessing/packet.pb.h>
+#include <uLocalMagnitudeServiceAPI/waveformProcessing/v1/data_type.pb.h>
+#include <uLocalMagnitudeServiceAPI/waveformProcessing/v1/packet.pb.h>
 
 using namespace ULocalMagnitudeService::WaveformProcessing;
 
@@ -130,7 +130,7 @@ Packet& Packet::operator=(Packet &&packet) noexcept
 /// Construct from message
 template<>
 Packet::Packet(
-    const ULocalMagnitudeServiceAPI::V1::WaveformProcessing::Packet &packet)
+    const ULocalMagnitudeServiceAPI::WaveformProcessing::V1::Packet &packet)
 {
     if (!packet.has_start_time())
     {
@@ -154,7 +154,7 @@ Packet::Packet(
             packet.start_time());
     thisPacket.setStartTime(std::chrono::nanoseconds {startTime});
     thisPacket.setSamplingRate(packet.sampling_rate());
-    namespace UAPI = ULocalMagnitudeServiceAPI::V1::WaveformProcessing;
+    namespace UAPI = ULocalMagnitudeServiceAPI::WaveformProcessing::V1;
     auto dataType = packet.data_type();
     auto nSamples = packet.number_of_samples();
     if (dataType == UAPI::DataType::DATA_TYPE_UNSPECIFIED)

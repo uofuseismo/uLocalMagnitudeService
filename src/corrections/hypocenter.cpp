@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 #include "uLocalMagnitudeService/corrections/hypocenter.hpp"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/hypocenter.pb.h"
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/hypocenter.pb.h>
 
 using namespace ULocalMagnitudeService::Corrections;
 
@@ -59,7 +59,7 @@ Hypocenter& Hypocenter::operator=(Hypocenter &&location) noexcept
 /// Constructor
 template<>
 Hypocenter::Hypocenter(
-    const ULocalMagnitudeServiceAPI::V1::Magnitude::Hypocenter &hypocenter)
+    const ULocalMagnitudeServiceAPI::Magnitude::V1::Hypocenter &hypocenter)
 {
     if (!hypocenter.has_depth())
     {

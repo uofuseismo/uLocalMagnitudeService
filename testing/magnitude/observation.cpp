@@ -11,10 +11,10 @@
 #include "uLocalMagnitudeService/corrections/stationLocation.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/hypocenter.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_location.pb.h"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/amplitude.pb.h"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/hypocenter.pb.h"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/station_amplitude_measurement.pb.h"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/station_location.pb.h"
 
 using namespace ULocalMagnitudeService::Magnitude;
 
@@ -299,7 +299,7 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::Observation", "[observation]")
 TEST_CASE("ULocalMagnitudeService::Magnitude::Observation - protobuf",
           "[observation]")
 {
-    namespace API = ULocalMagnitudeServiceAPI::V1::Magnitude;
+    namespace API = ULocalMagnitudeServiceAPI::Magnitude::V1;
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     const auto amplitudeMessage = [](const std::string &network,
                                      const std::string &station,

@@ -8,8 +8,8 @@
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.pb.h"
-#include "uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitude.pb.h"
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/amplitude.pb.h>
+#include <uLocalMagnitudeServiceAPI/magnitude/v1/station_magnitude.pb.h>
 
 using namespace ULocalMagnitudeService::Magnitude;
 
@@ -181,10 +181,10 @@ bool StationMagnitude::hasAmplitudes() const noexcept
 
 /// To message
 template<>
-ULocalMagnitudeServiceAPI::V1::Magnitude::StationMagnitude
+ULocalMagnitudeServiceAPI::Magnitude::V1::StationMagnitude
 StationMagnitude::toMessage() const
 {
-    ULocalMagnitudeServiceAPI::V1::Magnitude::StationMagnitude result;
+    ULocalMagnitudeServiceAPI::Magnitude::V1::StationMagnitude result;
     if (!hasAmplitudes())
     {
         throw std::runtime_error("Amplitudes not set");
@@ -192,12 +192,12 @@ StationMagnitude::toMessage() const
     *result.mutable_amplitude_1()
         = std::move(pImpl->mAmplitudes.first.toMessage
                     <
-                       ULocalMagnitudeServiceAPI::V1::Magnitude::Amplitude
+                       ULocalMagnitudeServiceAPI::Magnitude::V1::Amplitude
                     > ());
     *result.mutable_amplitude_2()
         = std::move(pImpl->mAmplitudes.second.toMessage
                     <
-                       ULocalMagnitudeServiceAPI::V1::Magnitude::Amplitude
+                       ULocalMagnitudeServiceAPI::Magnitude::V1::Amplitude
                     > ());
     result.set_value(getValue());
     result.set_station_correction(getStationCorrection());

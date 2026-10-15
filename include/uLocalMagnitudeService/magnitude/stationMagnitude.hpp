@@ -81,7 +81,7 @@ public:
     /// @result The station magnitude in the desired protobuf message format. 
     /// @throws std::runtime_error if \c hasValue(), \c hasStationCorrection(),
     ///         \c hasDistanceCorrection(), or \c hasAmplitudes()  is false.
-    /// @note Supported types: ULocalMagnitudeServiceAPI::V1::Magnitude::StationMagnitude
+    /// @note Supported types: ULocalMagnitudeServiceAPI::Magnitude::V1::StationMagnitude
     ///       Any other type fails to link.
     template<typename U> [[nodiscard]] U toMessage() const;
 
