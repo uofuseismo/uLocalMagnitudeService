@@ -125,29 +125,29 @@ set(LIBRARY_HEADER_FILES
     include/${PROJECT_NAME}/waveformProcessing/streamIdentifier.hpp
     include/${PROJECT_NAME}/version.hpp)
 set(PROTO_MESSAGE_SRC
-    uLocalMagnitudeServiceAPI/v1/magnitude/amplitude.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_request.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/distance_corrections_response.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/hypocenter.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_request.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/network_magnitude_from_amplitudes_response.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/station_amplitude_measurement.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_request.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/station_corrections_response.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/station_location.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitude.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_request.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/station_magnitudes_from_amplitudes_response.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/station_identifier.proto
-    uLocalMagnitudeServiceAPI/v1/magnitude/stream_identifier.proto
-    uLocalMagnitudeServiceAPI/v1/waveformProcessing/data_type.proto
-    uLocalMagnitudeServiceAPI/v1/waveformProcessing/packet.proto
-    uLocalMagnitudeServiceAPI/v1/waveformProcessing/stream_identifier.proto
-    uLocalMagnitudeServiceAPI/v1/waveformProcessing/waveform.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/amplitude.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/distance_corrections_request.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/distance_corrections_response.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/hypocenter.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/network_magnitude_from_amplitudes_request.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/network_magnitude_from_amplitudes_response.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/station_amplitude_measurement.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/station_corrections_request.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/station_corrections_response.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/station_location.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/station_magnitude.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/station_magnitudes_from_amplitudes_request.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/station_magnitudes_from_amplitudes_response.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/station_identifier.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/stream_identifier.proto
+    uLocalMagnitudeServiceAPI/waveformProcessing/v1/data_type.proto
+    uLocalMagnitudeServiceAPI/waveformProcessing/v1/packet.proto
+    uLocalMagnitudeServiceAPI/waveformProcessing/v1/stream_identifier.proto
+    uLocalMagnitudeServiceAPI/waveformProcessing/v1/waveform.proto
     )
 set(PROTO_SRC
     ${PROTO_MESSAGE_SRC}
-    uLocalMagnitudeServiceAPI/v1/magnitude/service.proto
+    uLocalMagnitudeServiceAPI/magnitude/v1/service.proto
     )
 
 if (BUILD_SHARED_LIBS)
