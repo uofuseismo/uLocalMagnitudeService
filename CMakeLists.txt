@@ -252,6 +252,7 @@ if (PROJECT_IS_TOP_LEVEL AND ${BUILD_TESTS})
                   testing/magnitude/networkMagnitudeCalculator.cpp
                   testing/magnitude/networkMagnitudeCalculatorOptions.cpp
                   testing/magnitude/observation.cpp
+                  testing/magnitude/residual.cpp
                   testing/magnitude/stationMagnitude.cpp
                   testing/magnitude/stationMagnitudeCalculator.cpp
                   testing/magnitude/streamIdentifier.cpp

@@ -87,7 +87,7 @@ double NetworkMagnitude::getValue() const
 {
     if (!hasValue())
     {
-        throw std::invalid_argument("Value not set");
+        throw std::runtime_error("Value not set");
     }
     return pImpl->mValue;
 }
@@ -251,6 +251,28 @@ NetworkMagnitude::toRejectedObservationsMessage() const
             reason
                 = NetworkMagnitudeFromAmplitudesResponse::Reason
                   ::NetworkMagnitudeFromAmplitudesResponse_Reason_REASON_NO_STATION_CORRECTION;
+        }
+        // (1) The API uses hypocenters and station locations so a negative
+        //     distance is my fault.
+        // (2) A negative depth would be flagged by a bad hypocenter.
+        // (3) Missing a distance or depth is another algorithm failure
+        //     since I should have set it.
+        else if (item.first ==
+                 NetworkMagnitudeCalculator::StationCalculatorErrorCode
+                    ::NegativeDistance ||
+                 item.first ==
+                 NetworkMagnitudeCalculator::StationCalculatorErrorCode
+                    ::InvalidDepth ||
+                 item.first ==
+                 NetworkMagnitudeCalculator::StationCalculatorErrorCode
+                    ::ObservationMissingDistance ||
+                 item.first ==
+                 NetworkMagnitudeCalculator::StationCalculatorErrorCode
+                    ::ObservationMissingDepth)
+        {
+            reason
+               = NetworkMagnitudeFromAmplitudesResponse::Reason
+                  ::NetworkMagnitudeFromAmplitudesResponse_Reason_REASON_ALGORITHM;
         }
         else if (item.first ==
                  NetworkMagnitudeCalculator::StationCalculatorErrorCode

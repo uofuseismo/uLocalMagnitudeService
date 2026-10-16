@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <array>
 #include <expected>
 #include <optional>
@@ -16,6 +17,8 @@
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/magnitude/stationMagnitude.hpp"
+#include "uLocalMagnitudeService/magnitude/residual.hpp"
+#include "uLocalMagnitudeServiceAPI/magnitude/v1/network_magnitude_from_amplitudes_response.pb.h"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
@@ -492,5 +495,157 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculator - AQMS 
         REQUIRE_THAT(networkMagnitude->getValue(),
                      Catch::Matchers::WithinAbs(expectedMagnitude + 3./6.,
                                                 1.e-10));
+    }
+}
+
+TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculator - result to client",
+          "[networkMagnitudeCalculator]")
+{
+    namespace API = ULocalMagnitudeServiceAPI::Magnitude::V1;
+    using Response = API::NetworkMagnitudeFromAmplitudesResponse;
+    using StationCalculatorErrorCode
+        = NetworkMagnitudeCalculator::StationCalculatorErrorCode;
+    constexpr double depth{7000};
+    const NetworkMagnitudeCalculator utah{utahOptions(), nullptr};
+    // Observation numbers are 1-based in the input order
+    const std::vector observations
+    {
+        observation("UU", "CCUT", 66775.14936328208, depth),  // 1
+        observation("UU", "CTU", 20000, depth),               // 2 - no correction
+        observation("UU", "LCMT", 31787.222423682797, depth), // 3
+        observation("UU", "PKCU", 700000, depth),             // 4 - too far
+    };
+    const auto result = utah(observations);
+    REQUIRE(result.has_value());
+    REQUIRE(result->hasValue());
+
+    SECTION("Residuals are tied back to their observations")
+    {
+        REQUIRE(result->hasResiduals());
+        const auto &residuals = result->getResidualsReference();
+        REQUIRE(residuals.size() == 2);
+        REQUIRE(residuals.at(0).second == 1);
+        REQUIRE(residuals.at(0).first.getStationMagnitude().getStationName()
+             == "UU.CCUT");
+        REQUIRE(residuals.at(1).second == 3);
+        REQUIRE(residuals.at(1).first.getStationMagnitude().getStationName()
+             == "UU.LCMT");
+        // Residual is network - station
+        double sum{0};
+        for (const auto &[residual, observationNumber] : residuals)
+        {
+            const auto stationMagnitude
+                = utah.computeStationMagnitude(
+                      observations.at(observationNumber - 1));
+            REQUIRE(stationMagnitude.has_value());
+            REQUIRE_THAT(residual.getValue(),
+                         Catch::Matchers::WithinAbs(
+                             result->getValue() - stationMagnitude->getValue(),
+                             1.e-14));
+            REQUIRE(residual.getStationMagnitude().getValue()
+                 == stationMagnitude->getValue());
+            sum = sum + residual.getValue();
+        }
+        // The network magnitude is the mean so the residuals sum to 0
+        REQUIRE_THAT(sum, Catch::Matchers::WithinAbs(0, 1.e-14));
+    }
+
+    SECTION("Rejected observations are tied back to their observations")
+    {
+        REQUIRE(result->hasRejectedObservations());
+        const auto rejects = result->getRejectedObservations();
+        REQUIRE(rejects.size() == 2);
+        REQUIRE(rejects.at(0)
+             == std::pair {StationCalculatorErrorCode::ObservationHasNoCorrection,
+                           2});
+        REQUIRE(rejects.at(1)
+             == std::pair {StationCalculatorErrorCode::StationTooFar, 4});
+    }
+
+    SECTION("Nothing rejected")
+    {
+        const auto clean = utah(std::vector {observations.at(0),
+                                             observations.at(2)});
+        REQUIRE(clean.has_value());
+        REQUIRE(clean->hasRejectedObservations());
+        REQUIRE(clean->getRejectedObservations().empty());
+        REQUIRE(clean->getResidualsReference().size() == 2);
+        REQUIRE(clean->getValue() == result->getValue());
+    }
+
+    SECTION("Every observation is accounted for exactly once")
+    {
+        std::vector<int> numbers;
+        for (const auto &residual : result->getResidualsReference())
+        {
+            numbers.push_back(residual.second);
+        }
+        for (const auto &reject : result->getRejectedObservations())
+        {
+            numbers.push_back(reject.second);
+        }
+        std::ranges::sort(numbers);
+        REQUIRE(numbers == std::vector {1, 2, 3, 4});
+    }
+
+    SECTION("Response survives the wire")
+    {
+        // Pack the response the way the service does
+        Response response;
+        response.set_identifier("uu80157466");
+        response.set_value(result->getValue());
+        for (const auto &residual : result->getResidualsReference())
+        {
+            auto stationMagnitudeAndResidual
+                = residual.first.toStationMagnitudeAndResidualMessage
+                      <Response::StationMagnitudeAndResidual> ();
+            stationMagnitudeAndResidual.set_input_observation_number(
+                residual.second);
+            response.mutable_station_magnitudes_and_residuals()->Add(
+                std::move(stationMagnitudeAndResidual));
+        }
+        for (auto &reject : result->toRejectedObservationsMessage
+                                <Response::RejectedObservation> ())
+        {
+            response.mutable_rejected_observations()->Add(std::move(reject));
+        }
+        // and unpack it the way a client would
+        Response received;
+        REQUIRE(received.ParseFromString(response.SerializeAsString()));
+        REQUIRE(received.identifier() == "uu80157466");
+        REQUIRE(received.value() == result->getValue());
+
+        REQUIRE(received.station_magnitudes_and_residuals_size() == 2);
+        const auto &ccut = received.station_magnitudes_and_residuals(0);
+        REQUIRE(ccut.input_observation_number() == 1);
+        REQUIRE(ccut.identifier().network() == "UU");
+        REQUIRE(ccut.identifier().station() == "CCUT");
+        const auto &lcmt = received.station_magnitudes_and_residuals(1);
+        REQUIRE(lcmt.input_observation_number() == 3);
+        REQUIRE(lcmt.identifier().network() == "UU");
+        REQUIRE(lcmt.identifier().station() == "LCMT");
+        for (const auto &item : received.station_magnitudes_and_residuals())
+        {
+            REQUIRE(item.has_station_magnitude());
+            REQUIRE(item.station_magnitude().has_amplitude_1());
+            REQUIRE(item.station_magnitude().has_amplitude_2());
+            REQUIRE_THAT(item.station_magnitude().value() + item.residual(),
+                         Catch::Matchers::WithinAbs(received.value(), 1.e-14));
+            // The client can map back to what it sent
+            const auto &sent
+                = observations.at(item.input_observation_number() - 1);
+            REQUIRE(sent.getStationName()
+                 == item.identifier().network() + "." + item.identifier().station());
+        }
+
+        REQUIRE(received.rejected_observations_size() == 2);
+        REQUIRE(received.rejected_observations(0).input_observation_number()
+             == 2);
+        REQUIRE(received.rejected_observations(0).reason()
+             == Response::REASON_NO_STATION_CORRECTION);
+        REQUIRE(received.rejected_observations(1).input_observation_number()
+             == 4);
+        REQUIRE(received.rejected_observations(1).reason()
+             == Response::REASON_TOO_FAR);
     }
 }

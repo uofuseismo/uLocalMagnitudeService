@@ -265,6 +265,7 @@ grpc::ServerUnaryReactor
                              ULMSAPIV1::NetworkMagnitudeFromAmplitudesResponse
                                       ::StationMagnitudeAndResidual
                           > ();
+                    stationMagRes.set_input_observation_number(residual.second);
                     response->mutable_station_magnitudes_and_residuals()->Add(
                         std::move(stationMagRes)); 
                 }
@@ -296,6 +297,14 @@ grpc::ServerUnaryReactor
                 Finish({grpc::StatusCode::INVALID_ARGUMENT, "No observations"});
                 return;
             }
+            else if (magnitudeResult.error() ==
+                Magnitude::NetworkMagnitudeCalculator::ErrorCode::DuplicateObservations)
+            {
+                metrics.incrementClientErrorCounter(mRouteName);
+                Finish({grpc::StatusCode::INVALID_ARGUMENT,
+                        "Duplicate observations"});
+                return;
+            }
             // 500 errors
             else if (magnitudeResult.error() == 
                 Magnitude::NetworkMagnitudeCalculator::ErrorCode::Uninitialized)
@@ -321,7 +330,9 @@ grpc::ServerUnaryReactor
             {
                 SPDLOG_LOGGER_ERROR(mLogger, "Unhandled error");
                 metrics.incrementServerErrorCounter(mRouteName);
-
+                Finish({grpc::StatusCode::INTERNAL,
+                        "Algorithm error - contact maintainer"});
+                return;
             }
             mSuccess = true;
             Finish(grpc::Status::OK);
