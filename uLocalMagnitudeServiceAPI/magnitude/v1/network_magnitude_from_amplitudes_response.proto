@@ -40,11 +40,13 @@ message NetworkMagnitudeFromAmplitudesResponse {
    string identifier = 1 [default = ""];
    /// Algorithm version.
    string version = 2;
+   /// The network magnitude.
+   double value = 3;
    /// Additional comments from processing and a place for things like API
    /// deprecation notices.
-   string notices = 3 [default = ""];
+   string notices = 4 [default = ""];
    /// The corresponding station magnitudes and residuals.
-   repeated StationMagnitudeAndResidual observations = 4;
+   repeated StationMagnitudeAndResidual observations = 5;
    /// The rejected observations.
-   repeated RejectedObservation rejected_observations = 5;   
+   repeated RejectedObservation rejected_observations = 6;   
 }
