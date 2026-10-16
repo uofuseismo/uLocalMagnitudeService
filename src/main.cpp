@@ -41,8 +41,12 @@ public:
     {
 #ifndef NDEBUG
         assert(mLogger != nullptr);
-#endif      
-
+#endif
+        mServer
+           = std::make_unique<ULocalMagnitudeService::GRPC::Server>(
+                mOptions.grpcServerOptions,
+                mOptions.networkMagnitudeCalculatorOptions,
+                mLogger);
     }
 
     /// @brief Destructor
@@ -55,6 +59,7 @@ public:
     void start()
     {
         mKeepRunning.store(true);
+        mServer->start(); // Throws
         handleMainThread();
     }
 
@@ -62,6 +67,10 @@ public:
     void stop()
     {
         mKeepRunning.store(false);
+        if (mServer != nullptr)
+        {
+            mServer->stop();
+        }
     }
 
     /// @brief Peridically prints the status to a summary log
@@ -134,6 +143,7 @@ public:
 //private:
     ProgramOptions mOptions; 
     std::shared_ptr<spdlog::logger> mLogger{nullptr};
+    std::unique_ptr<ULocalMagnitudeService::GRPC::Server> mServer{nullptr};
     mutable std::mutex mStopMutex;
     std::condition_variable mStopProcessCondition;
     std::condition_variable mTerminateCondition;

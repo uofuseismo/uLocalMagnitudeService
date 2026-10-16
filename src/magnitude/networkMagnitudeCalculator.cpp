@@ -332,6 +332,7 @@ NetworkMagnitudeCalculator::operator()(
     struct WorkItem
     {
         Observation observation;
+        int observationNumber;
         std::expected
         <
             StationMagnitude,
@@ -341,11 +342,14 @@ NetworkMagnitudeCalculator::operator()(
     };
     std::vector<WorkItem> workItems;
     workItems.reserve(observations.size());
+    int observationNumber{0};
     for (const auto &observation : observations)
     {
+        observationNumber = observationNumber + 1;
         WorkItem workItem
         {
             observation, 
+            observationNumber,
             computeStationMagnitude(observation)
         };
         workItems.push_back(std::move(workItem));
@@ -401,8 +405,20 @@ NetworkMagnitudeCalculator::operator()(
                             e.what());
         return std::unexpected(ErrorCode::Algorithm);
     }
-    // Now tabulate the residuals
-    for (const auto &item : workItems)
+    // Now tabulate the residuals and errors
+    std::vector<std::pair
+    <
+        Residual,
+        int
+    >
+    > residuals;
+    std::vector<std::pair
+    <   
+        StationCalculatorErrorCode,
+        int
+    >
+    > rejectedObservations;
+    for (auto &item : workItems)
     {
         if (item.stationMagnitude.has_value())
         {
@@ -410,7 +426,19 @@ NetworkMagnitudeCalculator::operator()(
             auto residualValue = networkMagnitude.getValue()
                                - item.stationMagnitude->getValue();
             residual.setValue(residualValue);
+            residual.setStationMagnitude(std::move(*item.stationMagnitude));
+            residuals.push_back(
+                std::pair {std::move(residual),
+                           item.observationNumber}); 
+        }
+        else
+        {
+             rejectedObservations.push_back(
+                std::pair{item.stationMagnitude.error(),
+                          item.observationNumber});
         }
     }
+    networkMagnitude.setResiduals(std::move(residuals));
+    networkMagnitude.setRejectedObservations(rejectedObservations);
     return networkMagnitude;
 }

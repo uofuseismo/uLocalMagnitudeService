@@ -1,11 +1,13 @@
 #ifndef ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_MAGNITUDE_HPP
 #define ULOCAL_MAGNITUDE_SERVICE_MAGNITUDE_NETWORK_MAGNITUDE_HPP
 #include <memory>
+#include <tuple>
 #include <utility>
 #include <vector>
+#include <uLocalMagnitudeService/magnitude/networkMagnitudeCalculator.hpp>
+
 namespace ULocalMagnitudeService::Magnitude
 {
- class Observation;
  class Residual;
 }
 namespace ULocalMagnitudeService::Magnitude
@@ -35,12 +37,37 @@ public:
     /// @result True indicates that the netork magnitude was set.
     [[nodiscard]] bool hasValue() const noexcept;
 
-    /// @brief Sets the observations and residuals.
-    /// @param[in] observationsAndResiduals  Each element is an observation and
-    ///                                      corresponding (magnitude) residual.
-    void setObservationsAndResiduals(const std::vector<std::pair<Observation, Residual>> &observationsAndResiduals);
-    /// @result True indicates that the observations and residuals were set.
-    [[nodiscard]] bool hasObservationsAndResiduals() const noexcept;
+    /// @brief Sets the residuals.
+    /// @param[in,out] residuals  The residuals (Network - StationMagnitude)
+    ///                           and the corresponding observation number.
+    /// @throws std::invalid_argument if any residual does not have a value
+    ///         or a station magnitude.
+    void setResiduals(std::vector<std::pair<Residual, int>> &&stationMagnitudesAndResiduals);
+    void setResiduals(const std::vector<std::pair<Residual, int>> &stationMagnitudesAndResiduals);
+    /// @result The residuals and corresponding observation numbers.
+    /// @throws std::runtime_error if \c hasResiduals() is false.
+    [[nodiscard]] std::vector<std::pair<Residual, int>> getResiduals() const;
+    [[nodiscard]] const std::vector<std::pair<Residual, int>> &getResidualsReference() const;
+    /// @result True indicates that the residuals were set.
+    [[nodiscard]] bool hasResiduals() const noexcept;
+    /// @result The station magnitudes and residual message.
+    /// @throws std::runtime_error if \c hasResiduals() is false.
+    /// @note This is defined for ULocalMagnitudeServiceAPI::Magnitude::V1::NetworkMagnitudeFromAmplitudesResponse::StationMagnitudeAndResidual.
+    //template<typename U> std::vector<U> toStationMagnitudesAndResiduals() const;
+
+
+    /// @brief Sets the reasons for rejected observations.
+    /// @note The rejected observations vector can be empty.
+    void setRejectedObservations(const std::vector<std::pair<NetworkMagnitudeCalculator::StationCalculatorErrorCode, int>> &rejectedObservations); 
+    /// @result The rejeted observations.
+    /// @throws std::runtime_error if \c hasRejectedObservations() is false.
+    [[nodiscard]] std::vector<std::pair<NetworkMagnitudeCalculator::StationCalculatorErrorCode, int>> getRejectedObservations() const;
+    /// @result True indicates the rejected observations were set.
+    [[nodiscard]] bool hasRejectedObservations() const noexcept;
+    /// @result The rejected observations message.
+    /// @throws std::runtime_error if \c hasRejectedObservations() is false.
+    /// @note This is defined for ULocalMagnitudeServiceAPI::Magnitude::V1::NetworkMagnitudeFromAmplitudesResponse::RejectedObservation.
+    template<typename U> std::vector<U> toRejectedObservationsMessage() const;
 
     /// @brief Destructor.
     ~NetworkMagnitude();

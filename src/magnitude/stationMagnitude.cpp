@@ -174,6 +174,16 @@ StationMagnitude::getAmplitudes() const
     return pImpl->mAmplitudes;
 } 
 
+const std::pair<Amplitude, Amplitude>
+&StationMagnitude::getAmplitudesReference() const
+{
+    if (!hasAmplitudes())
+    {   
+        throw std::runtime_error("Amplitudes not set");
+    }   
+    return *&pImpl->mAmplitudes;
+} 
+
 bool StationMagnitude::hasAmplitudes() const noexcept
 {
     return pImpl->mHasAmplitudes;

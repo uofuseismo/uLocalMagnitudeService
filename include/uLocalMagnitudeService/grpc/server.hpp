@@ -24,6 +24,12 @@ public:
            const Magnitude::NetworkMagnitudeCalculatorOptions &calculatorOptions,
            std::shared_ptr<spdlog::logger> logger);
 
+    /// @brief Starts the server.
+    void start();
+
+    /// @brief Stops the server.
+    void stop();
+ 
     /// @brief Destructor.
     ~Server();
 

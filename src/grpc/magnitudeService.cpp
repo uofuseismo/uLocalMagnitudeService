@@ -23,6 +23,7 @@
 #include "uLocalMagnitudeService/magnitude/networkMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculator.hpp"
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
+#include "uLocalMagnitudeService/magnitude/residual.hpp"
 #include "uLocalMagnitudeService/magnitude/stationMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
 #include "uLocalMagnitudeService/metrics/singleton.hpp"
@@ -184,7 +185,7 @@ grpc::ServerUnaryReactor
                     try
                     {
                         Magnitude::Observation observation
-                        {   
+                        {
                             grpcMeasurement,
                             hypocenter
                         };
@@ -232,7 +233,8 @@ grpc::ServerUnaryReactor
                 metrics.incrementServerErrorCounter(mRouteName);
                 SPDLOG_LOGGER_ERROR(
                     mLogger,
-                    "Failed to unpack observations because {}",
+                    "Failed to unpack observations for {} because {}",
+                    requestIdentifier,
                     std::string{e.what()});
                 Finish({grpc::StatusCode::INTERNAL,
                         "Server error - try using a different endpoint"});
@@ -250,7 +252,32 @@ grpc::ServerUnaryReactor
             auto magnitudeResult = calculator->operator()(observations);
             if (magnitudeResult.has_value())
             {
-
+                SPDLOG_LOGGER_INFO(mLogger, "Computed magnitude {} for {}",
+                                   magnitudeResult->getValue(),
+                                   requestIdentifier); 
+                response->set_value(magnitudeResult->getValue());
+                const auto &residuals = magnitudeResult->getResidualsReference();
+                for (const auto &residual : residuals)
+                {
+                    auto stationMagRes
+                        = residual.first.toStationMagnitudeAndResidualMessage
+                          <
+                             ULMSAPIV1::NetworkMagnitudeFromAmplitudesResponse
+                                      ::StationMagnitudeAndResidual
+                          > ();
+                    response->mutable_observations()->Add(std::move(stationMagRes)); 
+                }
+                auto rejectedObservations
+                    = magnitudeResult->toRejectedObservationsMessage
+                      <
+                          ULMSAPIV1::NetworkMagnitudeFromAmplitudesResponse
+                                   ::RejectedObservation
+                      > ();
+                for (auto &reject : rejectedObservations)
+                {
+                    response->mutable_rejected_observations()->Add(
+                        std::move(reject));
+                }
             }
             // 400 errors
             else if (magnitudeResult.error() ==

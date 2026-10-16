@@ -71,6 +71,10 @@ public:
     /// @result The amplitudes that went into making the station magnitude.
     /// @throws std::runtime_error if \c hasAmplitudes() is false.
     [[nodiscard]] std::pair<Amplitude, Amplitude> getAmplitudes() const;
+    /// @result A reference to the station amplitudes.
+    /// @throws std::runtime_error if \c hasAmplitudes() is false.
+    /// @note \c getAmplitudes() should be preferred.
+    [[nodiscard]] const std::pair<Amplitude, Amplitude> &getAmplitudesReference() const;
     /// @result True indicates that the amplitudes were set.
     [[nodiscard]] bool hasAmplitudes() const noexcept;
     /// @result The station name - e.g., UU.CWU.

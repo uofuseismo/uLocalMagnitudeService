@@ -190,5 +190,17 @@ Server::Server(
 {
 }
 
+/// Start the server
+void Server::start()
+{
+    pImpl->start();
+}
+
+/// Stop the server
+void Server::stop()
+{
+    pImpl->stop();
+}
+
 /// Destructor
 Server::~Server() = default;

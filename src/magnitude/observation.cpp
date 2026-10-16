@@ -55,12 +55,10 @@ Observation::Observation(Observation &&observation) noexcept
 /// Create from a station amplitude measurement
 template<>
 Observation::Observation(
-    const ULocalMagnitudeServiceAPI::Magnitude::V1
-          ::StationAmplitudeMeasurement &measurement,
-    const ULocalMagnitudeServiceAPI::Magnitude::V1
-          ::Hypocenter &hypocenterMessage)
+    const ULocalMagnitudeServiceAPI::Magnitude::V1::StationAmplitudeMeasurement
+         &measurement,
+    const Corrections::Hypocenter &hypocenter)
 {
-    const Corrections::Hypocenter hypocenter{hypocenterMessage};
     if (!measurement.has_amplitude_stream_1())
     {
         throw std::invalid_argument("First amplitude not set");
@@ -81,7 +79,7 @@ Observation::Observation(
         = Corrections::Distance::computeEpicentralDistance(
              hypocenter, stationLocation);
     Observation thisObservation;
-    Amplitude amplitude1{measurement.amplitude_stream_1()};  
+    Amplitude amplitude1{measurement.amplitude_stream_1()};
     Amplitude amplitude2{measurement.amplitude_stream_2()};
     std::pair<Amplitude, Amplitude> amplitudePair
     {
@@ -91,6 +89,18 @@ Observation::Observation(
     thisObservation.setAmplitudes(std::move(amplitudePair));
     thisObservation.setEpicentralDistance(epicentralDistance);
     thisObservation.setDepth(hypocenter.getDepth());
+    *this = std::move(thisObservation);
+}
+
+template<>
+Observation::Observation(
+    const ULocalMagnitudeServiceAPI::Magnitude::V1::StationAmplitudeMeasurement
+         &measurement,
+    const ULocalMagnitudeServiceAPI::Magnitude::V1::Hypocenter
+         &hypocenterMessage)
+{
+    const Corrections::Hypocenter hypocenter{hypocenterMessage};
+    Observation thisObservation{measurement, hypocenter};
     *this = std::move(thisObservation);
 }
 

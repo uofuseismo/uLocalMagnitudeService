@@ -32,6 +32,27 @@ public:
     /// @result True indicates that the residual was set. 
     [[nodiscard]] bool hasValue() const noexcept;
 
+    /// @brief Sets the station magnitude.
+    /// @throws std::invalid_argument if \c hasValue() is false,
+    ///         \c hasAmplitudes() is false, \c hasStationCorrection() is false,
+    ///         or \c hasDistanceCorrection() is false.
+    void setStationMagnitude(StationMagnitude &&stationMagnitude);
+    void setStationMagnitude(const StationMagnitude &stationMagnitude);
+    /// @result The station magnitude.
+    /// @throws std::runtime_error if \c hasStationMagnitude() is false.
+    [[nodiscard]] StationMagnitude getStationMagnitude() const;
+    /// @result A reference to the station magnitude.
+    /// @throws std::runtime_error if \c hasStationMagnitude() is false.
+    [[nodiscard]] const StationMagnitude &getStationMagnitudeReference() const;
+    /// @result True indicates that the station magnitude was set.
+    [[nodiscard]] bool hasStationMagnitude() const noexcept;
+
+    /// @brief Convenience function to create a station magnitude and
+    ///        residual message.
+    /// @throws std::runtime_error if \c hasStationMagnitude() is false
+    ///         or \c hasValue() is false.
+    template<typename U> [[nodiscard]] U toStationMagnitudeAndResidualMessage() const;
+
     /// @brief Destructor.
     ~Residual();
     /// @brief Copy assignment.
