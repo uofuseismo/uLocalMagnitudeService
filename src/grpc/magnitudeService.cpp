@@ -252,8 +252,47 @@ grpc::ServerUnaryReactor
             {
 
             }
+            // 400 errors
+            else if (magnitudeResult.error() ==
+                Magnitude::NetworkMagnitudeCalculator::ErrorCode::TooFewObservations)
+            {
+                metrics.incrementClientErrorCounter(mRouteName);
+                Finish({grpc::StatusCode::INVALID_ARGUMENT,
+                        "Too few observations"});
+                return;
+            }
+            else if (magnitudeResult.error() ==
+                Magnitude::NetworkMagnitudeCalculator::ErrorCode::NoObservations)
+            {
+                metrics.incrementClientErrorCounter(mRouteName);
+                Finish({grpc::StatusCode::INVALID_ARGUMENT, "No observations"});
+                return;
+            }
+            // 500 errors
+            else if (magnitudeResult.error() == 
+                Magnitude::NetworkMagnitudeCalculator::ErrorCode::Uninitialized)
+            {
+                metrics.incrementServerErrorCounter(mRouteName);
+                SPDLOG_LOGGER_CRITICAL(mLogger,
+                                       "Network calcalator not initialized");
+                Finish({grpc::StatusCode::INTERNAL,
+                        "Server error - contact maintainer"});
+                return;
+            } 
+            else if (magnitudeResult.error() ==
+                Magnitude::NetworkMagnitudeCalculator::ErrorCode::Algorithm)
+            {
+                metrics.incrementServerErrorCounter(mRouteName);
+                SPDLOG_LOGGER_ERROR(mLogger,
+                                    "Algorithmic error in network calcalator");
+                Finish({grpc::StatusCode::INTERNAL,
+                        "Algorithm error - contact maintainer"});
+                return;
+            }
             else
             {
+                SPDLOG_LOGGER_ERROR(mLogger, "Unhandled error");
+                metrics.incrementServerErrorCounter(mRouteName);
 
             }
             mSuccess = true;
