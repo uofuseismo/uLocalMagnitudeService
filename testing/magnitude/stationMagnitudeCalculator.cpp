@@ -369,6 +369,26 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::StationMagnitudeCalculator",
         REQUIRE(tooFarObservation.error() == ErrorCode::StationTooFar);
     }
 
+    SECTION("Station before the start of the distance table is rejected")
+    {
+        // The Yellowstone table starts at 3 km hypocentral distance
+        const Magnitude::StationMagnitudeCalculator yellowstone{
+            stationCorrection("UU", "CCUT", 0.31),
+            yellowstoneDistanceCorrections()};
+        REQUIRE(yellowstone.getDistanceCorrection(0, 3000).has_value());
+        const auto tooClose = yellowstone.getDistanceCorrection(0, 2000);
+        REQUIRE_FALSE(tooClose.has_value());
+        REQUIRE(tooClose.error() == ErrorCode::StationTooClose);
+        const auto tooCloseObservation
+            = yellowstone(observation(east, north, 1000, 2000));
+        REQUIRE_FALSE(tooCloseObservation.has_value());
+        REQUIRE(tooCloseObservation.error() == ErrorCode::StationTooClose);
+        // Negative distance is still reported as such
+        const auto negative = yellowstone.getDistanceCorrection(-1, 0);
+        REQUIRE_FALSE(negative.has_value());
+        REQUIRE(negative.error() == ErrorCode::NegativeDistance);
+    }
+
     SECTION("Hypocentral depth is validated")
     {
         const Magnitude::StationMagnitudeCalculator yellowstone{

@@ -34,6 +34,9 @@ public:
         InvalidDepth,              /*!< The event depth was not in the
                                         range [-8600, 900000]. - user error. */
         NegativeDistance,          /*!< The event distance is negative - user error. */ 
+        StationTooClose,           /*!< The distance correction could not be used
+                                        because the source-receiver distance
+                                        was too small. */
         StationTooFar,             /*!< The distance correction could not be used
                                         because the source-receiver distance
                                         was too big. */

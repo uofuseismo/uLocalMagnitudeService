@@ -15,6 +15,7 @@
 #include "uLocalMagnitudeService/magnitude/networkMagnitudeCalculatorOptions.hpp"
 #include "uLocalMagnitudeService/magnitude/amplitude.hpp"
 #include "uLocalMagnitudeService/magnitude/observation.hpp"
+#include "uLocalMagnitudeService/magnitude/stationMagnitude.hpp"
 #include "uLocalMagnitudeService/magnitude/streamIdentifier.hpp"
 #include "uLocalMagnitudeService/corrections/distance.hpp"
 #include "uLocalMagnitudeService/corrections/distanceOptions.hpp"
@@ -350,6 +351,37 @@ TEST_CASE("ULocalMagnitudeService::Magnitude::NetworkMagnitudeCalculator - obser
             = observation("UU", "PKCU", 20000, std::nullopt);
         requireError(hypocentral(std::vector {ccut, lcmt, noDepth}),
                      ErrorCode::ObservationMissingDepth);
+    }
+
+    SECTION("Distance table limits propagate to the station magnitude")
+    {
+        using StationErrorCode
+            = NetworkMagnitudeCalculator::StationCalculatorErrorCode;
+        auto options = utahOptions();
+        options.setDistanceCorrections(yellowstoneDistanceCorrections());
+        const NetworkMagnitudeCalculator yellowstone{options, nullptr};
+        // The Yellowstone table spans 3 to 180 km hypocentral distance
+        REQUIRE(yellowstone.computeStationMagnitude(ccut).has_value());
+        const auto tooClose = observation("UU", "PKCU", 1000, 2000);
+        const auto tooCloseMagnitude
+            = yellowstone.computeStationMagnitude(tooClose);
+        REQUIRE_FALSE(tooCloseMagnitude.has_value());
+        REQUIRE(tooCloseMagnitude.error() == StationErrorCode::StationTooClose);
+        const auto tooFar = observation("UU", "PKCU", 181000, depth);
+        const auto tooFarMagnitude
+            = yellowstone.computeStationMagnitude(tooFar);
+        REQUIRE_FALSE(tooFarMagnitude.has_value());
+        REQUIRE(tooFarMagnitude.error() == StationErrorCode::StationTooFar);
+        // Too close stations don't count toward the network magnitude
+        const auto withTooClose
+            = yellowstone(std::vector {ccut, lcmt, tooClose});
+        const auto without = yellowstone(std::vector {ccut, lcmt});
+        REQUIRE(withTooClose.has_value());
+        REQUIRE(without.has_value());
+        REQUIRE_THAT(withTooClose->getValue(),
+                     Catch::Matchers::WithinAbs(without->getValue(), 1.e-14));
+        requireError(yellowstone(std::vector {ccut, tooClose}),
+                     ErrorCode::TooFewObservations);
     }
 
     SECTION("A station can only be observed once")

@@ -486,15 +486,20 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance", "[distance]")
         requireError(distance(1000), Distance::ErrorCode::StationTooFar);
     }
 
-    SECTION("Linear saturates below the first node")
+    SECTION("Closer than the first node is too close")
     {
         DistanceOptions shifted;
         shifted.setInterpolation(DistanceOptions::Interpolation::Linear);
         shifted.setType(DistanceOptions::Type::Epicentral);
         shifted.setCorrections({{100, 1.0}, {200, 2.0}});
         const Distance distance{shifted};
-        REQUIRE(distance(0) == 1.0);
-        REQUIRE(distance(50) == 1.0);
+        REQUIRE(distance.getMinimumDistance() == 100);
+        requireError(distance(0), Distance::ErrorCode::StationTooClose);
+        requireError(distance(50), Distance::ErrorCode::StationTooClose);
+        requireError(distance(99.999), Distance::ErrorCode::StationTooClose);
+        REQUIRE(distance(100) == 1.0);
+        // Negative takes precedence over too close
+        requireError(distance(-1), Distance::ErrorCode::NegativeDistance);
     }
 
     SECTION("Single entry table is a constant")
@@ -507,7 +512,9 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance", "[distance]")
             single.setType(DistanceOptions::Type::Epicentral);
             single.setCorrections({{5000, 0.25}});
             const Distance distance{single};
-            REQUIRE(distance(0) == 0.25);
+            REQUIRE(distance.getMinimumDistance() == 5000);
+            REQUIRE(distance.getMaximumDistance() == 5000);
+            requireError(distance(0), Distance::ErrorCode::StationTooClose);
             REQUIRE(distance(5000) == 0.25);
             requireError(distance(100000), Distance::ErrorCode::StationTooFar);
         }
@@ -590,12 +597,21 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance - Utah and Yellowstone"
         REQUIRE(atKm(utahNearest, 80.0) == 2.9);
     }
 
-    SECTION("Closer than the table starts takes the first correction")
+    SECTION("Closer than the table starts is too close")
     {
         // Utah starts at 0 so only Yellowstone can be undershot - it
         // starts at 3 km.
-        REQUIRE(atKm(yellowstoneLinear, 0.0) == 0.64);
-        REQUIRE(atKm(yellowstoneLinear, 2.9) == 0.64);
+        REQUIRE(utahNearest.getMinimumDistance() == 0);
+        REQUIRE(yellowstoneLinear.getMinimumDistance() == 3000);
+        requireError(atKm(yellowstoneLinear, 0.0),
+                     Distance::ErrorCode::StationTooClose);
+        requireError(atKm(yellowstoneLinear, 2.9),
+                     Distance::ErrorCode::StationTooClose);
+        REQUIRE(atKm(yellowstoneLinear, 3.0) == 0.64);
+        // Yellowstone is hypocentral so the depth can pull it into the table
+        requireError(yellowstoneLinear(0, 0),
+                     Distance::ErrorCode::StationTooClose);
+        REQUIRE(yellowstoneLinear(0, 3000) == 0.64);
     }
 
     SECTION("Further than the table goes is too far")
@@ -657,9 +673,11 @@ TEST_CASE("ULocalMagnitudeService::Corrections::Distance - Utah and Yellowstone"
                      Catch::Matchers::WithinAbs(2.825, 1.e-12));
         REQUIRE_THAT(atKm(yellowstoneLinear, 4.5).value(),
                      Catch::Matchers::WithinAbs(0.68, 1.e-12));
-        // Saturates below the first node and stops at the last
-        REQUIRE_THAT(atKm(yellowstoneLinear, 0.0).value(),
+        // Starts at the first node and stops at the last
+        REQUIRE_THAT(atKm(yellowstoneLinear, 3.0).value(),
                      Catch::Matchers::WithinAbs(0.64, 1.e-12));
+        requireError(atKm(yellowstoneLinear, 2.9),
+                     Distance::ErrorCode::StationTooClose);
         REQUIRE_THAT(atKm(utahLinear, 600.0).value(),
                      Catch::Matchers::WithinAbs(4.9, 1.e-12));
         requireError(atKm(utahLinear, 700.0),

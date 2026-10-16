@@ -263,6 +263,12 @@ NetworkMagnitudeCalculator::computeStationMagnitude(
                 StationCalculatorErrorCode::NegativeDistance);
         }
         else if (stationMagnitudeResult.error() ==
+                 StationMagnitudeCalculator::ErrorCode::StationTooClose)
+        {
+            return std::unexpected(
+                StationCalculatorErrorCode::StationTooClose);
+        }
+        else if (stationMagnitudeResult.error() ==
                  StationMagnitudeCalculator::ErrorCode::StationTooFar)
         {
             return std::unexpected(

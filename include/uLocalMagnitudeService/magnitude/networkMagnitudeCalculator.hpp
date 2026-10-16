@@ -41,6 +41,7 @@ public:
         // User errors at a station level
         ObservationHasNoCorrection,   /*!< This observation has not corresponding station correction. */
         NegativeDistance,             /*!< A negative epicentral distance was encountered. */
+        StationTooClose,              /*!< The source-receiver distance is too small. */
         StationTooFar,                /*!< The source-receiver distance is too large. */ 
         // Server error
         Uninitialized,   /*!< Class not initialized. */
@@ -55,6 +56,7 @@ public:
         ObservationMissingDepth,      /*!< Depth corrections are used an the observation lacks that. */
         ObservationHasNoCorrection,   /*!< This observation has not corresponding station correciton. */
         NegativeDistance,             /*!< A negative epicentral distance was encountered. */
+        StationTooClose,              /*!< The source-receiver distance is too small. */
         StationTooFar,                /*!< The source-receiver distance is too large. */ 
         InvalidDepth,                 /*!< The depth is out the range [-8600, 900000]. */
         // Server error

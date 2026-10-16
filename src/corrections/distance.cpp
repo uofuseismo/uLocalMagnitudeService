@@ -69,6 +69,7 @@ public:
     DistanceOptions mDistanceOptions;
     std::vector<double> mAbsissas;
     std::vector<double> mValues;
+    double mMinimumDistance{0};
     double mMaximumDistance{0};
     bool mLinearInterpolation{false};
     bool mInitialized{false};
@@ -100,9 +101,11 @@ Distance::Distance(const DistanceOptions &options) :
         pImpl->mAbsissas.push_back(correction.first);
         pImpl->mValues.push_back(correction.second);
     }   
-    pImpl->mMaximumDistance =
-        *std::ranges::max_element(pImpl->mAbsissas.begin(),
-                                  pImpl->mAbsissas.end());
+    auto [minDistance, maxDistance]
+        = std::ranges::minmax_element(pImpl->mAbsissas.begin(),
+                                      pImpl->mAbsissas.end());
+    pImpl->mMinimumDistance = *minDistance;
+    pImpl->mMaximumDistance = *maxDistance;
     pImpl->mInitialized = true;
 }
 
@@ -145,6 +148,16 @@ std::vector<std::pair<double, double>> Distance::getCorrections() const
         throw std::runtime_error("Distance corrections not initialized");
     }
     return pImpl->mDistanceOptions.getCorrections();
+}
+
+/// Minimum distance
+double Distance::getMinimumDistance() const
+{
+    if (!isInitialized())
+    {
+        throw std::runtime_error("Distance corrections not initialized");
+    }
+    return pImpl->mMinimumDistance;
 }
 
 /// Maximum distance
@@ -220,7 +233,11 @@ Distance::operator()(const double distance) const noexcept
     if (distance < 0)
     {   
         return std::unexpected(ErrorCode::NegativeDistance);
-    }   
+    }
+    if (distance < pImpl->mMinimumDistance)
+    {
+        return std::unexpected(ErrorCode::StationTooClose);
+    }
     if (distance > pImpl->mMaximumDistance)
     {   
         return std::unexpected(ErrorCode::StationTooFar);

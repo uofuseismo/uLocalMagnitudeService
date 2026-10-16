@@ -195,6 +195,11 @@ StationMagnitudeCalculator::getDistanceCorrection(
         return std::unexpected(ErrorCode::NegativeDistance);
     }
     else if (distanceCorrection.error() ==
+             Corrections::Distance::ErrorCode::StationTooClose)
+    {
+        return std::unexpected(ErrorCode::StationTooClose);
+    }
+    else if (distanceCorrection.error() ==
              Corrections::Distance::ErrorCode::StationTooFar)
     {
         return std::unexpected(ErrorCode::StationTooFar);

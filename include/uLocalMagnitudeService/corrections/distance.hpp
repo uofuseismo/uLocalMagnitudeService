@@ -24,6 +24,8 @@ public:
     enum class ErrorCode
     {
         NegativeDistance,     /*!< The source receiver distance is negative. */
+        StationTooClose,      /*!< The source receiver distance is less than the
+                                   minimum distance in the correction table. */
         StationTooFar,        /*!< The source receiver distance extends past the
                                    maximum distance in the correction table. */
         InvalidSourceDepth,   /*!< The source depth is being used to compute
@@ -69,6 +71,10 @@ public:
     /// @result The distance type (context for the operator()).
     /// @throws std::runtime_error if \c isInitialized() is false.
     [[nodiscard]] DistanceOptions::Type getDistanceType() const;
+
+    /// @result The minimum distance in meters in the distance table.
+    /// @throws std::runtime_error if \c isInitialized() is false.
+    [[nodiscard]] double getMinimumDistance() const;
 
     /// @result The maximum distance in meters in the distance table.
     /// @throws std::runtime_error if \c isInitialized() is false.
