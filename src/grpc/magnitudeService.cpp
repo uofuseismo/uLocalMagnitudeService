@@ -265,7 +265,8 @@ grpc::ServerUnaryReactor
                              ULMSAPIV1::NetworkMagnitudeFromAmplitudesResponse
                                       ::StationMagnitudeAndResidual
                           > ();
-                    response->mutable_observations()->Add(std::move(stationMagRes)); 
+                    response->mutable_station_magnitudes_and_residuals()->Add(
+                        std::move(stationMagRes)); 
                 }
                 auto rejectedObservations
                     = magnitudeResult->toRejectedObservationsMessage
