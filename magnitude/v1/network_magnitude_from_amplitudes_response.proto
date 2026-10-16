@@ -11,10 +11,11 @@ import "uLocalMagnitudeServiceAPI/magnitude/v1/station_magnitude.proto";
 message NetworkMagnitudeFromAmplitudesResponse {
    enum Reason {
        REASON_UNSPECIFIED = 0;            // Observation rejected but no reason is specified.  (Very unlikely result)
-       REASON_TOO_FAR = 1;                // The source-receiver distance extends past the end of the distance correction table.
-       REASON_INVALID_AMPLITUDES = 2;     // The amplitudes had erroneous values - e.g., non-positive amplitudes, units, inconsistent streams.
-       REASON_NO_STATION_CORRECTION = 3;  // There existed no station correction so the station magnitude could not be computed.
-       REASON_ALGORITHM = 4;              // Server-side error.
+       REASON_TOO_CLOSE = 1;              // The source-receiver distance precedes the start of the distance correction table.       
+       REASON_TOO_FAR = 2;                // The source-receiver distance extends past the end of the distance correction table.
+       REASON_INVALID_AMPLITUDES = 3;     // The amplitudes had erroneous values - e.g., non-positive amplitudes, units, inconsistent streams.
+       REASON_NO_STATION_CORRECTION = 4;  // There existed no station correction so the station magnitude could not be computed.
+       REASON_ALGORITHM = 5;              // Server-side error.
    }
    /// Defines a reason an observation was not used in computing the network magnitude.
    message RejectedObservation {
