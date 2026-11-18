@@ -216,8 +216,6 @@ int main(int argc, char *argv[])
     }
     catch (const std::exception &e)
     {
-        //NOLINTNEXTLINE(misc-include-cleaner)
-        auto consoleLogger = spdlog::stdout_color_st("console");
         SPDLOG_LOGGER_CRITICAL(consoleLogger,
                                "Failed to initialize logger because {}",
                                std::string {e.what()});
